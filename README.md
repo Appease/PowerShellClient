@@ -1,15 +1,20 @@
-**What is it?:**
+**What is it?**
 A PowerShell task runner inspired by [Grunt](http://gruntjs.com/).
 
-**Installation:**
-The easiest way to install is by using [Chocolatey](https://chocolatey.org/packages/posh-ci).
+**How do I install it?**
+Make sure you have [Chocolatey](https://chocolatey.org) installed, then from PowerShell run
 ```
 cinst posh-ci
 ```
 
-**Documentation**
-see the [Documentation](Documentation/Index.md) for available documentation.
+**How do I use it?**
+  1. Navigate to the root directory of your project
+  2. Create a `Posh-CI-File.ps1`
+  3. Create a [Packages.config](https://github.com/chocolatey/chocolatey/wiki/CommandsInstall#packagesconfig---v09813) with any dependencies required to run your `Posh-CI-File.ps1`
 
-**Build Status:**
-![](https://ci.appveyor.com/api/projects/status/l5hc8sswg3kgtvu5?svg=true)
+**Where's the documentation?**
+[Here](Documentation/Index.md)
+
+**What's the build status**
+![](https://ci.appveyor.com/api/projects/status/ay2uucfxymlgk2ni?svg=true)
 
