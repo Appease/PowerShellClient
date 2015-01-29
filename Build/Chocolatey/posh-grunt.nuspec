@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
+	<metadata>
+		<id>posh-grunt</id>
+		<title>Posh-Grunt</title>
+		<version>$version$</version>
+		<authors>Chris Dostert</authors>
+		<requireLicenseAcceptance>false</requireLicenseAcceptance>
+		<description>
+			Posh-Grunt: The Powershell Task Runner
+			
+			Installation notes: 
+			-	installs to:  C:\ProgramFiles\Posh-Grunt
+			-	appends C:\ProgramFiles\Posh-Grunt\Modules to PSModulePath environment variable
+		</description>
+		<tags>Powershell Posh-Grunt TaskRunner CI ContinuousIntegration Build Deployment admin</tags>
+		<projectUrl>https://github.com/posh-grunt/posh-grunt</projectUrl>
+		<iconUrl>http://res.cloudinary.com/he6hc3lvi/image/upload/c_crop,w_350/v1416041580/tw.png</iconUrl>
+	</metadata>	
+	<files>
+		<file src="**" target="tools" />
+	</files>
+</package>
