@@ -1,12 +1,12 @@
 try {
 
-    . "$PSScriptRoot\Posh-Grunt\Uninstall.ps1"
+    . "$PSScriptRoot\Posh-CI\Uninstall.ps1"
 
-    Write-ChocolateySuccess 'Posh-Grunt'
+    Write-ChocolateySuccess 'Posh-CI'
 
 } catch {
 
-    Write-ChocolateyFailure 'Posh-Grunt' $_.Exception.Message
+    Write-ChocolateyFailure 'Posh-CI' $_.Exception.Message
 
     throw 
 }

@@ -24,8 +24,8 @@ $PathToBuildArtifactsDirectory = ".\Build-Artifacts",
 $PathToMsBuildExe = "C:\Program Files (x86)\MSBuild\14.0\Bin\MSBuild.exe"){
     EnsureChocolateyInstalled
     SetupBuildArtifactsDirectory -Path $PathToBuildArtifactsDirectory    
-    Posh-Grunt-MsBuild\Invoke -PathToParentDirectory $PathToSourceDirectory -PathToMsBuildExe $PathToMsBuildExe -Recurse
-    Posh-Grunt-NuGet\Invoke-Pack -PathToParentDirectory $PathToSourceDirectory -PathToBuildArtifactsDirectory $PathToBuildArtifactsDirectory -Recurse
+    Posh-CI-MsBuild\Invoke -PathToParentDirectory $PathToSourceDirectory -PathToMsBuildExe $PathToMsBuildExe -Recurse
+    Posh-CI-NuGet\Invoke-Pack -PathToParentDirectory $PathToSourceDirectory -PathToBuildArtifactsDirectory $PathToBuildArtifactsDirectory -Recurse
 }
 
 Export-ModuleMember -Function New-Build

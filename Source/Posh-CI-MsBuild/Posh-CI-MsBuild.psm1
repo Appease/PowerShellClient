@@ -1,4 +1,4 @@
-Import-Module "$PSScriptRoot\..\Posh-Grunt-NuGet" -Force
+Import-Module "$PSScriptRoot\..\Posh-CI-NuGet" -Force
 
 function Get-SlnFile(
 [string]$PathToParentDirectory,
@@ -17,7 +17,7 @@ function Invoke(
         foreach($slnFile in $slnFiles){
 
             # restore packages
-            Posh-Grunt-NuGet\Invoke-Restore -SlnOrConfigFile $slnFile
+            Posh-CI-NuGet\Invoke-Restore -SlnOrConfigFile $slnFile
 
             # invoke msbuild
             & $PathToMsBuildExe $slnFile
