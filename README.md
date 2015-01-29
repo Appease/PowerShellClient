@@ -10,7 +10,7 @@ Why reinvent the wheel when it's already bad-ass... one less framework to grasp.
   3. Add a [Packages.config](https://github.com/chocolatey/chocolatey/wiki/CommandsInstall#packagesconfig---v09813).
 
 **How do I Install it?**
-The easiest way to install is by using [Chocolatey](https://chocolatey.org/packages/posh-grunt).
+Install [Chocolatey](https://chocolatey.org/) if you don't already have it, then from PowerShell
 ```
 cinst posh-grunt
 ```
