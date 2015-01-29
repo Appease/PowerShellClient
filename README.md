@@ -9,8 +9,8 @@ cinst posh-ci
 
 **How do I use it?**
   1. Navigate to the root directory of your project
-  2. Create a `Posh-CI-File.ps1` with your CI tasks
-  3. Create a [Packages.config](https://github.com/chocolatey/chocolatey/wiki/CommandsInstall#packagesconfig---v09813) with any dependencies required to run your `Posh-CI-File.ps1`
+  2. Create a `Posh-CI-File.ps1` containing your CI tasks
+  3. Create a [Packages.config](https://github.com/chocolatey/chocolatey/wiki/CommandsInstall#packagesconfig---v09813) identifying any dependencies required to run your `Posh-CI-File.ps1`
 
 **Where's the documentation?**
 [Here](Documentation/Index.md)
