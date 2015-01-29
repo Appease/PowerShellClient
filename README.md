@@ -1,8 +1,5 @@
 **What is it?**
-A PowerShell task runner based on [Grunt](http://gruntjs.com/).
-
-**Why Is It Based On Grunt?**
-Why reinvent the wheel when it's already bad-ass... one less framework to grasp... learn one, understand both... need i continue?
+A PowerShell task runner inspired by [Grunt](http://gruntjs.com/).
 
 **How do I use it?**
   1. Navigate to the root directory of your project.
