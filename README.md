@@ -5,14 +5,17 @@ A PowerShell task runner inspired by the popular Javascript task runners [Gulp](
 Make sure you have [Chocolatey](https://chocolatey.org) installed, then from PowerShell run
 ```
 cinst posh-ci
-Import-Module "$env:ChocolateyInstall\chocolateyinstall\helpers\chocolateyInstaller"
-Update-SessionEnvironment
+Import-Module "C:\Program Files\Posh-CI\Modules\Posh-CI"
 ```
 
-**How do I use it?**
-  1. Navigate to the root directory of your project
-  2. Create a `CI-Plan.ps1` containing your tasks
-  3. Create a [Packages.xml](https://github.com/chocolatey/chocolatey/wiki/CommandsInstall#packagesconfig---v09813) identifying any dependencies of your `CI-Plan.ps1`
+**How do I add it to my project?**
+```
+# navigate to the root directory of your project
+Set-Location "THE-ROOT-DIR-OF-YOUR-PROJECT"
+
+# create a new ci plan and initialize it with a 'Build' and a 'Unit-Test' stage
+New-CIPlan Build,Unit-Test
+```
 
 **Where's the documentation?**
 [Here](Documentation/Index.md)
