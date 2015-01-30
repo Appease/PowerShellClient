@@ -4,7 +4,7 @@ A PowerShell task runner inspired by the popular Javascript task runners [Gulp](
 **How do I install it?**
 Make sure you have [Chocolatey](https://chocolatey.org) installed, then from PowerShell run
 ```
-cinst posh-ci
+cinst posh-ci;. "$env:ProgramFiles\Posh-CI\Modules\Posh-CI\Install"
 ```
 
 **How do I use it?**
