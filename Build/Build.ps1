@@ -70,8 +70,7 @@ function Compile(
         -Description 'A PowerShell environment for continous integration.' `
         -PowerShellVersion '3.0' `
         -DotNetFrameworkVersion '4.5' `
-        -RootModule 'Posh-CI.psm1' `
-        -NestedModule @('Posh-CI-NuGet\Posh-CI-NuGet.psm1','Posh-CI-MsBuild\Posh-CI-MsBuild.psm1')
+        -RootModule 'Posh-CI.psm1'
 }
 
 function New-Build(
