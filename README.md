@@ -4,7 +4,9 @@ A PowerShell task runner inspired by the popular Javascript task runners [Gulp](
 **How do I install it?**
 Make sure you have [Chocolatey](https://chocolatey.org) installed, then from PowerShell run
 ```
-cinst posh-ci;Import-Module "$env:ChocolateyInstall\chocolateyinstall\helpers\chocolateyInstaller";Update-SessionEnvironment
+cinst posh-ci
+Import-Module "$env:ChocolateyInstall\chocolateyinstall\helpers\chocolateyInstaller"
+Update-SessionEnvironment
 ```
 
 **How do I use it?**
