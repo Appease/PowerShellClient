@@ -13,7 +13,7 @@ Import-Module "C:\Program Files\Posh-CI\Modules\Posh-CI"
 # navigate to the root directory of your project
 Set-Location "THE-ROOT-DIR-OF-YOUR-PROJECT"
 
-# create a new ci plan and initialize it with 'Build' and 'Unit-Test' stages
+# create a new ci plan and initialize it with 2 stages you chose to call 'Build' and 'Unit-Test'
 New-CIPlan Build,Unit-Test
 ```
 
