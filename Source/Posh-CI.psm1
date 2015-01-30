@@ -11,14 +11,14 @@ function EnsureChocolateyInstalled(){
 function Posh-CI(
 [string]$RootDir=(Resolve-Path .)){
     
-    $pathToPoshCIFile = "$RootDir\Posh-CI-File.ps1"
-    if(Test-Path $pathToPoshCIFile){
+    $pathToCIPlan = "$RootDir\CI-Plan.ps1"
+    if(Test-Path $pathToCIPlan){
         EnsureChocolateyInstalled
         choco install "$RootDir\Packages.config"
-        . $pathToPoshCIFile
+        . $pathToCIPlan
     }
     else{
-        throw "File not found at: $pathToPoshCIFile"
+        throw "File not found at: $pathToCIPlan"
     }    
 }
 
