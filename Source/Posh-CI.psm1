@@ -14,7 +14,7 @@ function Posh-CI(
     $pathToCIPlan = "$RootDir\CI-Plan.ps1"
     if(Test-Path $pathToCIPlan){
         EnsureChocolateyInstalled
-        choco install "$RootDir\Packages.config"
+        choco install "$RootDir\CI-Deps.xml"
         . $pathToCIPlan
     }
     else{
