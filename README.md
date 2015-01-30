@@ -11,7 +11,7 @@ Update-SessionEnvironment
 
 **How do I use it?**
   1. Navigate to the root directory of your project
-  2. Create a `Posh-CI-File.ps1` containing your tasks
+  2. Create a `_Posh-CI.ps1` file containing your tasks
   3. Create a [Packages.config](https://github.com/chocolatey/chocolatey/wiki/CommandsInstall#packagesconfig---v09813) identifying any dependencies of the tasks in your `Posh-CI-File.ps1`
 
 **Where's the documentation?**
