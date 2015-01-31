@@ -1,7 +1,7 @@
 function CreateChocolateyPackage(
-[string]$Version,
-[string]$Tools,
-[string]$OutputDirectory){
+[string][Parameter(Mandatory=$true)]$Version,
+[string][Parameter(Mandatory=$true)]$Tools,
+[string][Parameter(Mandatory=$true)]$OutputDirectory){
     # init working dir
     $workingDirPath = "$env:TEMP\Posh-CI-Build-Chocolatey"
     if(Test-Path $workingDirPath){
@@ -45,10 +45,30 @@ function CreateChocolateyPackage(
 
 }
 
+function Test(){
+    # install chocolatey
+    try{
+        Get-Command choco -ErrorAction Stop | Out-Null
+    }
+    catch{             
+        iex ((new-object net.webclient).DownloadString('https://chocolatey.org/install.ps1'))
+    }
+
+    # install pester
+    try{
+        Get-Command pester -ErrorAction Stop | Out-Null
+    }
+    catch{             
+        iex ((new-object net.webclient).DownloadString('https://chocolatey.org/install.ps1'))
+    }
+
+    choco install pester
+}
+
 function Compile(
-[string]$Version,
-[string]$SourceDirPath,
-[string]$OutputDirPath){
+[string][Parameter(Mandatory=$true)]$Version,
+[string][Parameter(Mandatory=$true)]$SourceDirPath,
+[string][Parameter(Mandatory=$true)]$OutputDirPath){
 
     # Import-Module looks for module manifest with same name as containing folder
     $compiledPowerShellModuleDirPath = "$OutputDirPath\Posh-CI"
@@ -74,8 +94,8 @@ function Compile(
 }
 
 function New-Build(
-[string]$Version,
-[string]$ArtifactsDirPath,
+[string][Parameter(Mandatory=$true)]$Version,
+[string][Parameter(Mandatory=$true)]$ArtifactsDirPath,
 [string]$SourceDirPath = "$PSScriptRoot\..\Source"){
 
     $ArtifactsDirPath = Resolve-Path $ArtifactsDirPath
