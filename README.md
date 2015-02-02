@@ -8,13 +8,19 @@ cinst posh-ci
 Import-Module "C:\Program Files\Posh-CI\Modules\Posh-CI"
 ```
 
-**How do I add it to my project?**
+**How do I use it?**
 ```
 # navigate to the root directory of your project
 Set-Location "THE-ROOT-DIR-OF-YOUR-PROJECT"
 
-# create a new ci plan and initialize it with 2 stages you chose to call 'Build' and 'Unit-Test'
-New-CIPlan Build,Unit-Test
+# create a new ci plan
+New-CIPlan
+
+# add a ci stage
+Add-CIStage -Name "Dev"
+
+# invoke your ci plan
+Invoke-CIPlan
 ```
 
 **Where's the documentation?**
