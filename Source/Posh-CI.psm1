@@ -1,4 +1,5 @@
 function EnsureChocolateyInstalled(){
+
     # install chocolatey
     try{
         Get-Command choco -ErrorAction Stop | Out-Null
@@ -6,16 +7,72 @@ function EnsureChocolateyInstalled(){
     catch{             
         iex ((new-object net.webclient).DownloadString('https://chocolatey.org/install.ps1'))
     }
+
 }
 
 function Get-CIPlanDirPath(
 [string][Parameter(Mandatory=$true)]$ProjectRootDirPath){
+
     "$ProjectRootDirPath\CIPlan"
+
 }
 
 function Get-CIStagesDirPath(
-[string][Parameter(Mandatory=$true)]$ProjectRootDirPath){
+[string][Parameter(Mandatory=$true)]$ProjectRootDirPath){    
+
     "$(Get-CIPlanDirPath $ProjectRootDirPath)\Stages"
+
+}
+
+function ConvertTo-CIPlanJson(
+[PSCustomObject][Parameter(Mandatory=$true)]$CIPlan){
+
+    $stagesArray = $CIPlan.Stages.Values
+    return ConvertTo-Json -InputObject ([PSCustomObject]@{"Stages"=$stagesArray}) -Depth 6
+
+}
+
+function ConvertFrom-CIPlanJson(
+[string]$CIPlanFileContent){
+
+    $ciPlan = $CIPlanFileContent -join "`n" | ConvertFrom-Json
+
+    # JSON doesnt support equivalent of PowerShell ordered dictionary so we must construct one
+    # from an array(maintains order)
+    $stagesArray = $ciPlan.Stages
+    # stages must be ordered
+    $stagesOrderedDictionary = [ordered]@{}
+    $stagesArray | %{$stagesOrderedDictionary.Add($_.Name,$_)}
+    
+    return [pscustomobject]@{"Stages"=$stagesOrderedDictionary}    
+}
+
+function Get-CIPlan(
+[string][Parameter(Mandatory=$true)]$ProjectRootDirPath){
+    <#
+        .SUMMARY
+        an internal utility function to retrieve a CIPlan file and 
+        instantiate a runtime CIPlan object.
+    #>
+
+    $ciPlanDirPath = "$ProjectRootDirPath\CIPlan"
+    $ciPlanFilePath = "$ciPlanDirPath\CIPlan.json"
+    return ConvertFrom-CIPlanJson -CIPlanFileContent (Get-Content $ciPlanFilePath)
+
+}
+
+function Set-CIPlan(
+[psobject]$CIPlan,
+[string][Parameter(Mandatory=$true)]$ProjectRootDirPath){
+    <#
+        .SUMMARY
+        an internal utility function to save a runtime CIPlan object as 
+        a CIPlan file.
+    #>
+    
+    $ciPlanDirPath = "$ProjectRootDirPath\CIPlan"
+    $ciPlanFilePath = "$ciPlanDirPath\CIPlan.json"    
+    Set-Content $ciPlanFilePath -Value (ConvertTo-CIPlanJson -CIPlan $CIPlan)
 }
 
 function Add-CIStage(
@@ -23,15 +80,14 @@ function Add-CIStage(
 [string]$ProjectRootDirPath = $PWD){
     $ciStagesDirPath = Get-CIStagesDirPath $ProjectRootDirPath
     $ciStageDirPath = "$ciStagesDirPath\$Name"
+    $templatesDirPath = "$PSScriptRoot\Templates"
     
     if(!(Test-Path $ciStageDirPath)){
-        $ciPlanDirPath = Get-CIPlanDirPath $ProjectRootDirPath
-        $ciPlanFilePath = "$ciPlanDirPath\CIPlan.json"
-
+        
         # add the stage to the plan
-        $ciPlan = (Get-Content $ciPlanFilePath) -join "`n" | ConvertFrom-Json
-        $ciPlan.Stages += New-Object PSObject -Property @{Name=$Name}
-        Set-Content $ciPlanFilePath -Value (ConvertTo-Json $ciPlan)
+        $ciPlan = Get-CIPlan -ProjectRootDirPath $ProjectRootDirPath
+        $ciPlan.Stages.Add($Name, [pscustomobject]@{Name=$Name})
+        Set-CIPlan -CIPlan $ciPlan -ProjectRootDirPath $ProjectRootDirPath
 
         # add a powershell module
         New-Item -Path $ciStageDirPath -ItemType Directory
@@ -58,14 +114,13 @@ function Remove-CIStage(
         Remove-Item -Path $ciStageDirPath -Recurse -Force
 
         # remove the stage from the plan
-        $ciPlan = (Get-Content $ciPlanFilePath) -join "`n" | ConvertFrom-Json
-        $ciPlan.Stages = ($ciPlan.Stages | Where-Object{!($_.Name -eq $Name)})
-        Set-Content $ciPlanFilePath -Value (ConvertTo-Json $ciPlan)
+        $ciPlan = Get-CIPlan -ProjectRootDirPath $ProjectRootDirPath
+        $ciPlan.Stages.Remove($Name)
+        Set-CIPlan -CIPlan $ciPlan -ProjectRootDirPath $ProjectRootDirPath
     }
 }
 
 function New-CIPlan(
-[string[]]$Stages,
 [string]$ProjectRootDirPath= $PWD){
     $ciPlanDirPath = Get-CIPlanDirPath $ProjectRootDirPath  
 
@@ -82,11 +137,6 @@ function New-CIPlan(
         # create default files
         Copy-Item -Path "$templatesDirPath\CIPlan.json" $ciPlanDirPath
         Copy-Item -Path "$templatesDirPath\Packages.config" $ciPlanDirPath
-
-        # add Stages
-        foreach($stage in $Stages){
-            Add-CIStage -Name $stage -ProjectRootDirPath $ProjectRootDirPath
-        }
     }
     else{        
         throw "CIPlan directory already exists at $ciPlanDirPath. If you are trying to recreate your ci plan from scratch you must invoke Remove-CIPlan first"
@@ -113,18 +163,21 @@ function Invoke-CIPlan(
         choco install $packagesFilePath
 
         # add variables to session
-        $CIPlan = (Get-Content $ciPlanFilePath) -join "`n" | ConvertFrom-Json
-        Add-Member -InputObject $CIPlan -MemberType CodeProperty -Name "Current"
+        $CIPlan = Get-CIPlan -ProjectRootDirPath $ProjectRootDirPath
         
-        foreach($stage in $CIPlan.Stages){
+        # clone stage names before adding helper stages
+        $stageNames = @()
+        $CIPlan.Stages.Keys | %{$stageNames+=$_}
+
+        foreach($stageName in $stageNames){
             
-            # update current stage variable
-            $CIPlan.Stages.Current = $stage
+            # add/update "Current" stage helper
+            $CIPlan.Stages["Current"] = $CIPlan.Stages[$stageName]
             
-            $stageDirPath = "$ciPlanDirPath\Stages\$($stage.Name)"
+            $stageDirPath = "$ciPlanDirPath\Stages\$($stageName)"
             Import-Module $stageDirPath -Force
 
-            iex "$($stage.Name)\Start-CIStage"
+            & "$($stageName)\Start-CIStage" -CIPlan $CIPlan
         }
     }
     else{
