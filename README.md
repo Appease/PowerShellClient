@@ -16,8 +16,8 @@ Set-Location "THE-ROOT-DIR-OF-YOUR-PROJECT"
 # create a new ci plan
 New-CIPlan
 
-# add a ci stage
-Add-CIStep -Name "Dev"
+# add a step to your plan
+Add-CIStep -Name "Compile"
 
 # invoke your ci plan
 Invoke-CIPlan
