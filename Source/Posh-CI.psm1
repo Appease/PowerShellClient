@@ -24,37 +24,43 @@ function Get-CIStepsDirPath(
 
 }
 
-function ConvertTo-CIPlanJson(
+function ConvertTo-CIPlanArchiveJson(
 [PSCustomObject][Parameter(Mandatory=$true)]$CIPlan){
     <#
         .SUMMARY
         an internal utility function to convert a runtime CIPlan object to a 
-        JSON formatted string
+        ci plan archive formatted as a json string
     #>
 
-    $stepsArray = $CIPlan.Steps.Values
-    return ConvertTo-Json -InputObject ([PSCustomObject]@{"Steps"=$stepsArray}) -Depth 6
+    # construct ci plan archive from ci plan
+    $ciPlanArchiveSteps = @()
+    $CIPlan.Steps.Keys | %{$ciPlanArchiveSteps += [PSCustomObject]@{'Name'=$_}}
+    $ciPlanArchive = [PSCustomObject]@{'Steps'=$ciPlanArchiveSteps}
+
+    return ConvertTo-Json -InputObject $ciPlanArchive -Depth 6
 
 }
 
-function ConvertFrom-CIPlanJson(
+function ConvertFrom-CIPlanArchiveJson(
 [string]$CIPlanFileContent){
     <#
         .SUMMARY
-        an internal utility function to convert a JSON formatted string 
+        an internal utility function to convert a ci plan archive formatted as a json string
         into a runtime CIPlan object.
     #>
 
-    $ciPlan = $CIPlanFileContent -join "`n" | ConvertFrom-Json
+    $ciPlanArchive = $CIPlanFileContent -join "`n" | ConvertFrom-Json
 
-    # JSON doesnt support equivalent of PowerShell ordered dictionary so we must construct one
-    # from an array(maintains order)
-    $stepsArray = $ciPlan.Steps
-    # steps must be ordered
-    $stepsOrderedDictionary = [ordered]@{}
-    $stepsArray | %{$stepsOrderedDictionary.Add($_.Name,$_)}
+    # construct a ci plan from a ci plan archive
+    $ciPlanSteps = [ordered]@{}
+    foreach($ciPlanArchiveStep in $ciPlanArchive.Steps){    
+        $ciPlanStepsItemKey = $ciPlanArchiveStep.Name
+        $ciPlanStepsItemValue = [PSCustomObject]@{'Name'=$ciPlanArchiveStep.Name;'Outputs'=@{}}
+        $ciPlanSteps.Add($ciPlanStepsItemKey,$ciPlanStepsItemValue)
+    }
     
-    return [pscustomobject]@{"Steps"=$stepsOrderedDictionary}    
+    return [pscustomobject]@{'Steps'=$ciPlanSteps;'Parameters'=@{}}
+
 }
 
 function Get-CIPlan(
@@ -66,8 +72,8 @@ function Get-CIPlan(
     #>
 
     $ciPlanDirPath = "$ProjectRootDirPath\CIPlan"
-    $ciPlanFilePath = "$ciPlanDirPath\CIPlan.json"
-    return ConvertFrom-CIPlanJson -CIPlanFileContent (Get-Content $ciPlanFilePath)
+    $ciPlanFilePath = "$ciPlanDirPath\CIPlanArchive.json"
+    return ConvertFrom-CIPlanArchiveJson -CIPlanFileContent (Get-Content $ciPlanFilePath)
 
 }
 
@@ -81,8 +87,8 @@ function Save-CIPlan(
     #>
     
     $ciPlanDirPath = "$ProjectRootDirPath\CIPlan"
-    $ciPlanFilePath = "$ciPlanDirPath\CIPlan.json"    
-    Set-Content $ciPlanFilePath -Value (ConvertTo-CIPlanJson -CIPlan $CIPlan)
+    $ciPlanFilePath = "$ciPlanDirPath\CIPlanArchive.json"    
+    Set-Content $ciPlanFilePath -Value (ConvertTo-CIPlanArchiveJson -CIPlan $CIPlan)
 }
 
 function Add-CIStep(
@@ -96,7 +102,7 @@ function Add-CIStep(
         
         # add the step to the plan
         $ciPlan = Get-CIPlan -ProjectRootDirPath $ProjectRootDirPath
-        $ciPlan.Steps.Add($Name, [pscustomobject]@{Name=$Name})
+        $ciPlan.Steps.Add($Name, [PSCustomObject]@{Name=$Name})
         Save-CIPlan -CIPlan $ciPlan -ProjectRootDirPath $ProjectRootDirPath
 
         # add a powershell module
@@ -116,7 +122,7 @@ function Remove-CIStep(
 [string]$ProjectRootDirPath = $PWD){
 
     $ciPlanDirPath = Get-CIPlanDirPath $ProjectRootDirPath
-    $ciPlanFilePath = "$ciPlanDirPath\CIPlan.json"
+    $ciPlanFilePath = "$ciPlanDirPath\CIPlanArchive.json"
     $CIStepsDirPath = Get-CIStepsDirPath $ProjectRootDirPath
     $CIStepDirPath = "$CIStepsDirPath\$Name"
 
@@ -149,7 +155,7 @@ function New-CIPlan(
         New-Item -ItemType Directory -Path $CIStepsDirPath  
 
         # create default files
-        Copy-Item -Path "$templatesDirPath\CIPlan.json" $ciPlanDirPath
+        Copy-Item -Path "$templatesDirPath\CIPlanArchive.json" $ciPlanDirPath
         Copy-Item -Path "$templatesDirPath\Packages.config" $ciPlanDirPath
     }
     else{        
@@ -172,10 +178,11 @@ function Remove-CIPlan(
 }
 
 function Invoke-CIPlan(
-[string]$ProjectRootDirPath= $PWD){
+[HashTable] $Parameters = @{},
+[String]$ProjectRootDirPath= $PWD){
     
     $ciPlanDirPath = Get-CIPlanDirPath $ProjectRootDirPath
-    $ciPlanFilePath = "$ciPlanDirPath\CIPlan.json"
+    $ciPlanFilePath = "$ciPlanDirPath\CIPlanArchive.json"
     $packagesFilePath = "$ciPlanDirPath\Packages.config"
     if(Test-Path $ciPlanFilePath){
         EnsureChocolateyInstalled
@@ -183,6 +190,7 @@ function Invoke-CIPlan(
 
         # add variables to session
         $CIPlan = Get-CIPlan -ProjectRootDirPath $ProjectRootDirPath
+        $CIPlan.Parameters = $Parameters
         
         # clone step names before adding helper steps
         $stepNames = @()
@@ -200,7 +208,7 @@ function Invoke-CIPlan(
         }
     }
     else{
-        throw "CIPlan.json not found at: $ciPlanFilePath"
+        throw "CIPlanArchive.json not found at: $ciPlanFilePath"
     }
 }
 
