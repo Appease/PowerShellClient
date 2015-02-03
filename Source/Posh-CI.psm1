@@ -2,7 +2,7 @@ function EnsureChocolateyInstalled(){
 
     # install chocolatey
     try{
-        Get-Command choco -ErrorAction Stop | Out-Null
+        Get-Command choco -ErrorAction 'Stop' | Out-Null
     }
     catch{             
         iex ((new-object net.webclient).DownloadString('https://chocolatey.org/install.ps1'))
@@ -34,7 +34,7 @@ function ConvertTo-CIPlanArchiveJson(
 
     # construct ci plan archive from ci plan
     $ciPlanArchiveSteps = @()
-    $CIPlan.Steps.Keys | %{$ciPlanArchiveSteps += [PSCustomObject]@{'Name'=$_}}
+    $CIPlan.Steps.Values | %{$ciPlanArchiveSteps += $_}
     $ciPlanArchive = [PSCustomObject]@{'Steps'=$ciPlanArchiveSteps}
 
     return ConvertTo-Json -InputObject $ciPlanArchive -Depth 6
@@ -53,11 +53,7 @@ function ConvertFrom-CIPlanArchiveJson(
 
     # construct a ci plan from a ci plan archive
     $ciPlanSteps = [ordered]@{}
-    foreach($ciPlanArchiveStep in $ciPlanArchive.Steps){    
-        $ciPlanStepsItemKey = $ciPlanArchiveStep.Name
-        $ciPlanStepsItemValue = [PSCustomObject]@{'Name'=$ciPlanArchiveStep.Name}
-        $ciPlanSteps.Add($ciPlanStepsItemKey,$ciPlanStepsItemValue)
-    }
+    $ciPlanArchive.Steps | %{$ciPlanSteps.Add($_.Name,$_)}
     
     return [pscustomobject]@{'Steps'=$ciPlanSteps}
 
@@ -93,51 +89,41 @@ function Save-CIPlan(
 
 function Add-CIStep(
 [string][Parameter(Mandatory=$true)]$Name,
+[string][Parameter(Mandatory=$true)]$ModulePath,
 [string]$ProjectRootDirPath = $PWD){
-    $CIStepsDirPath = Get-CIStepsDirPath $ProjectRootDirPath
-    $CIStepDirPath = "$CIStepsDirPath\$Name"
-    $templatesDirPath = "$PSScriptRoot\Templates"
-    
-    if(!(Test-Path $CIStepDirPath)){
-        
-        # add the step to the plan
-        $ciPlan = Get-CIPlan -ProjectRootDirPath $ProjectRootDirPath
-        $ciPlan.Steps.Add($Name, [PSCustomObject]@{Name=$Name})
-        Save-CIPlan -CIPlan $ciPlan -ProjectRootDirPath $ProjectRootDirPath
 
-        # add a powershell module
-        New-Item -Path $CIStepDirPath -ItemType Directory
-        Copy-Item -Path "$templatesDirPath\CIStep.psm1" "$CIStepDirPath\$Name.psm1"
-        
+    $ciPlan = Get-CIPlan -ProjectRootDirPath $ProjectRootDirPath
+    
+    if($ciPlan.Steps.Contains($Name)){
+
+        throw "A ci step with name $Name already exists.`n Tip: You can remove the existing step by invoking Remove-CIStep"
+            
     }
     else{
-        throw "$Name directory already exists at $CIStepDirPath. If you are trying to recreate your $Name ci step from scratch you must invoke Remove-CIStep first"
+        
+        # add step to plan
+        $ciPlan.Steps.Add($Name, [PSCustomObject]@{'Name'=$Name;'ModulePath'=$ModulePath})
+        Save-CIPlan -CIPlan $ciPlan -ProjectRootDirPath $ProjectRootDirPath    
+
     }
 }
-
 
 function Remove-CIStep(
 [string][Parameter(Mandatory=$true)]$Name,
 [switch]$Force,
 [string]$ProjectRootDirPath = $PWD){
 
-    $ciPlanDirPath = Get-CIPlanDirPath $ProjectRootDirPath
-    $ciPlanFilePath = "$ciPlanDirPath\CIPlanArchive.json"
-    $CIStepsDirPath = Get-CIStepsDirPath $ProjectRootDirPath
-    $CIStepDirPath = "$CIStepsDirPath\$Name"
-
-    $confirmationPromptQuery = "Are you sure you want to delete the CI step located at $CIStepDirPath`?"
+    $confirmationPromptQuery = "Are you sure you want to delete the CI step with name $Name`?"
     $confirmationPromptCaption = 'Confirm ci step removal'
 
     if($Force.IsPresent -or $PSCmdlet.ShouldContinue($confirmationPromptQuery,$confirmationPromptCaption)){
-        # remove the powershell module
-        Remove-Item -Path $CIStepDirPath -Recurse -Force
 
-        # remove the step from the plan
+        # remove step from plan
         $ciPlan = Get-CIPlan -ProjectRootDirPath $ProjectRootDirPath
         $ciPlan.Steps.Remove($Name)
         Save-CIPlan -CIPlan $ciPlan -ProjectRootDirPath $ProjectRootDirPath
     }
+
 }
 
 function New-CIPlan(
@@ -191,12 +177,9 @@ function Invoke-CIPlan(
         # add variables to session
         $CIPlan = Get-CIPlan -ProjectRootDirPath $ProjectRootDirPath
 
-        foreach($step in $CIPlan.Steps.GetEnumerator()){                        
-
-            $stepDirPath = "$ciPlanDirPath\Steps\$($step.Name)"
-            Import-Module $stepDirPath -Force
-
-            & "$($step.Name)\Start-CIStep" @Variables
+        foreach($step in $CIPlan.Steps.Values){
+            Import-Module (resolve-path $step.ModulePath) -Force
+            Invoke-CIStep @Variables
         }
     }
     else{
