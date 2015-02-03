@@ -2,9 +2,9 @@
 $ErrorActionPreference = "Stop"
 
 function Start-CIStep(
-[PSCustomObject]$CIPlan){
+[String]$PoshCIHello){
     #define your ci step here!
-    Write-Host "Running $($CIPlan.Steps['Current'].Name) step!"
+    Write-Host $PoshCIHello
 }
 
 Export-ModuleMember Start-CIStep

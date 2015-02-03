@@ -55,11 +55,11 @@ function ConvertFrom-CIPlanArchiveJson(
     $ciPlanSteps = [ordered]@{}
     foreach($ciPlanArchiveStep in $ciPlanArchive.Steps){    
         $ciPlanStepsItemKey = $ciPlanArchiveStep.Name
-        $ciPlanStepsItemValue = [PSCustomObject]@{'Name'=$ciPlanArchiveStep.Name;'Outputs'=@{}}
+        $ciPlanStepsItemValue = [PSCustomObject]@{'Name'=$ciPlanArchiveStep.Name}
         $ciPlanSteps.Add($ciPlanStepsItemKey,$ciPlanStepsItemValue)
     }
     
-    return [pscustomobject]@{'Steps'=$ciPlanSteps;'Parameters'=@{}}
+    return [pscustomobject]@{'Steps'=$ciPlanSteps}
 
 }
 
@@ -178,7 +178,7 @@ function Remove-CIPlan(
 }
 
 function Invoke-CIPlan(
-[HashTable] $Parameters = @{},
+[HashTable] $Variables = @{'PoshCIHello'="Hello from Posh-CI!"},
 [String]$ProjectRootDirPath= $PWD){
     
     $ciPlanDirPath = Get-CIPlanDirPath $ProjectRootDirPath
@@ -190,21 +190,13 @@ function Invoke-CIPlan(
 
         # add variables to session
         $CIPlan = Get-CIPlan -ProjectRootDirPath $ProjectRootDirPath
-        $CIPlan.Parameters = $Parameters
-        
-        # clone step names before adding helper steps
-        $stepNames = @()
-        $CIPlan.Steps.Keys | %{$stepNames+=$_}
 
-        foreach($stepName in $stepNames){
-            
-            # add/update "Current" step helper
-            $CIPlan.Steps["Current"] = $CIPlan.Steps[$stepName]
-            
-            $stepDirPath = "$ciPlanDirPath\Steps\$($stepName)"
+        foreach($step in $CIPlan.Steps.GetEnumerator()){                        
+
+            $stepDirPath = "$ciPlanDirPath\Steps\$($step.Name)"
             Import-Module $stepDirPath -Force
 
-            & "$($stepName)\Start-CIStep" -CIPlan $CIPlan
+            & "$($step.Name)\Start-CIStep" @Variables
         }
     }
     else{
