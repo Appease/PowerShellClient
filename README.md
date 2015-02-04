@@ -3,13 +3,13 @@ A PowerShell task runner inspired by the popular Javascript task runners [Gulp](
 
 **How do I install it?**
 Make sure you have [Chocolatey](https://chocolatey.org) installed, then from PowerShell run
-```
+```POWERSHELL
 cinst posh-ci
 Import-Module "C:\Program Files\Posh-CI\Modules\Posh-CI"
 ```
 
 **How do I use it?**
-```
+```POWERSHELL
 # navigate to the root directory of your project
 Set-Location "PATH-TO-ROOT-DIR-OF-YOUR-PROJECT"
 
