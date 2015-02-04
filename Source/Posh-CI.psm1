@@ -164,10 +164,17 @@ function Remove-CIPlan(
 }
 
 function Invoke-CIPlan(
-[HashTable] $Variables = @{'PoshCIHello'="Hello from Posh-CI!"},
-[String]$ProjectRootDirPath= $PWD){
+
+[PSCustomObject]
+[Parameter(
+    ValueFromPipeline=$true,
+    ValueFromPipelineByPropertyName=$true)]
+$Variables=@{'PoshCIHello'="Hello from Posh-CI!"},
+
+[String]
+$ProjectRootDirPath='.'){
     
-    $ciPlanDirPath = Get-CIPlanDirPath $ProjectRootDirPath
+    $ciPlanDirPath = Resolve-Path "$ProjectRootDirPath\CIPlan"
     $ciPlanFilePath = "$ciPlanDirPath\CIPlanArchive.json"
     $packagesFilePath = "$ciPlanDirPath\Packages.config"
     if(Test-Path $ciPlanFilePath){
