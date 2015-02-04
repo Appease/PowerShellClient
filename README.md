@@ -1,5 +1,5 @@
 **What is it?**
-A PowerShell task runner inspired by the popular Javascript task runners [Gulp](http://gulpjs.com) and [Grunt](http://gruntjs.com).
+Continuous integration for any project run, and maintained entirely from PowerShell.
 
 **How do I install it?**
 Make sure you have [Chocolatey](https://chocolatey.org) installed, then from PowerShell run
