@@ -19,7 +19,7 @@ New-CIPlan
 # add a step to your plan
 Add-CIStep -Name "Compile" -ModulePath "PATH-TO-DIR-CONTAINING-MODULE"
 
-# invoke your ci plan, passing it a variable object which will be pipelined to each step
+# invoke your ci plan, passing it a PSCustomObject which will be pipelined to each step
 Invoke-CIPlan -Variables [PSCustomObject]@{Var1='Var1Value';Var2='Var2Value'}
 ```
 
