@@ -1,14 +1,14 @@
-**What is it?**
+###What is it?
 Continuous integration for any project, run and maintained without leaving PowerShell.
 
-**How do I install it?**
+##How do I install it?
 Make sure you have [Chocolatey](https://chocolatey.org) installed, then from PowerShell run
 ```POWERSHELL
 cinst posh-ci
 Import-Module "C:\Program Files\Posh-CI\Modules\Posh-CI"
 ```
 
-**How do I use it?**
+###How do I use it?
 
 navigate to the root directory of your project:
 ```POWERSHELL
@@ -29,9 +29,9 @@ invoke your ci plan:
 [PSCustomObject]@{Var1='Var1Value';Var2='Var2Value'} | Invoke-CIPlan
 ```
 
-**Where's the documentation?**
+###Where's the documentation?
 [Here](Documentation/Index.md)
 
-**What's the build status**
+###What's the build status
 ![](https://ci.appveyor.com/api/projects/status/ay2uucfxymlgk2ni?svg=true)
 
