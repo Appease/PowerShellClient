@@ -11,16 +11,16 @@ Import-Module "C:\Program Files\Posh-CI\Modules\Posh-CI"
 **How do I use it?**
 ```
 # navigate to the root directory of your project
-Set-Location "THE-ROOT-DIR-OF-YOUR-PROJECT"
+Set-Location "PATH-TO-ROOT-DIR-OF-YOUR-PROJECT"
 
 # create a new ci plan
 New-CIPlan
 
 # add a step to your plan
-Add-CIStep -Name "Compile"
+Add-CIStep -Name "Compile" -ModulePath "PATH-TO-DIR-CONTAINING-MODULE"
 
-# invoke your ci plan
-Invoke-CIPlan
+# invoke your ci plan, passing it a variable object which will be pipelined to each step
+Invoke-CIPlan -Variables [PSCustomObject]@{Var1='Var1Value';Var2='Var2Value'}
 ```
 
 **Where's the documentation?**
