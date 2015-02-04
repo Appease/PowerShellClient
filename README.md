@@ -1,5 +1,5 @@
 **What is it?**
-Continuous integration for any project run, and maintained entirely from PowerShell.
+Continuous integration for any project, run and maintained without leaving PowerShell.
 
 **How do I install it?**
 Make sure you have [Chocolatey](https://chocolatey.org) installed, then from PowerShell run
