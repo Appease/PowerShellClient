@@ -10,6 +10,37 @@ function EnsureChocolateyInstalled(){
 
 }
 
+function Invoke-Splat {
+    <#
+    .Synopsis
+        Splats a hashtable on a function in a safer way than the built-in
+        mechanism.
+    .Example
+        Invoke-Splat Get-XYZ $myArgs
+    #>
+    param(
+        [Parameter(ValueFromPipeline=$true, Mandatory=$true, Position=0)]
+        [string]
+        $FunctionName,
+        [Parameter(ValueFromPipeline=$true, Mandatory=$true, Position=1)]
+        [System.Collections.Hashtable]
+        $Parameters
+    )
+ 
+    $h = @{}
+    ForEach ($key in (gcm $FunctionName).Parameters.Keys) {
+        if ($Parameters.$key) {
+            $h.$key = $Parameters.$key
+        }
+    }
+    if ($h.Count -eq 0) {
+        $FunctionName | Invoke-Expression
+    }
+    else {
+        "$FunctionName @h" | Invoke-Expression
+    }
+}
+
 function Get-CIPlanDirPath(
 [string][Parameter(Mandatory=$true)]$ProjectRootDirPath){
 
@@ -179,7 +210,7 @@ function Invoke-CIPlan(
 
         foreach($step in $CIPlan.Steps.Values){
             Import-Module (resolve-path $step.ModulePath) -Force
-            Invoke-CIStep @Variables
+            Invoke-Splat Invoke-CIStep $Variables
         }
     }
     else{
