@@ -1,6 +1,3 @@
-###What is it?
-Continuous integration for any project à la PowerShell.
-
 ###How do I install it?
 Make sure you have [Chocolatey](https://chocolatey.org) installed, then from PowerShell run
 ```POWERSHELL
