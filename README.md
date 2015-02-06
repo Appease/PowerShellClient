@@ -8,10 +8,11 @@ cinst posh-ci
 Import-Module "C:\Program Files\Posh-CI\Modules\Posh-CI"
 ```
 ###In a nutshell, hows it work?
-- a `ci plan` consists of an arbitrary number of `ci steps`.
-- each `ci step` achieves some task specific to your `ci plan`
-- you [CRUD](http://en.wikipedia.org/wiki/Create,_read,_update_and_delete) your `ci plan` directly from PowerShell [non] interactively and a snapshot is saved in a `CIPlanArchive.json` file.
-- at any time you can invoke your `ci plan` and pass in any variables your tasks rely on directly from PowerShell [non] interactively
+Conceptually, there are two main constructs to get your head around; `ci plans`, which contain an ordered set of `ci steps`, and `ci steps`, which are arbitrary tasks. 
+
+- everything takes place within PowerShell
+- as you [CRUD](http://en.wikipedia.org/wiki/Create,_read,_update_and_delete) a `ci plan` a snapshot is maintained in a `CIPlanArchive.json` file.
+- at any time you can invoke your `ci plan` and pass in any variables your `ci steps` rely on
 
 ###How do I get started?
 navigate to the root directory of your project:
