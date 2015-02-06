@@ -11,7 +11,7 @@ Import-Module "C:\Program Files\Posh-CI\Modules\Posh-CI"
 - a `ci plan` consists of an arbitrary number of `ci steps`.
 - each `ci step` achieves some task specific to your `ci plan`
 - you [CRUD](http://en.wikipedia.org/wiki/Create,_read,_update_and_delete) your `ci plan` directly from PowerShell [non] interactively and a snapshot is saved in a `CIPlanArchive.json` file.
-- at any time you can invoke your `ci plan` and pass in any variables your tasks rely on from PowerShell [non] interactively
+- at any time you can invoke your `ci plan` and pass in any variables your tasks rely on directly from PowerShell [non] interactively
 
 ###How do I get started?
 navigate to the root directory of your project:
