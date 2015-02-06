@@ -24,7 +24,7 @@ Add-CIStep -Name "Compile" -ModulePath "PATH-TO-DIR-CONTAINING-MODULE"
 ```
 invoke your ci plan:
 
-(Note: we're piping it a PSCustomObject containing variables which will in turn be pipelined to each step of your ci plan)
+(Note: we're piping it variables which will in turn be pipelined to each step of your ci plan)
 ```POWERSHELL
 [PSCustomObject]@{Var1='Var1Value';Var2='Var2Value'} | Invoke-CIPlan
 ```
