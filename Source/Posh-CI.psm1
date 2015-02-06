@@ -10,20 +10,6 @@ function EnsureChocolateyInstalled(){
 
 }
 
-function Get-CIPlanDirPath(
-[string][Parameter(Mandatory=$true)]$ProjectRootDirPath){
-
-    "$ProjectRootDirPath\CIPlan"
-
-}
-
-function Get-CIStepsDirPath(
-[string][Parameter(Mandatory=$true)]$ProjectRootDirPath){    
-
-    "$(Get-CIPlanDirPath $ProjectRootDirPath)\Steps"
-
-}
-
 function ConvertTo-CIPlanArchiveJson(
 [PSCustomObject][Parameter(Mandatory=$true)]$CIPlan){
     <#
@@ -37,7 +23,7 @@ function ConvertTo-CIPlanArchiveJson(
     $CIPlan.Steps.Values | %{$ciPlanArchiveSteps += $_}
     $ciPlanArchive = [PSCustomObject]@{'Steps'=$ciPlanArchiveSteps}
 
-    return ConvertTo-Json -InputObject $ciPlanArchive -Depth 6
+    Write-Output (ConvertTo-Json -InputObject $ciPlanArchive -Depth 4)
 
 }
 
@@ -55,42 +41,53 @@ function ConvertFrom-CIPlanArchiveJson(
     $ciPlanSteps = [ordered]@{}
     $ciPlanArchive.Steps | %{$ciPlanSteps.Add($_.Name,$_)}
     
-    return [pscustomobject]@{'Steps'=$ciPlanSteps}
+    Write-Output ([pscustomobject]@{'Steps'=$ciPlanSteps})
 
 }
 
 function Get-CIPlan(
-[string][Parameter(Mandatory=$true)]$ProjectRootDirPath){
+[string]
+[Parameter(
+    ValueFromPipeline=$true,
+    ValueFromPipelineByPropertyName=$true)]
+$ProjectRootDirPath = '.'){
     <#
         .SUMMARY
-        an internal utility function to retrieve a CIPlan file and 
+        a utility function to parse a ci plan archive and 
         instantiate a runtime CIPlan object.
     #>
 
-    $ciPlanDirPath = "$ProjectRootDirPath\CIPlan"
-    $ciPlanFilePath = "$ciPlanDirPath\CIPlanArchive.json"
-    return ConvertFrom-CIPlanArchiveJson -CIPlanFileContent (Get-Content $ciPlanFilePath)
+    $ciPlanFilePath = Resolve-Path "$ProjectRootDirPath\CIPlan\CIPlanArchive.json"   
+    Write-Output (ConvertFrom-CIPlanArchiveJson -CIPlanFileContent (Get-Content $ciPlanFilePath))
 
 }
 
 function Save-CIPlan(
 [psobject]$CIPlan,
-[string][Parameter(Mandatory=$true)]$ProjectRootDirPath){
+[string]
+[Parameter(
+    ValueFromPipeline=$true,
+    ValueFromPipelineByPropertyName=$true)]
+$ProjectRootDirPath = '.'){
     <#
         .SUMMARY
         an internal utility function to save a runtime CIPlan object as 
         a CIPlan file.
     #>
     
-    $ciPlanDirPath = "$ProjectRootDirPath\CIPlan"
-    $ciPlanFilePath = "$ciPlanDirPath\CIPlanArchive.json"    
+    $ciPlanFilePath = Resolve-Path "$ProjectRootDirPath\CIPlan\CIPlanArchive.json"    
     Set-Content $ciPlanFilePath -Value (ConvertTo-CIPlanArchiveJson -CIPlan $CIPlan)
 }
 
 function Add-CIStep(
 [string][Parameter(Mandatory=$true)]$Name,
 [string][Parameter(Mandatory=$true)]$ModulePath,
-[string]$ProjectRootDirPath = $PWD){
+
+[string]
+[Parameter(
+    ValueFromPipeline=$true,
+    ValueFromPipelineByPropertyName=$true)]
+$ProjectRootDirPath = '.'){
 
     $ciPlan = Get-CIPlan -ProjectRootDirPath $ProjectRootDirPath
     
@@ -111,7 +108,11 @@ function Add-CIStep(
 function Remove-CIStep(
 [string][Parameter(Mandatory=$true)]$Name,
 [switch]$Force,
-[string]$ProjectRootDirPath = $PWD){
+[string]
+[Parameter(
+    ValueFromPipeline=$true,
+    ValueFromPipelineByPropertyName=$true)]
+$ProjectRootDirPath = '.'){
 
     $confirmationPromptQuery = "Are you sure you want to delete the CI step with name $Name`?"
     $confirmationPromptCaption = 'Confirm ci step removal'
@@ -127,18 +128,18 @@ function Remove-CIStep(
 }
 
 function New-CIPlan(
-[string]$ProjectRootDirPath= $PWD){
-    $ciPlanDirPath = Get-CIPlanDirPath $ProjectRootDirPath  
+[string]
+[Parameter(
+    ValueFromPipeline=$true,
+    ValueFromPipelineByPropertyName=$true)]
+$ProjectRootDirPath = '.'){
+    $ciPlanDirPath = Resolve-Path "$ProjectRootDirPath\CIPlan"
 
     if(!(Test-Path $ciPlanDirPath)){    
         $templatesDirPath = "$PSScriptRoot\Templates"
-        $CIStepsDirPath = Get-CIStepsDirPath $ProjectRootDirPath
 
         # create a directory for the plan
         New-Item -ItemType Directory -Path $ciPlanDirPath
-
-        # create a directory for the plans Steps
-        New-Item -ItemType Directory -Path $CIStepsDirPath  
 
         # create default files
         Copy-Item -Path "$templatesDirPath\CIPlanArchive.json" $ciPlanDirPath
@@ -151,9 +152,13 @@ function New-CIPlan(
 
 function Remove-CIPlan(
 [switch]$Force,
-[string]$ProjectRootDirPath= $PWD){
+[string]
+[Parameter(
+    ValueFromPipeline=$true,
+    ValueFromPipelineByPropertyName=$true)]
+$ProjectRootDirPath = '.'){
     
-    $ciPlanDirPath = Get-CIPlanDirPath $ProjectRootDirPath
+    $ciPlanDirPath = Resolve-Path "$ProjectRootDirPath\CIPlan"
 
     $confirmationPromptQuery = "Are you sure you want to delete the CI plan located at $CIPlanDirPath`?"
     $confirmationPromptCaption = 'Confirm ci plan removal'
@@ -172,6 +177,9 @@ function Invoke-CIPlan(
 $Variables=@{'PoshCIHello'="Hello from Posh-CI!"},
 
 [String]
+[Parameter(
+    ValueFromPipeline=$true,
+    ValueFromPipelineByPropertyName=$true)]
 $ProjectRootDirPath='.'){
     
     $ciPlanDirPath = Resolve-Path "$ProjectRootDirPath\CIPlan"
@@ -194,4 +202,4 @@ $ProjectRootDirPath='.'){
     }
 }
 
-Export-ModuleMember -Function Invoke-CIPlan,New-CIPlan,Remove-CIPlan,Add-CIStep,Remove-CIStep
+Export-ModuleMember -Function Invoke-CIPlan,New-CIPlan,Remove-CIPlan,Add-CIStep,Remove-CIStep,Get-CIPlan
