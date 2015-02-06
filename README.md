@@ -7,9 +7,14 @@ Make sure you have [Chocolatey](https://chocolatey.org) installed, then from Pow
 cinst posh-ci
 Import-Module "C:\Program Files\Posh-CI\Modules\Posh-CI"
 ```
+###In a nutshell, hows it work?
+- a `ci plan` consists of an arbitrary number of `ci steps`.
+- each `ci step` achieves some task specific to your `ci plan`
+- you can perform all [CRUD](http://en.wikipedia.org/wiki/Create,_read,_update_and_delete) related to your `ci plan` directly from PowerShell either interactively or via script.
+- as you [CRUD](http://en.wikipedia.org/wiki/Create,_read,_update_and_delete) your `ci plan`, a snapshot of it is saved in a `CIPlanArchive.json` file.
+- at any time you can invoke your `ci plan` and pass in any variables your tasks rely on from PowerShell either interactively or via script. 
 
-###How do I use it?
-
+###How do I get started?
 navigate to the root directory of your project:
 ```POWERSHELL
 Set-Location "PATH-TO-ROOT-DIR-OF-YOUR-PROJECT"
