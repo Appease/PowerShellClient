@@ -308,7 +308,9 @@ $ProjectRootDirPath='.'){
         EnsureChocolateyInstalled
         choco install $packagesFilePath
 
-        # add variables to session
+        # add PoshCI variables to session
+        Add-Member -InputObject $Variables -MemberType 'NoteProperty' -Name "PoshCIProjectRootDirPath" -Value (Resolve-Path $ProjectRootDirPath)
+
         $CIPlan = Get-CIPlan -ProjectRootDirPath $ProjectRootDirPath
 
         foreach($step in $CIPlan.Steps.Values){
