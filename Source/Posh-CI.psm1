@@ -252,7 +252,7 @@ function New-CIPlan(
     ValueFromPipeline=$true,
     ValueFromPipelineByPropertyName=$true)]
 $ProjectRootDirPath = '.'){
-    $ciPlanDirPath = Resolve-Path "$ProjectRootDirPath\CIPlan"
+    $ciPlanDirPath = "$(Resolve-Path $ProjectRootDirPath)\CIPlan"
 
     if(!(Test-Path $ciPlanDirPath)){    
         $templatesDirPath = "$PSScriptRoot\Templates"
