@@ -13,7 +13,7 @@ function EnsureChocolateyInstalled(){
 function ConvertTo-CIPlanArchiveJson(
 [PSCustomObject][Parameter(Mandatory=$true)]$CIPlan){
     <#
-        .SUMMARY
+        .SYNOPSIS
         an internal utility function to convert a runtime CIPlan object to a 
         ci plan archive formatted as a json string
     #>
@@ -30,7 +30,7 @@ function ConvertTo-CIPlanArchiveJson(
 function ConvertFrom-CIPlanArchiveJson(
 [string]$CIPlanFileContent){
     <#
-        .SUMMARY
+        .SYNOPSIS
         an internal utility function to convert a ci plan archive formatted as a json string
         into a runtime CIPlan object.
     #>
@@ -52,9 +52,8 @@ function Get-CIPlan(
     ValueFromPipelineByPropertyName=$true)]
 $ProjectRootDirPath = '.'){
     <#
-        .SUMMARY
-        a utility function to parse a ci plan archive and 
-        instantiate a runtime CIPlan object.
+        .SYNOPSIS
+        parses a ci plan archive and returns the archived ci plan
     #>
 
     $ciPlanFilePath = Resolve-Path "$ProjectRootDirPath\CIPlan\CIPlanArchive.json"   
@@ -70,7 +69,7 @@ function Save-CIPlan(
     ValueFromPipelineByPropertyName=$true)]
 $ProjectRootDirPath = '.'){
     <#
-        .SUMMARY
+        .SYNOPSIS
         an internal utility function to save a runtime CIPlan object as 
         a CIPlan file.
     #>
@@ -83,9 +82,10 @@ function Get-IndexOfKeyInOrderedDictionary(
     [string]$Key,
     [System.Collections.Specialized.OrderedDictionary]$OrderedDictionary){
     <#
-        .SUMMARY
+        .SYNOPSIS
         an internal utility function to find the index of a key in an ordered dictionary
     #>
+
     $indexOfKey = -1
     $keysArray = [string[]]$OrderedDictionary.Keys
     for ($i = 0; $i -lt $OrderedDictionary.Count; $i++){
