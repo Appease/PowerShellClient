@@ -79,15 +79,101 @@ $ProjectRootDirPath = '.'){
     Set-Content $ciPlanFilePath -Value (ConvertTo-CIPlanArchiveJson -CIPlan $CIPlan)
 }
 
+function Get-IndexOfKeyInOrderedDictionary(
+    [string]$Key,
+    [System.Collections.Specialized.OrderedDictionary]$OrderedDictionary){
+    <#
+        .SUMMARY
+        an internal utility function to find the index of a key in an ordered dictionary
+    #>
+    $indexOfKey = -1
+    $keysArray = [string[]]$OrderedDictionary.Keys
+    for ($i = 0; $i -lt $OrderedDictionary.Count; $i++){
+        if($keysArray[$i] -eq $Key){
+            $indexOfKey = $i
+            break
+        }
+    }
+
+    Write-Output $indexOfKey
+}
+
 function Add-CIStep(
-[string][Parameter(Mandatory=$true)]$Name,
-[string][Parameter(Mandatory=$true)]$ModulePath,
+[CmdletBinding(
+    DefaultParameterSetName="add-CIStepLast")]
+
+[string]
+[Parameter(
+    Mandatory=$true)]
+$Name,
+
+[string]
+[Parameter(
+    Mandatory=$true)]
+$ModulePath,
+
+[switch]
+[Parameter(
+    Mandatory=$true,
+    ParameterSetName='add-CIStepFirst')]
+$First,
+
+[switch]
+[Parameter(
+    ParameterSetName='add-CIStepLast')]
+$Last,
+
+[string]
+[Parameter(
+    Mandatory=$true,
+    ParameterSetName='add-CIStepAfter')]
+$After,
+
+[string]
+[Parameter(
+    Mandatory=$true,
+    ParameterSetName='add-CIStepBefore')]
+$Before,
 
 [string]
 [Parameter(
     ValueFromPipeline=$true,
     ValueFromPipelineByPropertyName=$true)]
 $ProjectRootDirPath = '.'){
+
+    <#
+        .SYNOPSIS
+        Adds a new ci step to a ci plan
+        
+        .EXAMPLE
+        Add-CIStep -Name "LastStep" -ModulePath "Some_Module_Path"
+        
+        Description:
+
+        This command adds a new ci step (named LastStep) after all existing ci steps
+
+        .EXAMPLE
+        Add-CIStep -Name "FirstStep" -ModulePath "Some_Module_Path" -First
+
+        Description:
+
+        This command adds a new ci step (named FirstStep) before all existing ci steps
+
+        .EXAMPLE
+        Add-CIStep -Name "AfterSecondStep" -ModulePath "Some_Module_Path" -After "SecondStep"
+
+        Description:
+
+        This command adds a new ci step (named AfterSecondStep) after the existing ci step named SecondStep
+
+        .EXAMPLE
+        Add-CIStep -Name "BeforeSecondStep" -ModulePath "Some_Module_Path" -Before "SecondStep"
+
+        Description:
+
+        This command adds a new ci step (named BeforeSecondStep) before the existing ci step named SecondStep
+
+    #>
 
     $ciPlan = Get-CIPlan -ProjectRootDirPath $ProjectRootDirPath
     
@@ -97,9 +183,42 @@ $ProjectRootDirPath = '.'){
             
     }
     else{
+
+        $key = $Name
+        $value = [PSCustomObject]@{'Name'=$Name;'ModulePath'=$ModulePath}
+
+        if($First.IsPresent){
         
-        # add step to plan
-        $ciPlan.Steps.Add($Name, [PSCustomObject]@{'Name'=$Name;'ModulePath'=$ModulePath})
+            $ciPlan.Steps.Insert(0,$key,$value)
+        
+        }
+        elseif('add-CIStepAfter' -eq $PSCmdlet.ParameterSetName){
+
+            $indexOfAfter = Get-IndexOfKeyInOrderedDictionary -Key $After -OrderedDictionary $ciPlan.Steps
+            # ensure step with key $After exists
+            if($indexOfAfter -lt 0){
+                throw "A ci step with name $After could not be found."
+            }
+            $ciPlan.Steps.Insert($indexOfAfter + 1,$key,$value)
+        
+        }
+        elseif('add-CIStepBefore' -eq $PSCmdlet.ParameterSetName){        
+        
+            $indexOfBefore = Get-IndexOfKeyInOrderedDictionary -Key $Before -OrderedDictionary $ciPlan.Steps
+            # ensure step with key $Before exists
+            if($indexOfBefore -lt 0){
+                throw "A ci step with name $Before could not be found."
+            }
+            $ciPlan.Steps.Insert($indexOfBefore,$key,$value)
+        
+        }
+        else{
+        
+            # by default add as last step
+            $ciPlan.Steps.Add($key, $value)
+        
+        }
+
         Save-CIPlan -CIPlan $ciPlan -ProjectRootDirPath $ProjectRootDirPath    
 
     }
