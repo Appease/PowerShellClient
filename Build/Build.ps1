@@ -96,7 +96,7 @@ function Compile(
 function New-Build(
 [string][Parameter(Mandatory=$true)]$Version,
 [string][Parameter(Mandatory=$true)]$ArtifactsDirPath,
-[string]$SourceDirPath = "$PSScriptRoot\..\Source"){
+[string]$SourceDirPath = "$PSScriptRoot\..\Src"){
 
     $ArtifactsDirPath = Resolve-Path $ArtifactsDirPath
     

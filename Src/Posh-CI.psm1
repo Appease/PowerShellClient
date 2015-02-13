@@ -56,7 +56,7 @@ $ProjectRootDirPath = '.'){
         parses a ci plan archive and returns the archived ci plan
     #>
 
-    $ciPlanFilePath = Resolve-Path "$ProjectRootDirPath\CIPlan\CIPlanArchive.json"   
+    $ciPlanFilePath = Resolve-Path "$ProjectRootDirPath\.posh-ci\CIPlanArchive.json"   
     Write-Output (ConvertFrom-CIPlanArchiveJson -CIPlanFileContent (Get-Content $ciPlanFilePath))
 
 }
@@ -74,7 +74,7 @@ $ProjectRootDirPath = '.'){
         a CIPlan file.
     #>
     
-    $ciPlanFilePath = Resolve-Path "$ProjectRootDirPath\CIPlan\CIPlanArchive.json"    
+    $ciPlanFilePath = Resolve-Path "$ProjectRootDirPath\.posh-ci\CIPlanArchive.json"    
     Set-Content $ciPlanFilePath -Value (ConvertTo-CIPlanArchiveJson -CIPlan $CIPlan)
 }
 
@@ -277,7 +277,7 @@ function Remove-CIPlan(
     ValueFromPipelineByPropertyName=$true)]
 $ProjectRootDirPath = '.'){
     
-    $ciPlanDirPath = Resolve-Path "$ProjectRootDirPath\CIPlan"
+    $ciPlanDirPath = Resolve-Path "$ProjectRootDirPath\.posh-ci"
 
     $confirmationPromptQuery = "Are you sure you want to delete the CI plan located at $CIPlanDirPath`?"
     $confirmationPromptCaption = 'Confirm ci plan removal'
@@ -301,7 +301,7 @@ $Variables=@{'PoshCIHello'="Hello from Posh-CI!"},
     ValueFromPipelineByPropertyName=$true)]
 $ProjectRootDirPath='.'){
     
-    $ciPlanDirPath = Resolve-Path "$ProjectRootDirPath\CIPlan"
+    $ciPlanDirPath = Resolve-Path "$ProjectRootDirPath\.posh-ci"
     $ciPlanFilePath = "$ciPlanDirPath\CIPlanArchive.json"
     $packagesFilePath = "$ciPlanDirPath\Packages.config"
     if(Test-Path $ciPlanFilePath){
