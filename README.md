@@ -4,8 +4,7 @@ Modular Continuous integration for any project à la PowerShell.
 ###How do I install it?
 Make sure you have [Chocolatey](https://chocolatey.org) installed, then from PowerShell run
 ```POWERSHELL
-cinst posh-ci
-Import-Module "C:\Program Files\Posh-CI\Modules\Posh-CI"
+cinst posh-ci;Import-Module "C:\Program Files\Posh-CI\Modules\Posh-CI" -Force
 ```
 ###In a nutshell, hows it work?
 ***Conceptually:***
