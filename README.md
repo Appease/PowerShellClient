@@ -38,7 +38,7 @@ invoke your ci plan:
 ```
 
 ###Where's the documentation?
-[Here](Documentation/Index.md)
+[Here](Documentation)
 
 ###What's the build status
 ![](https://ci.appveyor.com/api/projects/status/ay2uucfxymlgk2ni?svg=true)
