@@ -3,7 +3,7 @@
 ##Feature Design
 When designing features:
 
-1.	All features must support both Interactive and Non-Interactive consumption via PowerShell. 
+1.	All features must support both interactive and non-interactive consumption via PowerShell. 
 
 
 ##Development
