@@ -309,7 +309,7 @@ $ProjectRootDirPath='.'){
         choco install $packagesFilePath
 
         # add PoshCI variables to session
-        Add-Member -InputObject $Variables -MemberType 'NoteProperty' -Name "PoshCIProjectRootDirPath" -Value (Resolve-Path $ProjectRootDirPath)
+        Add-Member -InputObject $Variables -MemberType 'NoteProperty' -Name "PoshCIProjectRootDirPath" -Value (Resolve-Path $ProjectRootDirPath) -Force
 
         $CIPlan = Get-CIPlan -ProjectRootDirPath $ProjectRootDirPath
 
