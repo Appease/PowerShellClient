@@ -23,7 +23,7 @@ Set-Location "PATH-TO-ROOT-DIR-OF-YOUR-PROJECT"
 ```
 create a new ci plan:
 ```POWERSHELL
-# note: this creates a folder named .posh-ci at the root of your project which contains your ci-plan
+# note: this creates a folder named .posh-ci at the root of your project containing your ci-plan
 New-CIPlan
 ```
 add a step to your plan:
@@ -36,6 +36,11 @@ invoke your ci plan:
 ```POWERSHELL
 [PSCustomObject]@{Var1='Var1Value';Var2='Var2Value'} | Invoke-CIPlan
 ```
+
+###How do I distribute my ci plan?
+When you run `New-CIPlan` it creates a folder named `.posh-ci` at the root of your project. From then on all modifications to your ci plan are maintained inside that folder so your .posh-ci folder is all you need!
+
+(pro-tip: check your .posh-ci folder in to source control to version your ci plan along with your code.)
 
 ###Where's the documentation?
 [Here](Docs)
