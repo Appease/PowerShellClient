@@ -23,7 +23,6 @@ Set-Location "PATH-TO-ROOT-DIR-OF-YOUR-PROJECT"
 ```
 create a new ci plan:
 ```POWERSHELL
-# note: this creates a folder named .posh-ci at the root of your project containing your ci-plan
 New-CIPlan
 ```
 add a step to your plan:
