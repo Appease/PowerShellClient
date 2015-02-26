@@ -8,7 +8,7 @@ Build/Deployment services today are extremely powerfull and easy to use. However
 
 ###How does Posh-CI attempt to solve them?
 ######+1 ci-plan versioning side by side with source code
-######+2 ci-plan implemented in plain old powershell modules
+######+2 ci-plan implemented as plain old powershell modules
 ######+3 ability to run your ci-plan on anything capable of running powershell
 ######+4 no expenses (as long as you have something capable of running powershell ;))
 
