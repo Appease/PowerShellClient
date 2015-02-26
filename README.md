@@ -8,9 +8,9 @@ Build/Deployment services today are extremely powerfull and easy to use. However
 
 ###How does Posh-CI attempt to solve them?
 ######+1 ci-plan versioning side by side with source code
-######+2 ci-plan implemented as plain old powershell modules
-######+3 ability to run your ci-plan on anything capable of running powershell
-######+4 no expenses (as long as you have something capable of running powershell ;))
+######+2 ci-plan implemented as plain old PowerShell modules
+######+3 ability to run your ci-plan on anything capable of running PowerShell
+######+4 no expenses (as long as you have something capable of running PowerShell ;))
 
 ###How do I install it?
 Make sure you have [Chocolatey](https://chocolatey.org) installed, then from PowerShell run
