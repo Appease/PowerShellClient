@@ -1,13 +1,13 @@
-function EnsureChocolateyInstalled(){
+$defaultPackageSources = @('https://www.myget.org/F/posh-ci/')
 
-    # install chocolatey
+function EnsureNuGetInstalled(){
     try{
-        Get-Command choco -ErrorAction 'Stop' | Out-Null
+        Get-Command nuget -ErrorAction Stop | Out-Null
     }
-    catch{             
-        iex ((new-object net.webclient).DownloadString('https://chocolatey.org/install.ps1'))
+    catch{
+        Write-Debug "installing nuget.commandline"
+        chocolatey install nuget.commandline | Out-Null
     }
-
 }
 
 function ConvertTo-CIPlanArchiveJson(
@@ -110,7 +110,7 @@ $Name,
 [string]
 [Parameter(
     Mandatory=$true)]
-$ModulePath,
+$ModulePackageId,
 
 [switch]
 [Parameter(
@@ -146,28 +146,28 @@ $ProjectRootDirPath = '.'){
         Adds a new ci step to a ci plan
         
         .EXAMPLE
-        Add-CIStep -Name "LastStep" -ModulePath "Some_Module_Path"
+        Add-CIStep -Name "LastStep" -ModulePackageId "Some_Module_Path"
         
         Description:
 
         This command adds a new ci step (named LastStep) after all existing ci steps
 
         .EXAMPLE
-        Add-CIStep -Name "FirstStep" -ModulePath "Some_Module_Path" -First
+        Add-CIStep -Name "FirstStep" -ModulePackageId "Some_Module_Path" -First
 
         Description:
 
         This command adds a new ci step (named FirstStep) before all existing ci steps
 
         .EXAMPLE
-        Add-CIStep -Name "AfterSecondStep" -ModulePath "Some_Module_Path" -After "SecondStep"
+        Add-CIStep -Name "AfterSecondStep" -ModulePackageId "Some_Module_Path" -After "SecondStep"
 
         Description:
 
         This command adds a new ci step (named AfterSecondStep) after the existing ci step named SecondStep
 
         .EXAMPLE
-        Add-CIStep -Name "BeforeSecondStep" -ModulePath "Some_Module_Path" -Before "SecondStep"
+        Add-CIStep -Name "BeforeSecondStep" -ModulePackageId "Some_Module_Path" -Before "SecondStep"
 
         Description:
 
@@ -185,7 +185,7 @@ $ProjectRootDirPath = '.'){
     else{
 
         $key = $Name
-        $value = [PSCustomObject]@{'Name'=$Name;'ModulePath'=$ModulePath}
+        $value = [PSCustomObject]@{'Name'=$Name;'ModulePackageId'=$ModulePackageId}
 
         if($First.IsPresent){
         
@@ -295,6 +295,11 @@ function Invoke-CIPlan(
     ValueFromPipelineByPropertyName=$true)]
 $Variables=@{'PoshCIHello'="Hello from Posh-CI!"},
 
+[string[]]
+[Parameter(
+    ValueFromPipelineByPropertyName=$true)]
+$PackageSources = $defaultPackageSources,
+
 [String]
 [Parameter(
     ValueFromPipeline=$true,
@@ -303,11 +308,11 @@ $ProjectRootDirPath='.'){
     
     $ciPlanDirPath = Resolve-Path "$ProjectRootDirPath\.posh-ci"
     $ciPlanFilePath = "$ciPlanDirPath\CIPlanArchive.json"
-    $packagesFilePath = "$ciPlanDirPath\Packages.config"
 
     if(Test-Path $ciPlanFilePath){
-        EnsureChocolateyInstalled
-        choco install $packagesFilePath
+
+        EnsureNuGetInstalled
+        nuget restore "$ciPlanDirPath\Packages.config" -PackagesDirectory "$ciPlanDirPath\Packages" -Source $PackageSources
 
         # add PoshCI plan lifetime variables to session
         Add-Member -InputObject $Variables -MemberType 'NoteProperty' -Name "PoshCIProjectRootDirPath" -Value (Resolve-Path $ProjectRootDirPath) -Force
@@ -318,7 +323,7 @@ $ProjectRootDirPath='.'){
             # add PoshCI step lifetime variables to session          
             Add-Member -InputObject $Variables -MemberType 'NoteProperty' -Name "PoshCIStepName" -Value $step.Name -Force
 
-            Import-Module (resolve-path $step.ModulePath) -Force
+            Import-Module "$ciPlanDirPath\Modules\$step.ModulePackageId" -Force
             $Variables | Invoke-CIStep
         }
     }
