@@ -323,7 +323,7 @@ $ProjectRootDirPath='.'){
             # add PoshCI step lifetime variables to session          
             Add-Member -InputObject $Variables -MemberType 'NoteProperty' -Name "PoshCIStepName" -Value $step.Name -Force
 
-            Import-Module "$ciPlanDirPath\Modules\$step.ModulePackageId" -Force
+            Import-Module "$ciPlanDirPath\Packages\$step.ModulePackageId\tools\$step.ModulePackageId" -Force
             $Variables | Invoke-CIStep
         }
     }
