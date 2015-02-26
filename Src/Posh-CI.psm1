@@ -304,16 +304,20 @@ $ProjectRootDirPath='.'){
     $ciPlanDirPath = Resolve-Path "$ProjectRootDirPath\.posh-ci"
     $ciPlanFilePath = "$ciPlanDirPath\CIPlanArchive.json"
     $packagesFilePath = "$ciPlanDirPath\Packages.config"
+
     if(Test-Path $ciPlanFilePath){
         EnsureChocolateyInstalled
         choco install $packagesFilePath
 
-        # add PoshCI variables to session
+        # add PoshCI plan lifetime variables to session
         Add-Member -InputObject $Variables -MemberType 'NoteProperty' -Name "PoshCIProjectRootDirPath" -Value (Resolve-Path $ProjectRootDirPath) -Force
 
         $CIPlan = Get-CIPlan -ProjectRootDirPath $ProjectRootDirPath
 
         foreach($step in $CIPlan.Steps.Values){
+            # add PoshCI step lifetime variables to session          
+            Add-Member -InputObject $Variables -MemberType 'NoteProperty' -Name "PoshCIStepName" -Value $step.Name -Force
+
             Import-Module (resolve-path $step.ModulePath) -Force
             $Variables | Invoke-CIStep
         }
