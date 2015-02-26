@@ -1,6 +1,5 @@
 ###What problems does Posh-CI attempt to solve?
 
-Modern development practices generally follow a continuous integration approach.
 Build/Deployment services today are extremely powerfull and easy to use. However, if you throw your ci-plan together in most of these services you are left with: 
 ######-1 lack of ci-plan versioning side by side with source code 
 ######-2 coupling of your ci-plan implementation to a proprietary build/deployment service.
