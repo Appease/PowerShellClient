@@ -2,7 +2,7 @@
 
 ###2 Automatic Variables
 Posh-CI automatically makes certain variables available to ci-steps. The names of Posh-CI provided variables always start with the prefix `PoshCI`.
-To use an automatic variable when creating a ci-step module, simply reference it in your Invoke-CIStep function.
+To use a Posh-CI provided variable when creating a ci-step module, simply reference it in your Invoke-CIStep function.
 
 Example:
 ```PowerShell
