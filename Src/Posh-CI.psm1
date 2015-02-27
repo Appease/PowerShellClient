@@ -1,4 +1,4 @@
-$defaultPackageSources = @('https://www.myget.org/F/posh-ci/')
+$defaultPackageSources = @('https://www.myget.org/F/posh-ci')
 
 function EnsureNuGetInstalled(){
     try{
