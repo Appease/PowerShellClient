@@ -1,11 +1,11 @@
 ###1 Configurable Parameters
-When developing a ci-step that requires/allows configuration, add parameters to your Invoke-CIStep method signature with any desired name (excluding names beginning with PoshCI which is reserved for Automatic Parameters) and type.
+When developing a ci-step that requires/allows configuration, add parameters to your Invoke-CIStep method signature with any desired name (excluding names beginning with PoshCI which is reserved for Automatic Parameters) and type `[string]`.
 
 Example:
 ```PowerShell
 function Invoke-CIStep(
 [string][Parameter(Mandatory=$true,ValueFromPipelineByPropertyName=$true)]$CustomParam1,
-[string[]][Parameter(Mandatory=$true,ValueFromPipelineByPropertyName=$true)]$CustomParam2)
+[string][Parameter(Mandatory=$true,ValueFromPipelineByPropertyName=$true)]$CustomParam2)
 {
     # implementation snipped...
 }
