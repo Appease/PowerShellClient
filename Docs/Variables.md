@@ -1,5 +1,5 @@
-###1 Custom CI-Step Variables
-When developing a ci-step that requires/allows configuration just add parameters to your Invoke-CIStep method signature and make sure to document this in your documentation.
+###1 Custom Parameters
+When developing a ci-step that requires/allows configuration, add custom parameters to your Invoke-CIStep method signature and make sure to provide documentation.
 
 Example:
 ```PowerShell
@@ -12,9 +12,11 @@ function Invoke-CIStep(
 
 ```
 
-###2 Automatic CI-Step Variables
-Posh-CI automatically makes certain variables available to ci-steps. The names of Posh-CI provided variables always start with the prefix `PoshCI`.
-When developing a ci-steps that needs information about the executing ci-plan/ci-step just add the required parameters to your Invoke-CIStep method signature.
+###2 Automatic Parameters
+Posh-CI will automatically populate certain ci-step parameters, the names of which always start with the prefix `PoshCI`.
+These parameters provide information about the executing ci-plan/ci-step. 
+
+To use automatic parameters, add parameters matching the type and name of defined automatic parameters to your Invoke-CIStep method signature and Posh-CI will populate them at invocation time.
 
 Example:
 ```PowerShell
