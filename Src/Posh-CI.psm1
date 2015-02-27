@@ -98,6 +98,32 @@ function Get-IndexOfKeyInOrderedDictionary(
     Write-Output $indexOfKey
 }
 
+function Get-LatestCIStepModuleVersion(
+[Parameter(
+    Mandatory=$true)]
+[string[]]
+$CIStepModuleSources,
+
+[Parameter(
+    Mandatory=$true)]
+    [string]
+$CIStepModuleId){
+    
+    $versions = @()
+
+    foreach($ciStepModuleSource in $CIStepModuleSources){
+        $uri = "$ciStepModuleSource/api/v2/package-versions/$CIStepModuleId"
+        Write-Debug "Attempting to fetch ci-step module versions:` uri: $uri "
+        $versions = $versions + (Invoke-RestMethod -Uri $uri)
+        Write-Debug "response from $uri was: ` $versions"
+    }
+    if(!$versions -or ($versions.Count -lt 1)){
+        throw "no versions of $CIStepModuleId could be located.` searched: $CIStepModuleSources"
+    }
+
+    Write-Output ($versions| Sort-Object -Descending)[0]
+}
+
 function Add-CIStep(
 [CmdletBinding(
     DefaultParameterSetName="add-CIStepLast")]
@@ -113,8 +139,6 @@ $Name,
 $ModulePackageId,
 
 [string]
-[Parameter(
-    Mandatory=$true)]
 $ModulePackageVersion,
 
 [switch]
@@ -140,6 +164,9 @@ $After,
     ParameterSetName='add-CIStepBefore')]
 $Before,
 
+[string[]]
+$CIStepModuleSources=$defaultPackageSources,
+
 [string]
 [Parameter(
     ValueFromPipeline=$true,
@@ -148,7 +175,7 @@ $ProjectRootDirPath = '.'){
 
     <#
         .SYNOPSIS
-        Adds a new ci step to a ci plan
+        Adds a new ci step to a ci plan using an explicit module package version
         
         .EXAMPLE
         Add-CIStep -Name "LastStep" -ModulePackageId "posh-ci-git" -ModulePackageVersion "0.0.3"
@@ -158,21 +185,21 @@ $ProjectRootDirPath = '.'){
         This command adds a new ci step (named LastStep) after all existing ci steps
 
         .EXAMPLE
-        Add-CIStep -Name "FirstStep" -ModulePackageId "posh-ci-git" -ModulePackageVersion "0.0.3" -First
+        Add-CIStep -Name "FirstStep" -ModulePackageId "posh-ci-git" -First
 
         Description:
 
         This command adds a new ci step (named FirstStep) before all existing ci steps
 
         .EXAMPLE
-        Add-CIStep -Name "AfterSecondStep" -ModulePackageId "posh-ci-git" -ModulePackageVersion "0.0.3" -After "SecondStep"
+        Add-CIStep -Name "AfterSecondStep" -ModulePackageId "posh-ci-git" -After "SecondStep"
 
         Description:
 
         This command adds a new ci step (named AfterSecondStep) after the existing ci step named SecondStep
 
         .EXAMPLE
-        Add-CIStep -Name "BeforeSecondStep" -ModulePackageId "posh-ci-git" -ModulePackageVersion "0.0.3" -Before "SecondStep"
+        Add-CIStep -Name "BeforeSecondStep" -ModulePackageId "posh-ci-git" -Before "SecondStep"
 
         Description:
 
@@ -188,6 +215,12 @@ $ProjectRootDirPath = '.'){
             
     }
     else{
+        
+        if([string]::IsNullOrWhiteSpace($ModulePackageVersion)){
+            $ModulePackageVersion = Get-LatestCIStepModuleVersion -CIStepModuleSources $CIStepModuleSources -CIStepModuleId $ModulePackageId
+            Write-Debug "using greatest available module version : $ModulePackageVersion"
+        }
+
 
         $key = $Name
         $value = [PSCustomObject]@{'Name'=$Name;'ModulePackageId'=$ModulePackageId;'ModulePackageVersion'=$ModulePackageVersion}
@@ -220,8 +253,7 @@ $ProjectRootDirPath = '.'){
         else{
         
             # by default add as last step
-            $ciPlan.Steps.Add($key, $value)
-        
+            $ciPlan.Steps.Add($key, $value)        
         }
 
         Write-Debug "saving ci plan"
