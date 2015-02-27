@@ -334,7 +334,7 @@ $ProjectRootDirPath='.'){
             nuget install $step.ModulePackageId -Version $step.ModulePackageVersion -OutputDirectory $packagesDirPath -Source $PackageSources -NonInteractive
 
             Write-Debug "importing module"
-            Import-Module "$packagesDirPath\$($step.ModulePackageId)$($step.ModulePackageVersion)\tools\$($step.ModulePackageId)" -Force
+            Import-Module "$packagesDirPath\$($step.ModulePackageId).$($step.ModulePackageVersion)\tools\$($step.ModulePackageId)" -Force
 
             Write-Debug "invoking ci-step $($step.Name)"
             $Variables | Invoke-CIStep
