@@ -224,6 +224,7 @@ $ProjectRootDirPath = '.'){
         
         }
 
+        Write-Debug "saving ci plan"
         Save-CIPlan -CIPlan $ciPlan -ProjectRootDirPath $ProjectRootDirPath    
 
     }
@@ -313,11 +314,11 @@ $ProjectRootDirPath='.'){
     
     $ciPlanDirPath = Resolve-Path "$ProjectRootDirPath\.posh-ci"
     $ciPlanFilePath = "$ciPlanDirPath\CIPlanArchive.json"
+    $packagesDirPath = "$ciPlanDirPath\Packages"
 
     if(Test-Path $ciPlanFilePath){
 
-        EnsureNuGetInstalled
-        nuget restore "$ciPlanDirPath\Packages.config" -PackagesDirectory "$ciPlanDirPath\Packages" -Source $PackageSources
+        EnsureNuGetInstalled        
 
         # add PoshCI plan lifetime variables to session
         Add-Member -InputObject $Variables -MemberType 'NoteProperty' -Name "PoshCIProjectRootDirPath" -Value (Resolve-Path $ProjectRootDirPath) -Force
@@ -325,10 +326,17 @@ $ProjectRootDirPath='.'){
         $CIPlan = Get-CIPlan -ProjectRootDirPath $ProjectRootDirPath
 
         foreach($step in $CIPlan.Steps.Values){
-            # add PoshCI step lifetime variables to session          
+
+            Write-Debug "adding PoshCI step lifetime variables to session"
             Add-Member -InputObject $Variables -MemberType 'NoteProperty' -Name "PoshCIStepName" -Value $step.Name -Force
 
-            Import-Module "$ciPlanDirPath\Packages\$step.ModulePackageId$step.ModulePackageVersion\tools\$step.ModulePackageId" -Force
+            Write-Debug "ensuring ci-step module package installed"
+            nuget install $step.ModulePackageId -Version $step.ModulePackageVersion -OutputDirectory $packagesDirPath -Source $PackageSources -NonInteractive
+
+            Write-Debug "importing module"
+            Import-Module "$packagesDirPath\$($step.ModulePackageId)$($step.ModulePackageVersion)\tools\$($step.ModulePackageId)" -Force
+
+            Write-Debug "invoking ci-step $($step.Name)"
             $Variables | Invoke-CIStep
         }
     }
