@@ -1,8 +1,20 @@
-###1 Custom Variables
+###1 Custom CI-Step Variables
+When developing a ci-step that requires/allows configuration just add parameters to your Invoke-CIStep method signature and make sure to document this in your documentation.
 
-###2 Automatic Variables
+Example:
+```PowerShell
+function Invoke-CIStep(
+[string][Parameter(Mandatory=$true,ValueFromPipelineByPropertyName=$true)]$CustomParam1,
+[string[]][Parameter(Mandatory=$true,ValueFromPipelineByPropertyName=$true)]$CustomParam2)
+{
+    # implementation snipped...
+}
+
+```
+
+###2 Automatic CI-Step Variables
 Posh-CI automatically makes certain variables available to ci-steps. The names of Posh-CI provided variables always start with the prefix `PoshCI`.
-To use a Posh-CI provided variable when creating a ci-step module, simply reference it in your Invoke-CIStep function.
+When developing a ci-steps that needs information about the executing ci-plan/ci-step just add the required parameters to your Invoke-CIStep method signature.
 
 Example:
 ```PowerShell
