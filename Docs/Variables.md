@@ -1,5 +1,5 @@
-###1 Custom Parameters
-When developing a ci-step that requires/allows configuration, add custom parameters to your Invoke-CIStep method signature and make sure to provide documentation.
+###1 Configurable Parameters
+When developing a ci-step that requires/allows configuration, add parameters to your Invoke-CIStep method signature with any desired name (excluding names beginning with PoshCI which is reserved for Automatic Parameters) and type and make sure to provide [documentation](https://technet.microsoft.com/en-us/magazine/hh500719.aspx).
 
 Example:
 ```PowerShell
