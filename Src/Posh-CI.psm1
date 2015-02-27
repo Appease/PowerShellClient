@@ -151,28 +151,28 @@ $ProjectRootDirPath = '.'){
         Adds a new ci step to a ci plan
         
         .EXAMPLE
-        Add-CIStep -Name "LastStep" -ModulePackageId "Some_Module_Package_Id" -ModulePackageVersion "Some_Module_Package_Version"
+        Add-CIStep -Name "LastStep" -ModulePackageId "posh-ci-git" -ModulePackageVersion "0.0.3"
         
         Description:
 
         This command adds a new ci step (named LastStep) after all existing ci steps
 
         .EXAMPLE
-        Add-CIStep -Name "FirstStep" -ModulePackageId "Some_Module_Package_Id" -ModulePackageVersion "Some_Module_Package_Version" -First
+        Add-CIStep -Name "FirstStep" -ModulePackageId "posh-ci-git" -ModulePackageVersion "0.0.3" -First
 
         Description:
 
         This command adds a new ci step (named FirstStep) before all existing ci steps
 
         .EXAMPLE
-        Add-CIStep -Name "AfterSecondStep" -ModulePackageId "Some_Module_Package_Id" -ModulePackageVersion "Some_Module_Package_Version" -After "SecondStep"
+        Add-CIStep -Name "AfterSecondStep" -ModulePackageId "posh-ci-git" -ModulePackageVersion "0.0.3" -After "SecondStep"
 
         Description:
 
         This command adds a new ci step (named AfterSecondStep) after the existing ci step named SecondStep
 
         .EXAMPLE
-        Add-CIStep -Name "BeforeSecondStep" -ModulePackageId "Some_Module_Package_Id" -ModulePackageVersion "Some_Module_Package_Version" -Before "SecondStep"
+        Add-CIStep -Name "BeforeSecondStep" -ModulePackageId "posh-ci-git" -ModulePackageVersion "0.0.3" -Before "SecondStep"
 
         Description:
 
