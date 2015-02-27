@@ -112,6 +112,11 @@ $Name,
     Mandatory=$true)]
 $ModulePackageId,
 
+[string]
+[Parameter(
+    Mandatory=$true)]
+$ModulePackageVersion,
+
 [switch]
 [Parameter(
     Mandatory=$true,
@@ -146,28 +151,28 @@ $ProjectRootDirPath = '.'){
         Adds a new ci step to a ci plan
         
         .EXAMPLE
-        Add-CIStep -Name "LastStep" -ModulePackageId "Some_Module_Path"
+        Add-CIStep -Name "LastStep" -ModulePackageId "Some_Module_Package_Id" -ModulePackageVersion "Some_Module_Package_Version"
         
         Description:
 
         This command adds a new ci step (named LastStep) after all existing ci steps
 
         .EXAMPLE
-        Add-CIStep -Name "FirstStep" -ModulePackageId "Some_Module_Path" -First
+        Add-CIStep -Name "FirstStep" -ModulePackageId "Some_Module_Package_Id" -ModulePackageVersion "Some_Module_Package_Version" -First
 
         Description:
 
         This command adds a new ci step (named FirstStep) before all existing ci steps
 
         .EXAMPLE
-        Add-CIStep -Name "AfterSecondStep" -ModulePackageId "Some_Module_Path" -After "SecondStep"
+        Add-CIStep -Name "AfterSecondStep" -ModulePackageId "Some_Module_Package_Id" -ModulePackageVersion "Some_Module_Package_Version" -After "SecondStep"
 
         Description:
 
         This command adds a new ci step (named AfterSecondStep) after the existing ci step named SecondStep
 
         .EXAMPLE
-        Add-CIStep -Name "BeforeSecondStep" -ModulePackageId "Some_Module_Path" -Before "SecondStep"
+        Add-CIStep -Name "BeforeSecondStep" -ModulePackageId "Some_Module_Package_Id" -ModulePackageVersion "Some_Module_Package_Version" -Before "SecondStep"
 
         Description:
 
@@ -185,7 +190,7 @@ $ProjectRootDirPath = '.'){
     else{
 
         $key = $Name
-        $value = [PSCustomObject]@{'Name'=$Name;'ModulePackageId'=$ModulePackageId}
+        $value = [PSCustomObject]@{'Name'=$Name;'ModulePackageId'=$ModulePackageId;'ModulePackageVersion'=$ModulePackageVersion}
 
         if($First.IsPresent){
         
@@ -323,7 +328,7 @@ $ProjectRootDirPath='.'){
             # add PoshCI step lifetime variables to session          
             Add-Member -InputObject $Variables -MemberType 'NoteProperty' -Name "PoshCIStepName" -Value $step.Name -Force
 
-            Import-Module "$ciPlanDirPath\Packages\$step.ModulePackageId\tools\$step.ModulePackageId" -Force
+            Import-Module "$ciPlanDirPath\Packages\$step.ModulePackageId$step.ModulePackageVersion\tools\$step.ModulePackageId" -Force
             $Variables | Invoke-CIStep
         }
     }
