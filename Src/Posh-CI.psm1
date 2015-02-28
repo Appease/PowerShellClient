@@ -451,4 +451,4 @@ $ProjectRootDirPath='.'){
     }
 }
 
-Export-ModuleMember -Function Invoke-CIPlan,New-CIPlan,Remove-CIPlan,Add-CIStep,Remove-CIStep,Get-CIPlan
+Export-ModuleMember -Function Invoke-CIPlan,New-CIPlan,Remove-CIPlan,Add-CIStep,Set-CIStepParameters,Remove-CIStep,Get-CIPlan
