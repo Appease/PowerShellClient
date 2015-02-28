@@ -175,7 +175,7 @@ $ProjectRootDirPath = '.'){
 
     <#
         .SYNOPSIS
-        Adds a new ci step to a ci plan using an explicit module package version
+        Adds a new ci step to a ci plan
         
         .EXAMPLE
         Add-CIStep -Name "LastStep" -ModulePackageId "posh-ci-git" -ModulePackageVersion "0.0.3"
@@ -262,9 +262,83 @@ $ProjectRootDirPath = '.'){
     }
 }
 
-function Remove-CIStep(
-[string][Parameter(Mandatory=$true)]$Name,
+function Set-CIStepParameters(
+
+[string]
+[Parameter(
+    Mandatory=$true)]
+$CIStepName,
+
+[hashtable]
+[Parameter(
+    Mandatory=$true)]
+$ParameterValueMap,
+
 [switch]$Force,
+
+[string]
+[Parameter(
+    ValueFromPipeline=$true,
+    ValueFromPipelineByPropertyName=$true)]
+$ProjectRootDirPath = '.'){
+    <#
+        .SYNOPSIS
+        Sets configurable parameters of a ci step
+        
+        .EXAMPLE
+        Set-CIStepParameters -CIStepName "GitClone" -ParameterValueMap @{GitParameters=@("status")} -Force
+        
+        Description:
+
+        This command sets a parameter (named "GitParameters") for a ci step (named "GitClone") to @("status")
+    #>
+
+    $ciPlan = Get-CIPlan -ProjectRootDirPath $ProjectRootDirPath
+    $ciStep = $ciPlan.Steps[$CIStepName]
+    $parameterValueMapPropertyName = "ParameterValueMap"
+
+    Write-Debug "Checking ci step with name: $CIStepName for property with name: $parameterValueMapPropertyName"
+    $ciStepParameterValueMap = $ciStep.$parameterValueMapPropertyName
+    if($ciStepParameterValueMap){
+        foreach($mappedParameterValue in $ParameterValueMap.GetEnumerator()){
+            Write-Debug "Checking if parameter $($mappedParameterValue.Key) previously mapped.."
+            if($ciStepParameterValueMap.($mappedParameterValue.Key)){
+                
+$confirmationPromptQuery = 
+@"
+For ci step with name: $CIStepName,
+are you sure you want to change the value of parameter $($mappedParameterValue.Key)
+old value: $($ciStepParameterValueMap.($mappedParameterValue.Key))?
+new value: $($mappedParameterValue.Value) ?
+"@
+
+                $confirmationPromptCaption = "Confirm parameter value change"
+
+                if($Force.IsPresent -or $PSCmdlet.ShouldContinue($confirmationPromptQuery,$confirmationPromptCaption)){
+                    $ciStepParameterValueMap.($mappedParameterValue.Key) = $mappedParameterValue.Value
+                }
+                else{
+                    continue
+                }
+            }
+        }
+    }
+    else {        
+        Write-Debug "Adding property with` name: $parameterValueMapPropertyName ` value: $ParameterValueMap "
+        Add-Member -InputObject $ciStep -MemberType 'NoteProperty' -Name $parameterValueMapPropertyName -Value $ParameterValueMap -Force
+    }
+    
+    Save-CIPlan -CIPlan $ciPlan -ProjectRootDirPath $ProjectRootDirPath
+}
+
+function Remove-CIStep(
+[string]
+[Parameter(
+    Mandatory=$true)]
+$Name,
+
+[switch]$Force,
+
 [string]
 [Parameter(
     ValueFromPipeline=$true,
@@ -276,8 +350,8 @@ $ProjectRootDirPath = '.'){
 
     if($Force.IsPresent -or $PSCmdlet.ShouldContinue($confirmationPromptQuery,$confirmationPromptCaption)){
 
-        # remove step from plan
         $ciPlan = Get-CIPlan -ProjectRootDirPath $ProjectRootDirPath
+        Write-Debug "Removing ci step $Name"
         $ciPlan.Steps.Remove($Name)
         Save-CIPlan -CIPlan $ciPlan -ProjectRootDirPath $ProjectRootDirPath
     }
@@ -295,10 +369,10 @@ $ProjectRootDirPath = '.'){
     if(!(Test-Path $ciPlanDirPath)){    
         $templatesDirPath = "$PSScriptRoot\Templates"
 
-        # create a directory for the plan
+        Write-Debug "Creating a directory for the ci plan at path $ciPlanDirPath"
         New-Item -ItemType Directory -Path $ciPlanDirPath
 
-        # create default files
+        Write-Debug "Adding default files to path $ciPlanDirPath"
         Copy-Item -Path "$templatesDirPath\CIPlanArchive.json" $ciPlanDirPath
         Copy-Item -Path "$templatesDirPath\Packages.config" $ciPlanDirPath
     }
