@@ -331,7 +331,7 @@ are you sure you want to change the value of parameter `"$parameterName`"
         }
     }
     else {        
-        Write-Debug 
+        Write-Debug `
 @"
 Property `"$parametersPropertyName`" has not previously been set for ci step `"$CIStepName`"
 Adding with value:
