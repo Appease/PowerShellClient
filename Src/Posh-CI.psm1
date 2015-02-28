@@ -5,7 +5,7 @@ function EnsureNuGetInstalled(){
         Get-Command nuget -ErrorAction Stop | Out-Null
     }
     catch{
-        Write-Debug "installing nuget.commandline"
+Write-Debug "installing nuget.commandline"
         chocolatey install nuget.commandline | Out-Null
     }
 }
@@ -23,7 +23,7 @@ function ConvertTo-CIPlanArchiveJson(
     $CIPlan.Steps.Values | %{$ciPlanArchiveSteps += $_}
     $ciPlanArchive = [PSCustomObject]@{'Steps'=$ciPlanArchiveSteps}
 
-    Write-Output (ConvertTo-Json -InputObject $ciPlanArchive -Depth 4)
+Write-Output (ConvertTo-Json -InputObject $ciPlanArchive -Depth 4)
 
 }
 
@@ -41,7 +41,7 @@ function ConvertFrom-CIPlanArchiveJson(
     $ciPlanSteps = [ordered]@{}
     $ciPlanArchive.Steps | %{$ciPlanSteps.Add($_.Name,$_)}
     
-    Write-Output ([pscustomobject]@{'Steps'=$ciPlanSteps})
+Write-Output ([pscustomobject]@{'Steps'=$ciPlanSteps})
 
 }
 
@@ -57,7 +57,7 @@ $ProjectRootDirPath = '.'){
     #>
 
     $ciPlanFilePath = Resolve-Path "$ProjectRootDirPath\.posh-ci\CIPlanArchive.json"   
-    Write-Output (ConvertFrom-CIPlanArchiveJson -CIPlanFileContent (Get-Content $ciPlanFilePath))
+Write-Output (ConvertFrom-CIPlanArchiveJson -CIPlanFileContent (Get-Content $ciPlanFilePath))
 
 }
 
@@ -78,6 +78,23 @@ $ProjectRootDirPath = '.'){
     Set-Content $ciPlanFilePath -Value (ConvertTo-CIPlanArchiveJson -CIPlan $CIPlan)
 }
 
+function Get-UnionOfHashtables(
+[hashtable]
+[Parameter(
+    ValueFromPipeline=$true,
+    ValueFromPipelineByPropertyName=$true)]
+$Source1,
+[hashtable]
+[Parameter(
+    ValueFromPipeline=$true,
+    ValueFromPipelineByPropertyName=$true)]
+$Source2){
+Write-Debug "Initializing destination to clone of '$Source1'"
+    $Destination = $Source1.Clone()
+    $Source2.Keys | ? { !$Source1.ContainsKey($_) } | % {$Destination.Add($_,$Source2[$_])}
+Write-Output $Destination
+}
+
 function Get-IndexOfKeyInOrderedDictionary(
     [string]$Key,
     [System.Collections.Specialized.OrderedDictionary]$OrderedDictionary){
@@ -95,7 +112,7 @@ function Get-IndexOfKeyInOrderedDictionary(
         }
     }
 
-    Write-Output $indexOfKey
+Write-Output $indexOfKey
 }
 
 function Get-LatestCIStepModuleVersion(
@@ -113,15 +130,15 @@ $CIStepModuleId){
 
     foreach($ciStepModuleSource in $CIStepModuleSources){
         $uri = "$ciStepModuleSource/api/v2/package-versions/$CIStepModuleId"
-        Write-Debug "Attempting to fetch ci-step module versions:` uri: $uri "
+Write-Debug "Attempting to fetch ci-step module versions:` uri: $uri "
         $versions = $versions + (Invoke-RestMethod -Uri $uri)
-        Write-Debug "response from $uri was: ` $versions"
+Write-Debug "response from $uri was: ` $versions"
     }
     if(!$versions -or ($versions.Count -lt 1)){
-        throw "no versions of $CIStepModuleId could be located.` searched: $CIStepModuleSources"
+throw "no versions of $CIStepModuleId could be located.` searched: $CIStepModuleSources"
     }
 
-    Write-Output ($versions| Sort-Object -Descending)[0]
+Write-Output ($versions| Sort-Object -Descending)[0]
 }
 
 function Add-CIStep(
@@ -211,14 +228,14 @@ $ProjectRootDirPath = '.'){
     
     if($ciPlan.Steps.Contains($Name)){
 
-        throw "A ci step with name $Name already exists.`n Tip: You can remove the existing step by invoking Remove-CIStep"
+throw "A ci step with name $Name already exists.`n Tip: You can remove the existing step by invoking Remove-CIStep"
             
     }
     else{
         
         if([string]::IsNullOrWhiteSpace($ModulePackageVersion)){
             $ModulePackageVersion = Get-LatestCIStepModuleVersion -CIStepModuleSources $CIStepModuleSources -CIStepModuleId $ModulePackageId
-            Write-Debug "using greatest available module version : $ModulePackageVersion"
+Write-Debug "using greatest available module version : $ModulePackageVersion"
         }
 
 
@@ -256,7 +273,7 @@ $ProjectRootDirPath = '.'){
             $ciPlan.Steps.Add($key, $value)        
         }
 
-        Write-Debug "saving ci plan"
+Write-Debug "saving ci plan"
         Save-CIPlan -CIPlan $ciPlan -ProjectRootDirPath $ProjectRootDirPath    
 
     }
@@ -295,9 +312,9 @@ $ProjectRootDirPath = '.'){
 
     $ciPlan = Get-CIPlan -ProjectRootDirPath $ProjectRootDirPath
     $ciStep = $ciPlan.Steps[$CIStepName]
-    $parametersPropertyName = "ParameterValueMap"
+    $parametersPropertyName = "Parameters"
 
-    Write-Debug "Checking ci step `"$CIStepName`" for property `"$parametersPropertyName`""
+Write-Debug "Checking ci step `"$CIStepName`" for property `"$parametersPropertyName`""
     $parametersPropertyValue = $ciStep.$parametersPropertyName    
     if($parametersPropertyValue){
         foreach($parameter in $Parameters.GetEnumerator()){
@@ -305,33 +322,33 @@ $ProjectRootDirPath = '.'){
             $parameterName = $parameter.Key
             $parameterValue = $parameter.Value
 
-            Write-Debug "Checking if parameter `"$parameterName`" previously set"
+Write-Debug "Checking if parameter `"$parameterName`" previously set"
             $previousParameterValue = $parametersPropertyValue.$parameterName
             if($previousParameterValue){
-                Write-Debug "Found parameter `"$parameterName`" previously set to `"$previousParameterValue`""
+Write-Debug "Found parameter `"$parameterName`" previously set to `"$previousParameterValue`""
 $confirmationPromptQuery = 
 @"
 For ci step `"$CIStepName`",
-are you sure you want to change the value of parameter `"$parameterName`"
-    old value: $previousParameterValue?
-    new value: $parameterValue ?
+are you sure you want to change the value of parameter `"$parameterName`"?
+    old value: $previousParameterValue
+    new value: $parameterValue
 "@
 
                 $confirmationPromptCaption = "Confirm parameter value change"
 
                 if($Force.IsPresent -or $PSCmdlet.ShouldContinue($confirmationPromptQuery,$confirmationPromptCaption)){
-                    Write-Debug "Setting parameter `"$parameterName`" = `"$parameterValue`" "
+Write-Debug "Setting parameter `"$parameterName`" = `"$parameterValue`" "
                     $parametersPropertyValue.$parameterName = $parameterValue
                 }
                 else{
-                    Write-Debug "Skipping parameter `"$parameterName`". Overwriting existing parameter value was not confirmed."
+Write-Debug "Skipping parameter `"$parameterName`". Overwriting existing parameter value was not confirmed."
                     continue
                 }
             }
         }
     }
     else {        
-        Write-Debug `
+Write-Debug `
 @"
 Property `"$parametersPropertyName`" has not previously been set for ci step `"$CIStepName`"
 Adding with value:
@@ -363,7 +380,7 @@ $ProjectRootDirPath = '.'){
     if($Force.IsPresent -or $PSCmdlet.ShouldContinue($confirmationPromptQuery,$confirmationPromptCaption)){
 
         $ciPlan = Get-CIPlan -ProjectRootDirPath $ProjectRootDirPath
-        Write-Debug "Removing ci step $Name"
+Write-Debug "Removing ci step $Name"
         $ciPlan.Steps.Remove($Name)
         Save-CIPlan -CIPlan $ciPlan -ProjectRootDirPath $ProjectRootDirPath
     }
@@ -381,15 +398,15 @@ $ProjectRootDirPath = '.'){
     if(!(Test-Path $ciPlanDirPath)){    
         $templatesDirPath = "$PSScriptRoot\Templates"
 
-        Write-Debug "Creating a directory for the ci plan at path $ciPlanDirPath"
+Write-Debug "Creating a directory for the ci plan at path $ciPlanDirPath"
         New-Item -ItemType Directory -Path $ciPlanDirPath
 
-        Write-Debug "Adding default files to path $ciPlanDirPath"
+Write-Debug "Adding default files to path $ciPlanDirPath"
         Copy-Item -Path "$templatesDirPath\CIPlanArchive.json" $ciPlanDirPath
         Copy-Item -Path "$templatesDirPath\Packages.config" $ciPlanDirPath
     }
     else{        
-        throw "CIPlan directory already exists at $ciPlanDirPath. If you are trying to recreate your ci plan from scratch you must invoke Remove-CIPlan first"
+throw "CIPlan directory already exists at $ciPlanDirPath. If you are trying to recreate your ci plan from scratch you must invoke Remove-CIPlan first"
     }
 }
 
@@ -417,7 +434,7 @@ function Invoke-CIPlan(
 [Parameter(
     ValueFromPipeline=$true,
     ValueFromPipelineByPropertyName=$true)]
-$Variables=@{'PoshCIHello'="Hello from Posh-CI!"},
+$Parameters=@{},
 
 [string[]]
 [Parameter(
@@ -436,30 +453,50 @@ $ProjectRootDirPath='.'){
 
     if(Test-Path $ciPlanFilePath){
 
-        EnsureNuGetInstalled        
+        EnsureNuGetInstalled
 
-        # add PoshCI plan lifetime variables to session
+Write-Debug "Adding ci plan scoped automatic parameters to pipeline"
         Add-Member -InputObject $Variables -MemberType 'NoteProperty' -Name "PoshCIProjectRootDirPath" -Value (Resolve-Path $ProjectRootDirPath) -Force
 
         $CIPlan = Get-CIPlan -ProjectRootDirPath $ProjectRootDirPath
 
         foreach($step in $CIPlan.Steps.Values){
 
-            Write-Debug "adding PoshCI step lifetime variables to session"
-            Add-Member -InputObject $Variables -MemberType 'NoteProperty' -Name "PoshCIStepName" -Value $step.Name -Force
+Write-Debug "Adding ci step scoped automatic parameters to pipeline"
+            Add-Member -InputObject $Parameters -MemberType 'NoteProperty' -Name "PoshCIStepName" -Value $step.Name -Force
 
-            Write-Debug "ensuring ci-step module package installed"
+Write-Debug "Ensuring ci-step module package installed"
             nuget install $step.ModulePackageId -Version $step.ModulePackageVersion -OutputDirectory $packagesDirPath -Source $PackageSources -NonInteractive
 
-            Write-Debug "importing module"
+Write-Debug "Importing ci-step module"
             Import-Module "$packagesDirPath\$($step.ModulePackageId).$($step.ModulePackageVersion)\tools\$($step.ModulePackageId)" -Force
+            
+            if($Parameters.($step.Name)){
 
-            Write-Debug "invoking ci-step $($step.Name)"
-            $Variables | Invoke-CIStep
+Write-Debug "Calculating union of passed parameters and archived parameters. Passed parameters will override archived parameters"
+                
+                $Parameters.($step.Name) = Get-UnionOfHashtables -Source1 $Parameters.($step.Name) -Source2 $step.Parameters
+
+            }
+            else{
+                
+                $Parameters.($step.Name) = $step.Parameters
+
+            }
+
+Write-Debug `
+@"
+Invoking ci-step $($step.Name) with parameters: 
+$Parameters.($step.Name)
+"@
+            $Parameters | Invoke-CIStep
+
         }
     }
     else{
-        throw "CIPlanArchive.json not found at: $ciPlanFilePath"
+
+throw "CIPlanArchive.json not found at: $ciPlanFilePath"
+
     }
 }
 
