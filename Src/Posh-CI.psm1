@@ -272,7 +272,7 @@ $CIStepName,
 [hashtable]
 [Parameter(
     Mandatory=$true)]
-$ParameterValueMap,
+$Parameters,
 
 [switch]$Force,
 
@@ -286,7 +286,7 @@ $ProjectRootDirPath = '.'){
         Sets configurable parameters of a ci step
         
         .EXAMPLE
-        Set-CIStepParameters -CIStepName "GitClone" -ParameterValueMap @{GitParameters=@("status")} -Force
+        Set-CIStepParameters -CIStepName "GitClone" -Parameters @{GitParameters=@("status")} -Force
         
         Description:
 
@@ -295,37 +295,49 @@ $ProjectRootDirPath = '.'){
 
     $ciPlan = Get-CIPlan -ProjectRootDirPath $ProjectRootDirPath
     $ciStep = $ciPlan.Steps[$CIStepName]
-    $parameterValueMapPropertyName = "ParameterValueMap"
+    $parametersPropertyName = "ParameterValueMap"
 
-    Write-Debug "Checking ci step with name: $CIStepName for property with name: $parameterValueMapPropertyName"
-    $ciStepParameterValueMap = $ciStep.$parameterValueMapPropertyName
-    if($ciStepParameterValueMap){
-        foreach($mappedParameterValue in $ParameterValueMap.GetEnumerator()){
-            Write-Debug "Checking if parameter $($mappedParameterValue.Key) previously mapped.."
-            if($ciStepParameterValueMap.($mappedParameterValue.Key)){
-                
+    Write-Debug "Checking ci step `"$CIStepName`" for property `"$parametersPropertyName`""
+    $parametersPropertyValue = $ciStep.$parametersPropertyName    
+    if($parametersPropertyValue){
+        foreach($parameter in $Parameters.GetEnumerator()){
+
+            $parameterName = $parameter.Key
+            $parameterValue = $parameter.Value
+
+            Write-Debug "Checking if parameter `"$parameterName`" previously set"
+            $previousParameterValue = $parametersPropertyValue.$parameterName
+            if($previousParameterValue){
+                Write-Debug "Found parameter `"$parameterName`" previously set to `"$previousParameterValue`""
 $confirmationPromptQuery = 
 @"
-For ci step with name: $CIStepName,
-are you sure you want to change the value of parameter $($mappedParameterValue.Key)
-old value: $($ciStepParameterValueMap.($mappedParameterValue.Key))?
-new value: $($mappedParameterValue.Value) ?
+For ci step `"$CIStepName`",
+are you sure you want to change the value of parameter `"$parameterName`"
+    old value: $previousParameterValue?
+    new value: $parameterValue ?
 "@
 
                 $confirmationPromptCaption = "Confirm parameter value change"
 
                 if($Force.IsPresent -or $PSCmdlet.ShouldContinue($confirmationPromptQuery,$confirmationPromptCaption)){
-                    $ciStepParameterValueMap.($mappedParameterValue.Key) = $mappedParameterValue.Value
+                    Write-Debug "Setting parameter `"$parameterName`" = `"$parameterValue`" "
+                    $parametersPropertyValue.$parameterName = $parameterValue
                 }
                 else{
+                    Write-Debug "Skipping parameter `"$parameterName`". Overwriting existing parameter value was not confirmed."
                     continue
                 }
             }
         }
     }
     else {        
-        Write-Debug "Adding property with` name: $parameterValueMapPropertyName ` value: $ParameterValueMap "
-        Add-Member -InputObject $ciStep -MemberType 'NoteProperty' -Name $parameterValueMapPropertyName -Value $ParameterValueMap -Force
+        Write-Debug 
+@"
+Property `"$parametersPropertyName`" has not previously been set for ci step `"$CIStepName`"
+Adding with value:
+$Parameters 
+"@
+        Add-Member -InputObject $ciStep -MemberType 'NoteProperty' -Name $parametersPropertyName -Value $Parameters -Force
     }
     
     Save-CIPlan -CIPlan $ciPlan -ProjectRootDirPath $ProjectRootDirPath
