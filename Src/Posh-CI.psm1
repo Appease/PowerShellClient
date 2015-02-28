@@ -78,21 +78,37 @@ $ProjectRootDirPath = '.'){
     Set-Content $ciPlanFilePath -Value (ConvertTo-CIPlanArchiveJson -CIPlan $CIPlan)
 }
 
-function Get-UnionOfHashtables(
-[hashtable]
+function Get-UnionOfPsCustomObjects(
+[PsCustomObject]
 [Parameter(
     ValueFromPipeline=$true,
     ValueFromPipelineByPropertyName=$true)]
 $Source1,
-[hashtable]
+[PsCustomObject]
 [Parameter(
     ValueFromPipeline=$true,
     ValueFromPipelineByPropertyName=$true)]
 $Source2){
-Write-Debug "Initializing destination to clone of '$Source1'"
-    $Destination = $Source1.Clone()
-    $Source2.Keys | ? { !$Source1.ContainsKey($_) } | % {$Destination.Add($_,$Source2[$_])}
-Write-Output $Destination
+    $destination = @{}
+    # these conditionals are hacks to compensate for powershell allowing
+    # hashtables through parameter binding
+    if($Source1.GetType() -eq [hashtable]){
+        $destination = $Source1.Clone()
+    }
+    else{
+        $Source1 | Get-Member -MemberType NoteProperty | %{$destination[$_.Name] = $_.Value}
+    }
+    Write-Debug "After adding `$Source1, destination is $($destination|Out-String)"
+
+    if($Source2.GetType() -eq [hashtable]){
+        $Source2.GetEnumerator() | ?{!$destination.ContainsKey($_.Name)} |%{$destination[$_.Name] = $_.Value}
+    }
+    else{
+        $Source2 | Get-Member -MemberType NoteProperty | ?{!$destination.ContainsKey($_.Name)} | %{$destination[$_.Name] = $_.Value}
+    }
+    Write-Debug "After adding `$Source2, destination is $($destination|Out-String)"
+
+    Write-Output ([PsCustomObject]$destination)
 }
 
 function Get-IndexOfKeyInOrderedDictionary(
@@ -456,40 +472,42 @@ $ProjectRootDirPath='.'){
         EnsureNuGetInstalled
 
 Write-Debug "Adding ci plan scoped automatic parameters to pipeline"
-        Add-Member -InputObject $Variables -MemberType 'NoteProperty' -Name "PoshCIProjectRootDirPath" -Value (Resolve-Path $ProjectRootDirPath) -Force
+        Add-Member -InputObject $Parameters -MemberType 'NoteProperty' -Name "PoshCIProjectRootDirPath" -Value (Resolve-Path $ProjectRootDirPath) -Force
 
         $CIPlan = Get-CIPlan -ProjectRootDirPath $ProjectRootDirPath
 
         foreach($step in $CIPlan.Steps.Values){
+                    
+            if($Parameters.($step.Name)){
 
-Write-Debug "Adding ci step scoped automatic parameters to pipeline"
-            Add-Member -InputObject $Parameters -MemberType 'NoteProperty' -Name "PoshCIStepName" -Value $step.Name -Force
+Write-Debug "Calculating union of passed parameters and archived parameters. Passed parameters will override archived parameters"
+                
+                $stepParameters = Get-UnionOfPsCustomObjects -Source1 $Parameters.($step.Name) -Source2 $step.Parameters
+
+            }
+            else{
+                
+                $stepParameters = $step.Parameters
+
+            }
+
+Write-Debug "Adding automatic parameters to pipeline"
+            
+            Add-Member -InputObject $stepParameters -MemberType 'NoteProperty' -Name "PoshCIProjectRootDirPath" -Value (Resolve-Path $ProjectRootDirPath) -Force
+            Add-Member -InputObject $stepParameters -MemberType 'NoteProperty' -Name "PoshCIStepName" -Value $step.Name -Force
 
 Write-Debug "Ensuring ci-step module package installed"
             nuget install $step.ModulePackageId -Version $step.ModulePackageVersion -OutputDirectory $packagesDirPath -Source $PackageSources -NonInteractive
 
 Write-Debug "Importing ci-step module"
             Import-Module "$packagesDirPath\$($step.ModulePackageId).$($step.ModulePackageVersion)\tools\$($step.ModulePackageId)" -Force
-            
-            if($Parameters.($step.Name)){
-
-Write-Debug "Calculating union of passed parameters and archived parameters. Passed parameters will override archived parameters"
-                
-                $Parameters.($step.Name) = Get-UnionOfHashtables -Source1 $Parameters.($step.Name) -Source2 $step.Parameters
-
-            }
-            else{
-                
-                $Parameters.($step.Name) = $step.Parameters
-
-            }
 
 Write-Debug `
 @"
 Invoking ci-step $($step.Name) with parameters: 
-$Parameters.($step.Name)
+$($stepParameters|Out-String)
 "@
-            $Parameters | Invoke-CIStep
+            $stepParameters | Invoke-CIStep
 
         }
     }
