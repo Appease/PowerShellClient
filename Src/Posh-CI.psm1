@@ -1,5 +1,5 @@
-Write-Debug "Dot Sourcing '.\PsonConverters.ps1'"
-. .\PsonConverters.ps1
+Write-Debug "Dot Sourcing $PSScriptRoot\PsonConverters.ps1"
+. "$PSScriptRoot\PsonConverters.ps1"
 
 $defaultPackageSources = @('https://www.myget.org/F/posh-ci')
 
