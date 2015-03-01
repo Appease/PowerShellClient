@@ -1,3 +1,6 @@
+Write-Debug "Dot Sourcing '.\PsonConverters.ps1'"
+. .\PsonConverters.ps1
+
 $defaultPackageSources = @('https://www.myget.org/F/posh-ci')
 
 function EnsureNuGetInstalled(){
@@ -10,38 +13,27 @@ Write-Debug "installing nuget.commandline"
     }
 }
 
-function ConvertTo-CIPlanArchiveJson(
+function ConvertTo-CIPlanArchivePson(
 [PSCustomObject][Parameter(Mandatory=$true)]$CIPlan){
     <#
         .SYNOPSIS
         an internal utility function to convert a runtime CIPlan object to a 
-        ci plan archive formatted as a json string
+        ci plan archive formatted as a PSON string
     #>
 
-    # construct ci plan archive from ci plan
-    $ciPlanArchiveSteps = @()
-    $CIPlan.Steps.Values | %{$ciPlanArchiveSteps += $_}
-    $ciPlanArchive = [PSCustomObject]@{'Steps'=$ciPlanArchiveSteps}
-
-Write-Output (ConvertTo-Json -InputObject $ciPlanArchive -Depth 4)
+Write-Output (ConvertTo-Pson -InputObject $ciPlanArchive -Depth 4)
 
 }
 
-function ConvertFrom-CIPlanArchiveJson(
+function ConvertFrom-CIPlanArchivePson(
 [string]$CIPlanFileContent){
     <#
         .SYNOPSIS
-        an internal utility function to convert a ci plan archive formatted as a json string
+        an internal utility function to convert a ci plan archive formatted as a PSON string
         into a runtime CIPlan object.
     #>
 
-    $ciPlanArchive = $CIPlanFileContent -join "`n" | ConvertFrom-Json
-
-    # construct a ci plan from a ci plan archive
-    $ciPlanSteps = [ordered]@{}
-    $ciPlanArchive.Steps | %{$ciPlanSteps.Add($_.Name,$_)}
-    
-Write-Output ([pscustomobject]@{'Steps'=$ciPlanSteps})
+Write-Output ($CIPlanFileContent | ConvertFrom-Pson)
 
 }
 
@@ -56,8 +48,8 @@ $ProjectRootDirPath = '.'){
         parses a ci plan archive and returns the archived ci plan
     #>
 
-    $ciPlanFilePath = Resolve-Path "$ProjectRootDirPath\.posh-ci\CIPlanArchive.json"   
-Write-Output (ConvertFrom-CIPlanArchiveJson -CIPlanFileContent (Get-Content $ciPlanFilePath))
+    $ciPlanFilePath = Resolve-Path "$ProjectRootDirPath\.posh-ci\CIPlanArchive.pson"   
+Write-Output (ConvertFrom-CIPlanArchivePson -CIPlanFileContent (Get-Content $ciPlanFilePath))
 
 }
 
@@ -71,11 +63,11 @@ $ProjectRootDirPath = '.'){
     <#
         .SYNOPSIS
         an internal utility function to save a runtime CIPlan object as 
-        a CIPlan file.
+        a ci plan archive.
     #>
     
-    $ciPlanFilePath = Resolve-Path "$ProjectRootDirPath\.posh-ci\CIPlanArchive.json"    
-    Set-Content $ciPlanFilePath -Value (ConvertTo-CIPlanArchiveJson -CIPlan $CIPlan)
+    $ciPlanFilePath = Resolve-Path "$ProjectRootDirPath\.posh-ci\CIPlanArchive.pson"    
+    Set-Content $ciPlanFilePath -Value (ConvertTo-CIPlanArchivePson -CIPlan $CIPlan)
 }
 
 function Get-UnionOfPsCustomObjects(
@@ -327,7 +319,7 @@ $ProjectRootDirPath = '.'){
     #>
 
     $ciPlan = Get-CIPlan -ProjectRootDirPath $ProjectRootDirPath
-    $ciStep = $ciPlan.Steps[$CIStepName]
+    $ciStep = $ciPlan.Steps.$CIStepName
     $parametersPropertyName = "Parameters"
 
 Write-Debug "Checking ci step `"$CIStepName`" for property `"$parametersPropertyName`""
@@ -416,7 +408,7 @@ Write-Debug "Creating a directory for the ci plan at path $ciPlanDirPath"
         New-Item -ItemType Directory -Path $ciPlanDirPath
 
 Write-Debug "Adding default files to path $ciPlanDirPath"
-        Copy-Item -Path "$templatesDirPath\CIPlanArchive.json" $ciPlanDirPath
+        Copy-Item -Path "$templatesDirPath\CIPlanArchive.Pson" $ciPlanDirPath
         Copy-Item -Path "$templatesDirPath\Packages.config" $ciPlanDirPath
     }
     else{        
@@ -462,7 +454,7 @@ $PackageSources = $defaultPackageSources,
 $ProjectRootDirPath='.'){
     
     $ciPlanDirPath = Resolve-Path "$ProjectRootDirPath\.posh-ci"
-    $ciPlanFilePath = "$ciPlanDirPath\CIPlanArchive.json"
+    $ciPlanFilePath = "$ciPlanDirPath\CIPlanArchive.Pson"
     $packagesDirPath = "$ciPlanDirPath\Packages"
 
     if(Test-Path $ciPlanFilePath){
@@ -511,7 +503,7 @@ $($stepParameters|Out-String)
     }
     else{
 
-throw "CIPlanArchive.json not found at: $ciPlanFilePath"
+throw "CIPlanArchive.Pson not found at: $ciPlanFilePath"
 
     }
 }
