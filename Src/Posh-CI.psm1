@@ -135,7 +135,7 @@ function Get-LatestCIStepModuleVersion(
 [Parameter(
     Mandatory=$true)]
 [string[]]
-$CIStepModuleSources,
+$PackageSources,
 
 [Parameter(
     Mandatory=$true)]
@@ -144,14 +144,14 @@ $CIStepModuleId){
     
     $versions = @()
 
-    foreach($ciStepModuleSource in $CIStepModuleSources){
+    foreach($ciStepModuleSource in $PackageSources){
         $uri = "$ciStepModuleSource/api/v2/package-versions/$CIStepModuleId"
 Write-Debug "Attempting to fetch ci-step module versions:` uri: $uri "
         $versions = $versions + (Invoke-RestMethod -Uri $uri)
 Write-Debug "response from $uri was: ` $versions"
     }
     if(!$versions -or ($versions.Count -lt 1)){
-throw "no versions of $CIStepModuleId could be located.` searched: $CIStepModuleSources"
+throw "no versions of $CIStepModuleId could be located.` searched: $PackageSources"
     }
 
 Write-Output ($versions| Sort-Object -Descending)[0]
@@ -169,10 +169,10 @@ $Name,
 [string]
 [Parameter(
     Mandatory=$true)]
-$ModulePackageId,
+$PackageId,
 
 [string]
-$ModulePackageVersion,
+$PackageVersion,
 
 [switch]
 [Parameter(
@@ -198,7 +198,7 @@ $After,
 $Before,
 
 [string[]]
-$CIStepModuleSources=$defaultPackageSources,
+$PackageSources=$defaultPackageSources,
 
 [string]
 [Parameter(
@@ -211,28 +211,28 @@ $ProjectRootDirPath = '.'){
         Adds a new ci step to a ci plan
         
         .EXAMPLE
-        Add-CIStep -Name "LastStep" -ModulePackageId "posh-ci-git" -ModulePackageVersion "0.0.3"
+        Add-CIStep -Name "LastStep" -PackageId "posh-ci-git" -PackageVersion "0.0.3"
         
         Description:
 
         This command adds a new ci step (named LastStep) after all existing ci steps
 
         .EXAMPLE
-        Add-CIStep -Name "FirstStep" -ModulePackageId "posh-ci-git" -First
+        Add-CIStep -Name "FirstStep" -PackageId "posh-ci-git" -First
 
         Description:
 
         This command adds a new ci step (named FirstStep) before all existing ci steps
 
         .EXAMPLE
-        Add-CIStep -Name "AfterSecondStep" -ModulePackageId "posh-ci-git" -After "SecondStep"
+        Add-CIStep -Name "AfterSecondStep" -PackageId "posh-ci-git" -After "SecondStep"
 
         Description:
 
         This command adds a new ci step (named AfterSecondStep) after the existing ci step named SecondStep
 
         .EXAMPLE
-        Add-CIStep -Name "BeforeSecondStep" -ModulePackageId "posh-ci-git" -Before "SecondStep"
+        Add-CIStep -Name "BeforeSecondStep" -PackageId "posh-ci-git" -Before "SecondStep"
 
         Description:
 
@@ -249,14 +249,14 @@ throw "A ci step with name $Name already exists.`n Tip: You can remove the exist
     }
     else{
         
-        if([string]::IsNullOrWhiteSpace($ModulePackageVersion)){
-            $ModulePackageVersion = Get-LatestCIStepModuleVersion -CIStepModuleSources $CIStepModuleSources -CIStepModuleId $ModulePackageId
-Write-Debug "using greatest available module version : $ModulePackageVersion"
+        if([string]::IsNullOrWhiteSpace($PackageVersion)){
+            $PackageVersion = Get-LatestCIStepModuleVersion -PackageSources $PackageSources -CIStepModuleId $PackageId
+Write-Debug "using greatest available module version : $PackageVersion"
         }
 
 
         $key = $Name
-        $value = [PSCustomObject]@{'Name'=$Name;'ModulePackageId'=$ModulePackageId;'ModulePackageVersion'=$ModulePackageVersion}
+        $value = [PSCustomObject]@{'Name'=$Name;'PackageId'=$PackageId;'PackageVersion'=$PackageVersion}
 
         if($First.IsPresent){
         
@@ -497,10 +497,10 @@ Write-Debug "Adding automatic parameters to pipeline"
             Add-Member -InputObject $stepParameters -MemberType 'NoteProperty' -Name "PoshCIStepName" -Value $step.Name -Force
 
 Write-Debug "Ensuring ci-step module package installed"
-            nuget install $step.ModulePackageId -Version $step.ModulePackageVersion -OutputDirectory $packagesDirPath -Source $PackageSources -NonInteractive
+            nuget install $step.PackageId -Version $step.PackageVersion -OutputDirectory $packagesDirPath -Source $PackageSources -NonInteractive
 
 Write-Debug "Importing ci-step module"
-            Import-Module "$packagesDirPath\$($step.ModulePackageId).$($step.ModulePackageVersion)\tools\$($step.ModulePackageId)" -Force
+            Import-Module "$packagesDirPath\$($step.PackageId).$($step.PackageVersion)\tools\$($step.PackageId)" -Force
 
 Write-Debug `
 @"
