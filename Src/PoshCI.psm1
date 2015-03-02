@@ -86,30 +86,30 @@ function Get-IndexOfKeyInOrderedDictionary(
 Write-Output $indexOfKey
 }
 
-function Get-LatestCIStepModuleVersion(
+function Get-LatestPackageVersion(
 [Parameter(
     Mandatory=$true)]
 [string[]]
-$PackageSources,
+$PackageSources = $defaultPackageSources,
 
 [Parameter(
     Mandatory=$true)]
     [string]
-$CIStepModuleId){
+$PackageId){
     
     $versions = @()
 
-    foreach($ciStepModuleSource in $PackageSources){
-        $uri = "$ciStepModuleSource/api/v2/package-versions/$CIStepModuleId"
-Write-Debug "Attempting to fetch ci-step module versions:` uri: $uri "
+    foreach($packageSource in $PackageSources){
+        $uri = "$packageSource/api/v2/package-versions/$PackageId"
+Write-Debug "Attempting to fetch package versions:` uri: $uri "
         $versions = $versions + (Invoke-RestMethod -Uri $uri)
 Write-Debug "response from $uri was: ` $versions"
     }
     if(!$versions -or ($versions.Count -lt 1)){
-throw "no versions of $CIStepModuleId could be located.` searched: $PackageSources"
+throw "no versions of $PackageId could be located.` searched: $PackageSources"
     }
 
-Write-Output ($versions| Sort-Object -Descending)[0]
+Write-Output ([Array]($versions| Sort-Object -Descending))[0]
 }
 
 function Add-CIStep(
@@ -205,7 +205,7 @@ throw "A ci step with name $Name already exists.`n Tip: You can remove the exist
     else{
         
         if([string]::IsNullOrWhiteSpace($PackageVersion)){
-            $PackageVersion = Get-LatestCIStepModuleVersion -PackageSources $PackageSources -CIStepModuleId $PackageId
+            $PackageVersion = Get-LatestPackageVersion -PackageSources $PackageSources -PackageId $PackageId
 Write-Debug "using greatest available module version : $PackageVersion"
         }
 
@@ -296,13 +296,13 @@ Write-Debug "Checking ci step `"$CIStepName`" for property `"$parametersProperty
 Write-Debug "Checking if parameter `"$parameterName`" previously set"
             $previousParameterValue = $parametersPropertyValue.$parameterName
             if($previousParameterValue){
-Write-Debug "Found parameter `"$parameterName`" previously set to `"$previousParameterValue`""
+Write-Debug "Found parameter `"$parameterName`" previously set to `"$($previousParameterValue|Out-String)`""
 $confirmationPromptQuery = 
 @"
 For ci step `"$CIStepName`",
 are you sure you want to change the value of parameter `"$parameterName`"?
-    old value: $previousParameterValue
-    new value: $parameterValue
+    old value: $($previousParameterValue|Out-String)
+    new value: $($parameterValue|Out-String)
 "@
 
                 $confirmationPromptCaption = "Confirm parameter value change"
@@ -312,7 +312,7 @@ Write-Debug "Skipping parameter `"$parameterName`". Overwriting existing paramet
                     continue
                 }
             }
-Write-Debug "Setting parameter `"$parameterName`" = `"$parameterValue`" "
+Write-Debug "Setting parameter `"$parameterName`" = `"$($parameterValue|Out-String)`" "
             $parametersPropertyValue.$parameterName = $parameterValue
         }
     }
@@ -321,7 +321,7 @@ Write-Debug `
 @"
 Property `"$parametersPropertyName`" has not previously been set for ci step `"$CIStepName`"
 Adding with value:
-$Parameters 
+$($Parameters|Out-String)
 "@
         Add-Member -InputObject $ciStep -MemberType 'NoteProperty' -Name $parametersPropertyName -Value $Parameters -Force
     }
@@ -432,15 +432,21 @@ Write-Debug "Adding ci plan scoped automatic parameters to pipeline"
                     
             if($Parameters.($step.Name)){
 
-Write-Debug "Calculating union of passed parameters and archived parameters. Passed parameters will override archived parameters"
+Write-Debug "Using union of passed parameters and archived parameters. Passed parameters will override archived parameters"
                 
                 $stepParameters = Get-UnionOfHashtables -Source1 $Parameters.($step.Name) -Source2 $step.Parameters
 
             }
-            else{
-                
+            elseif($step.Parameters){
+
+Write-Debug "Using archived parameters "    
                 $stepParameters = $step.Parameters
 
+            }
+            else{
+                
+                $stepParameters = @{}
+            
             }
 
 Write-Debug "Adding automatic parameters to pipeline"
