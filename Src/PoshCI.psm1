@@ -372,7 +372,6 @@ Write-Debug "Creating a directory for the ci plan at path $ciPlanDirPath"
 
 Write-Debug "Adding default files to path $ciPlanDirPath"
         Copy-Item -Path "$templatesDirPath\CIPlanArchive.psd1" $ciPlanDirPath
-        Copy-Item -Path "$templatesDirPath\Packages.config" $ciPlanDirPath
     }
     else{        
 throw "CIPlan directory already exists at $ciPlanDirPath. If you are trying to recreate your ci plan from scratch you must invoke Remove-CIPlan first"
