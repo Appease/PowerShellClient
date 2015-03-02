@@ -9,9 +9,6 @@ function CreateChocolateyPackage(
     }
     New-Item $workingDirPath -ItemType Directory | Out-Null
 
-    $chocolateyPackageToolsDirPath = "$workingDirPath\tools"
-    New-Item $chocolateyPackageToolsDirPath -ItemType Directory | Out-Null
-
     # install chocolatey
     try{
         Get-Command choco -ErrorAction Stop | Out-Null
@@ -21,17 +18,12 @@ function CreateChocolateyPackage(
     }
 
     Copy-Item `
-    -Path "$PSScriptRoot\Chocolatey\poshci.nuspec" `
+    -Path "$PSScriptRoot\Chocolatey\*" `
     -Destination $workingDirPath
 
     Copy-Item `
-    -Path "$PSScriptRoot\Chocolatey\*" `
-    -Destination $chocolateyPackageToolsDirPath `
-    -Exclude 'poshci.nuspec'
-
-    Copy-Item `
     -Path "$Tools\*" `
-    -Destination $chocolateyPackageToolsDirPath `
+    -Destination $workingDirPath `
     -Recurse
            
     $nuspecFilePath = "$workingDirPath\poshci.nuspec"
@@ -43,26 +35,6 @@ function CreateChocolateyPackage(
     chocolatey pack $nuspecFilePath
     Pop-Location 
 
-}
-
-function Test(){
-    # install chocolatey
-    try{
-        Get-Command choco -ErrorAction Stop | Out-Null
-    }
-    catch{             
-        iex ((new-object net.webclient).DownloadString('https://chocolatey.org/install.ps1'))
-    }
-
-    # install pester
-    try{
-        Get-Command pester -ErrorAction Stop | Out-Null
-    }
-    catch{             
-        iex ((new-object net.webclient).DownloadString('https://chocolatey.org/install.ps1'))
-    }
-
-    choco install pester
 }
 
 function Compile(
@@ -86,8 +58,7 @@ function Compile(
         -ModuleVersion $Version `
         -Guid 15c1b906-eb08-4b0a-b4de-b5289cf35700 `
         -Author 'Chris Dostert' `
-        -CompanyName 'TonightWe' `
-        -Description 'A PowerShell environment for continous integration.' `
+        -Description 'A build/deployment-service agnostic, continuous integration framework' `
         -PowerShellVersion '3.0' `
         -DotNetFrameworkVersion '4.5' `
         -RootModule 'PoshCI.psm1'

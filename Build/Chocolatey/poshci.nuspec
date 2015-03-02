@@ -17,6 +17,6 @@
 		<projectUrl>https://github.com/PoshCI/PoshCI</projectUrl>
 	</metadata>	
 	<files>
-		<file src="**" target="tools" />
+		<file src="**" target="tools" exclude="*.nuspec" />
 	</files>
 </package>
