@@ -1,7 +1,7 @@
 Write-Debug "Dot Sourcing $PSScriptRoot\PsonConverters.ps1"
 . "$PSScriptRoot\PsonConverters.ps1"
 
-$defaultPackageSources = @('https://www.myget.org/F/posh-ci')
+$defaultPackageSources = @('https://www.myget.org/F/poshci')
 
 function EnsureNuGetInstalled(){
     try{
@@ -11,30 +11,6 @@ function EnsureNuGetInstalled(){
 Write-Debug "installing nuget.commandline"
         chocolatey install nuget.commandline | Out-Null
     }
-}
-
-function ConvertTo-CIPlanArchivePson(
-[PSCustomObject][Parameter(Mandatory=$true)]$CIPlan){
-    <#
-        .SYNOPSIS
-        an internal utility function to convert a runtime CIPlan object to a 
-        ci plan archive formatted as a PSON string
-    #>
-
-Write-Output (ConvertTo-Pson -InputObject $ciPlanArchive -Depth 4)
-
-}
-
-function ConvertFrom-CIPlanArchivePson(
-[string]$CIPlanFileContent){
-    <#
-        .SYNOPSIS
-        an internal utility function to convert a ci plan archive formatted as a PSON string
-        into a runtime CIPlan object.
-    #>
-
-Write-Output ($CIPlanFileContent | ConvertFrom-Pson)
-
 }
 
 function Get-CIPlan(
@@ -49,12 +25,12 @@ $ProjectRootDirPath = '.'){
     #>
 
     $ciPlanFilePath = Resolve-Path "$ProjectRootDirPath\.posh-ci\CIPlanArchive.pson"   
-Write-Output (ConvertFrom-CIPlanArchivePson -CIPlanFileContent (Get-Content $ciPlanFilePath))
+Write-Output (Get-Content $ciPlanFilePath | Out-String | ConvertFrom-Pson)
 
 }
 
 function Save-CIPlan(
-[psobject]$CIPlan,
+[PsCustomObject]$CIPlan,
 [string]
 [Parameter(
     ValueFromPipeline=$true,
@@ -67,37 +43,24 @@ $ProjectRootDirPath = '.'){
     #>
     
     $ciPlanFilePath = Resolve-Path "$ProjectRootDirPath\.posh-ci\CIPlanArchive.pson"    
-    Set-Content $ciPlanFilePath -Value (ConvertTo-CIPlanArchivePson -CIPlan $CIPlan)
+    Set-Content $ciPlanFilePath -Value (ConvertTo-Pson -InputObject $CIPlan -Depth 12 -Layers 12 -Strict)
 }
 
-function Get-UnionOfPsCustomObjects(
-[PsCustomObject]
+function Get-UnionOfHashtables(
+[Hashtable]
 [Parameter(
     ValueFromPipeline=$true,
     ValueFromPipelineByPropertyName=$true)]
 $Source1,
-[PsCustomObject]
+[Hashtable]
 [Parameter(
     ValueFromPipeline=$true,
     ValueFromPipelineByPropertyName=$true)]
 $Source2){
-    $destination = @{}
-    # these conditionals are hacks to compensate for powershell allowing
-    # hashtables through parameter binding
-    if($Source1.GetType() -eq [hashtable]){
-        $destination = $Source1.Clone()
-    }
-    else{
-        $Source1 | Get-Member -MemberType NoteProperty | %{$destination[$_.Name] = $_.Value}
-    }
+    $destination = $Source1.Clone()
     Write-Debug "After adding `$Source1, destination is $($destination|Out-String)"
 
-    if($Source2.GetType() -eq [hashtable]){
-        $Source2.GetEnumerator() | ?{!$destination.ContainsKey($_.Name)} |%{$destination[$_.Name] = $_.Value}
-    }
-    else{
-        $Source2 | Get-Member -MemberType NoteProperty | ?{!$destination.ContainsKey($_.Name)} | %{$destination[$_.Name] = $_.Value}
-    }
+    $Source2.GetEnumerator() | ?{!$destination.ContainsKey($_.Name)} |%{$destination[$_.Name] = $_.Value}
     Write-Debug "After adding `$Source2, destination is $($destination|Out-String)"
 
     Write-Output ([PsCustomObject]$destination)
@@ -436,7 +399,7 @@ $ProjectRootDirPath = '.'){
 
 function Invoke-CIPlan(
 
-[PSCustomObject]
+[Hashtable]
 [Parameter(
     ValueFromPipeline=$true,
     ValueFromPipelineByPropertyName=$true)]
@@ -472,7 +435,7 @@ Write-Debug "Adding ci plan scoped automatic parameters to pipeline"
 
 Write-Debug "Calculating union of passed parameters and archived parameters. Passed parameters will override archived parameters"
                 
-                $stepParameters = Get-UnionOfPsCustomObjects -Source1 $Parameters.($step.Name) -Source2 $step.Parameters
+                $stepParameters = Get-UnionOfHashtables -Source1 $Parameters.($step.Name) -Source2 $step.Parameters
 
             }
             else{
