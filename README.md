@@ -24,7 +24,7 @@ cinst posh-ci;Import-Module "C:\Program Files\Posh-CI\Modules\Posh-CI" -Force
 
 ***Operationally:***
 - everything takes place within PowerShell
-- as you [CRUD](http://en.wikipedia.org/wiki/Create,_read,_update_and_delete) your `ci plan` a snapshot is maintained in a `CIPlanArchive.ps1` file.
+- as you [CRUD](http://en.wikipedia.org/wiki/Create,_read,_update_and_delete) your `ci plan` a snapshot is maintained in a `CIPlanArchive.psd1` file.
 - at any time you can invoke your `ci plan` and pass in any variables your `ci steps` rely on
 
 ###How do I get started?
