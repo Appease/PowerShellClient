@@ -15,7 +15,7 @@ Build/Deployment services today are extremely powerfull and easy to use. However
 ###How do I install it?
 Make sure you have [Chocolatey](https://chocolatey.org) installed, then from PowerShell run
 ```POWERSHELL
-cinst posh-ci;Import-Module "C:\Program Files\Posh-CI\Modules\Posh-CI" -Force
+cinst poshci;Import-Module "C:\Program Files\PoshCI\Modules\PoshCI" -Force
 ```
 ###In a nutshell, hows it work?
 ***Conceptually:***
@@ -46,9 +46,9 @@ invoke your ci plan:
 ```
 
 ###How do I distribute my ci plan?
-When you run `New-CIPlan` it creates a folder named `.posh-ci` at the root of your project. From then on all modifications to your ci plan are maintained inside that folder so your .posh-ci folder is all you need!
+When you run `New-CIPlan` it creates a folder named `.PoshCI` at the root of your project. From then on all modifications to your ci plan are maintained inside that folder so your .PoshCI folder is all you need!
 
-(pro-tip: check your .posh-ci folder in to source control to version your ci plan along with your code.)
+(pro-tip: check your .PoshCI folder in to source control to version your ci plan along with your code.)
 
 ###Where's the documentation?
 [Here](Docs)
