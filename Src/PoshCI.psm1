@@ -479,15 +479,16 @@ Write-Debug "Adding automatic parameters to pipeline"
 Write-Debug "Ensuring ci-step module package installed"
             nuget install $step.PackageId -Version $step.PackageVersion -OutputDirectory $packagesDirPath -Source $PackageSources -NonInteractive
 
-Write-Debug "Importing ci-step module"
-            Import-Module "$packagesDirPath\$($step.PackageId).$($step.PackageVersion)\tools\$($step.PackageId)" -Force
+            $moduleDirPath = "$packagesDirPath\$($step.PackageId).$($step.PackageVersion)\tools\$($step.PackageId)"
+Write-Debug "Importing module located at: $moduleDirPath"
+            Import-Module $moduleDirPath -Force
 
 Write-Debug `
 @"
 Invoking ci-step $($step.Name) with parameters: 
 $($stepParameters|Out-String)
 "@
-            [PSCustomObject]$stepParameters | Invoke-CIStep
+            ([PSCustomObject]$stepParameters) | Invoke-CIStep
 
         }
     }
