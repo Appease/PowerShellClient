@@ -48,11 +48,14 @@ $ProjectRootDirPath = '.'){
 
 function Get-UnionOfHashtables(
 [Hashtable]
+[ValidateNotNull()]
 [Parameter(
     ValueFromPipeline=$true,
     ValueFromPipelineByPropertyName=$true)]
 $Source1,
+
 [Hashtable]
+[ValidateNotNull()]
 [Parameter(
     ValueFromPipeline=$true,
     ValueFromPipelineByPropertyName=$true)]
@@ -60,10 +63,10 @@ $Source2){
     $destination = $Source1.Clone()
     Write-Debug "After adding `$Source1, destination is $($destination|Out-String)"
 
-    $Source2.GetEnumerator() | ?{!$destination.ContainsKey($_.Name)} |%{$destination[$_.Name] = $_.Value}
+    $Source2.GetEnumerator() | ?{!$destination.ContainsKey($_.Key)} |%{$destination[$_.Key] = $_.Value}
     Write-Debug "After adding `$Source2, destination is $($destination|Out-String)"
 
-    Write-Output ([PsCustomObject]$destination)
+    Write-Output $destination
 }
 
 function Get-IndexOfKeyInOrderedDictionary(
@@ -411,7 +414,6 @@ $PackageSources = $defaultPackageSources,
 
 [String]
 [Parameter(
-    ValueFromPipeline=$true,
     ValueFromPipelineByPropertyName=$true)]
 $ProjectRootDirPath='.'){
     
@@ -429,14 +431,25 @@ $ProjectRootDirPath='.'){
                     
             if($Parameters.($step.Name)){
 
-Write-Debug "Using union of passed parameters and archived parameters. Passed parameters will override archived parameters"
+                if($step.Parameters){
+
+Write-Debug "Adding union of passed parameters and archived parameters to pipeline. Passed parameters will override archived parameters"
                 
-                $stepParameters = Get-UnionOfHashtables -Source1 $Parameters.($step.Name) -Source2 $step.Parameters
+                    $stepParameters = Get-UnionOfHashtables -Source1 $Parameters.($step.Name) -Source2 $step.Parameters
+
+                }
+                else{
+
+Write-Debug "Adding passed parameters to pipeline"
+
+                    $stepParameters = $Parameters.($step.Name)
+            
+                }
 
             }
             elseif($step.Parameters){
 
-Write-Debug "Using archived parameters "    
+Write-Debug "Adding archived parameters to pipeline"    
                 $stepParameters = $step.Parameters
 
             }
