@@ -1,6 +1,6 @@
 try {
 
-    . "$PSScriptRoot\Posh-CI\Uninstall.ps1"
+    . "$PSScriptRoot\PoshCI\Uninstall.ps1"
 
     Write-ChocolateySuccess 'Posh-CI'
 

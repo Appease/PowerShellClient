@@ -2,17 +2,17 @@
 # for installing shared/3rd party powershell modules
 # (see: https://msdn.microsoft.com/en-us/library/dd878350%28v=vs.85%29.aspx )
 if($PSVersionTable.PSVersion.Major -lt 3) {
-    Write-Warning "Posh-CI requires PowerShell 3.0 or better; you have version $($Host.Version)."
+    Write-Warning "PoshCI requires PowerShell 3.0 or better; you have version $($Host.Version)."
     return
 }
 
 # prepare install dir
-$installRootDirPath = "$env:ProgramFiles\Posh-CI"
+$installRootDirPath = "$env:ProgramFiles\PoshCI"
 $installDirPath = "$installRootDirPath\Modules"
 
 # handle upgrade scenario
 if(Test-Path "$installRootDirPath"){
-    Write-Debug 'removing previous Posh-CI installation'
+    Write-Debug 'removing previous PoshCI installation'
     . "$PSScriptRoot\Uninstall.ps1"
 }
 New-Item $installDirPath -ItemType Directory | Out-Null
@@ -28,7 +28,7 @@ if(!($psModulePath.Split(';').Contains($installDirPath))){
     # trim trailing semicolon if exists
     $psModulePath = $psModulePath.TrimEnd(';');
 
-    # append path to Posh-CI installation
+    # append path to PoshCI installation
     $psModulePath = $psModulePath + ";$installDirPath"
     
     # save

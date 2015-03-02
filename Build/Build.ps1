@@ -3,7 +3,7 @@ function CreateChocolateyPackage(
 [string][Parameter(Mandatory=$true)]$Tools,
 [string][Parameter(Mandatory=$true)]$OutputDirectory){
     # init working dir
-    $workingDirPath = "$env:TEMP\Posh-CI-Build-Chocolatey"
+    $workingDirPath = "$env:TEMP\PoshCI-Build-Chocolatey"
     if(Test-Path $workingDirPath){
         Remove-Item $workingDirPath -Force -Recurse
     }
@@ -21,20 +21,20 @@ function CreateChocolateyPackage(
     }
 
     Copy-Item `
-    -Path "$PSScriptRoot\Chocolatey\posh-ci.nuspec" `
+    -Path "$PSScriptRoot\Chocolatey\poshci.nuspec" `
     -Destination $workingDirPath
 
     Copy-Item `
     -Path "$PSScriptRoot\Chocolatey\*" `
     -Destination $chocolateyPackageToolsDirPath `
-    -Exclude 'posh-ci.nuspec'
+    -Exclude 'poshci.nuspec'
 
     Copy-Item `
     -Path "$Tools\*" `
     -Destination $chocolateyPackageToolsDirPath `
     -Recurse
            
-    $nuspecFilePath = "$workingDirPath\posh-ci.nuspec"
+    $nuspecFilePath = "$workingDirPath\poshci.nuspec"
 
     # substitute vars into nuspec
     (gc $nuspecFilePath).Replace('$version$',$Version)|sc $nuspecFilePath
@@ -71,7 +71,7 @@ function Compile(
 [string][Parameter(Mandatory=$true)]$OutputDirPath){
 
     # Import-Module looks for module manifest with same name as containing folder
-    $compiledPowerShellModuleDirPath = "$OutputDirPath\Posh-CI"
+    $compiledPowerShellModuleDirPath = "$OutputDirPath\PoshCI"
     New-Item $compiledPowerShellModuleDirPath -ItemType Directory | Out-Null
 
     # Copy the source files to the output
@@ -82,7 +82,7 @@ function Compile(
 
     # Generate powershell module manifest
     New-ModuleManifest `
-        -Path "$compiledPowerShellModuleDirPath\Posh-CI.psd1" `
+        -Path "$compiledPowerShellModuleDirPath\PoshCI.psd1" `
         -ModuleVersion $Version `
         -Guid 15c1b906-eb08-4b0a-b4de-b5289cf35700 `
         -Author 'Chris Dostert' `
@@ -90,7 +90,7 @@ function Compile(
         -Description 'A PowerShell environment for continous integration.' `
         -PowerShellVersion '3.0' `
         -DotNetFrameworkVersion '4.5' `
-        -RootModule 'Posh-CI.psm1'
+        -RootModule 'PoshCI.psm1'
 }
 
 function New-Build(
@@ -101,7 +101,7 @@ function New-Build(
     $ArtifactsDirPath = Resolve-Path $ArtifactsDirPath
     
     # init PowerShell module compiler output dir
-    $compilerOutputDir = "$env:TEMP\Posh-CI-Compiler-Output"
+    $compilerOutputDir = "$env:TEMP\PoshCI-Compiler-Output"
     if(Test-Path $compilerOutputDir){
         Remove-Item $compilerOutputDir -Force -Recurse
     }

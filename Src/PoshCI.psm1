@@ -24,7 +24,7 @@ $ProjectRootDirPath = '.'){
         parses a ci plan archive and returns the archived ci plan
     #>
 
-    $ciPlanFilePath = Resolve-Path "$ProjectRootDirPath\.posh-ci\CIPlanArchive.pson"   
+    $ciPlanFilePath = Resolve-Path "$ProjectRootDirPath\.PoshCI\CIPlanArchive.psd1"   
 Write-Output (Get-Content $ciPlanFilePath | Out-String | ConvertFrom-Pson)
 
 }
@@ -42,7 +42,7 @@ $ProjectRootDirPath = '.'){
         a ci plan archive.
     #>
     
-    $ciPlanFilePath = Resolve-Path "$ProjectRootDirPath\.posh-ci\CIPlanArchive.pson"    
+    $ciPlanFilePath = Resolve-Path "$ProjectRootDirPath\.PoshCI\CIPlanArchive.psd1"    
     Set-Content $ciPlanFilePath -Value (ConvertTo-Pson -InputObject $CIPlan -Depth 12 -Layers 12 -Strict)
 }
 
@@ -166,28 +166,28 @@ $ProjectRootDirPath = '.'){
         Adds a new ci step to a ci plan
         
         .EXAMPLE
-        Add-CIStep -Name "LastStep" -PackageId "posh-ci-git" -PackageVersion "0.0.3"
+        Add-CIStep -Name "LastStep" -PackageId "poshci.git" -PackageVersion "0.0.3"
         
         Description:
 
         This command adds a new ci step (named LastStep) after all existing ci steps
 
         .EXAMPLE
-        Add-CIStep -Name "FirstStep" -PackageId "posh-ci-git" -First
+        Add-CIStep -Name "FirstStep" -PackageId "poshci.git" -First
 
         Description:
 
         This command adds a new ci step (named FirstStep) before all existing ci steps
 
         .EXAMPLE
-        Add-CIStep -Name "AfterSecondStep" -PackageId "posh-ci-git" -After "SecondStep"
+        Add-CIStep -Name "AfterSecondStep" -PackageId "poshci.git" -After "SecondStep"
 
         Description:
 
         This command adds a new ci step (named AfterSecondStep) after the existing ci step named SecondStep
 
         .EXAMPLE
-        Add-CIStep -Name "BeforeSecondStep" -PackageId "posh-ci-git" -Before "SecondStep"
+        Add-CIStep -Name "BeforeSecondStep" -PackageId "poshci.git" -Before "SecondStep"
 
         Description:
 
@@ -362,7 +362,7 @@ function New-CIPlan(
     ValueFromPipeline=$true,
     ValueFromPipelineByPropertyName=$true)]
 $ProjectRootDirPath = '.'){
-    $ciPlanDirPath = "$(Resolve-Path $ProjectRootDirPath)\.posh-ci"
+    $ciPlanDirPath = "$(Resolve-Path $ProjectRootDirPath)\.PoshCI"
 
     if(!(Test-Path $ciPlanDirPath)){    
         $templatesDirPath = "$PSScriptRoot\Templates"
@@ -371,7 +371,7 @@ Write-Debug "Creating a directory for the ci plan at path $ciPlanDirPath"
         New-Item -ItemType Directory -Path $ciPlanDirPath
 
 Write-Debug "Adding default files to path $ciPlanDirPath"
-        Copy-Item -Path "$templatesDirPath\CIPlanArchive.Pson" $ciPlanDirPath
+        Copy-Item -Path "$templatesDirPath\CIPlanArchive.psd1" $ciPlanDirPath
         Copy-Item -Path "$templatesDirPath\Packages.config" $ciPlanDirPath
     }
     else{        
@@ -387,7 +387,7 @@ function Remove-CIPlan(
     ValueFromPipelineByPropertyName=$true)]
 $ProjectRootDirPath = '.'){
     
-    $ciPlanDirPath = Resolve-Path "$ProjectRootDirPath\.posh-ci"
+    $ciPlanDirPath = Resolve-Path "$ProjectRootDirPath\.PoshCI"
 
     $confirmationPromptQuery = "Are you sure you want to delete the CI plan located at $CIPlanDirPath`?"
     $confirmationPromptCaption = 'Confirm ci plan removal'
@@ -416,8 +416,8 @@ $PackageSources = $defaultPackageSources,
     ValueFromPipelineByPropertyName=$true)]
 $ProjectRootDirPath='.'){
     
-    $ciPlanDirPath = Resolve-Path "$ProjectRootDirPath\.posh-ci"
-    $ciPlanFilePath = "$ciPlanDirPath\CIPlanArchive.Pson"
+    $ciPlanDirPath = Resolve-Path "$ProjectRootDirPath\.PoshCI"
+    $ciPlanFilePath = "$ciPlanDirPath\CIPlanArchive.psd1"
     $packagesDirPath = "$ciPlanDirPath\Packages"
 
     if(Test-Path $ciPlanFilePath){
@@ -466,7 +466,7 @@ $($stepParameters|Out-String)
     }
     else{
 
-throw "CIPlanArchive.Pson not found at: $ciPlanFilePath"
+throw "CIPlanArchive.psd1 not found at: $ciPlanFilePath"
 
     }
 }

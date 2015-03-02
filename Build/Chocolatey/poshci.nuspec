@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
+	<metadata>
+		<id>poshci</id>
+		<title>PoshCI</title>
+		<version>$version$</version>
+		<authors>Chris Dostert</authors>
+		<requireLicenseAcceptance>false</requireLicenseAcceptance>
+		<description>
+			A build/deployment-service agnostic, continuous integration framework
+			
+			Installation notes: 
+			-	installs to:  C:\ProgramFiles\PoshCI
+			-	appends C:\ProgramFiles\PoshCI\Modules to PSModulePath environment variable
+		</description>
+		<tags>Powershell PoshCI TaskRunner CI ContinuousIntegration Build Deployment admin</tags>
+		<projectUrl>https://github.com/PoshCI/PoshCI</projectUrl>
+	</metadata>	
+	<files>
+		<file src="**" target="tools" />
+	</files>
+</package>
