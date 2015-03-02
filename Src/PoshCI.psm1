@@ -30,7 +30,9 @@ Write-Output (Get-Content $ciPlanFilePath | Out-String | ConvertFrom-Pson)
 }
 
 function Save-CIPlan(
-[PsCustomObject]$CIPlan,
+[PsCustomObject]
+$CIPlan,
+
 [string]
 [Parameter(
     ValueFromPipeline=$true,
@@ -70,8 +72,13 @@ $Source2){
 }
 
 function Get-IndexOfKeyInOrderedDictionary(
-    [string]$Key,
-    [System.Collections.Specialized.OrderedDictionary]$OrderedDictionary){
+[string]
+[ValidateNotNullOrEmpty()]
+$Key,
+
+[System.Collections.Specialized.OrderedDictionary]
+[ValidateNotNullOrEmpty()]
+$OrderedDictionary){
     <#
         .SYNOPSIS
         an internal utility function to find the index of a key in an ordered dictionary
@@ -90,14 +97,16 @@ Write-Output $indexOfKey
 }
 
 function Get-LatestPackageVersion(
+[string[]]
 [Parameter(
     Mandatory=$true)]
-[string[]]
 $PackageSources = $defaultPackageSources,
 
+
+[string]
+[ValidateNotNullOrEmpty()]
 [Parameter(
     Mandatory=$true)]
-    [string]
 $PackageId){
     
     $versions = @()
@@ -120,6 +129,7 @@ function Add-CIStep(
     DefaultParameterSetName="add-CIStepLast")]
 
 [string]
+[ValidateNotNullOrEmpty()]
 [Parameter(
     Mandatory=$true)]
 $Name,
@@ -256,6 +266,7 @@ Write-Debug "saving ci plan"
 function Set-CIStepParameters(
 
 [string]
+[ValidateNotNullOrEmpty()]
 [Parameter(
     Mandatory=$true)]
 $CIStepName,
@@ -334,6 +345,7 @@ $($Parameters|Out-String)
 
 function Remove-CIStep(
 [string]
+[ValidateNotNullOrEmpty()]
 [Parameter(
     Mandatory=$true)]
 $Name,
@@ -405,7 +417,7 @@ function Invoke-CIPlan(
 [Parameter(
     ValueFromPipeline=$true,
     ValueFromPipelineByPropertyName=$true)]
-$Parameters=@{},
+$Parameters,
 
 [string[]]
 [Parameter(
