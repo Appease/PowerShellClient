@@ -460,7 +460,7 @@ Write-Debug `
 Invoking ci-step $($step.Name) with parameters: 
 $($stepParameters|Out-String)
 "@
-            $stepParameters | Invoke-CIStep
+            [PSCustomObject]$stepParameters | Invoke-CIStep
 
         }
     }
