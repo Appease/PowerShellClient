@@ -423,9 +423,6 @@ $ProjectRootDirPath='.'){
 
         EnsureNuGetInstalled
 
-Write-Debug "Adding ci plan scoped automatic parameters to pipeline"
-        Add-Member -InputObject $Parameters -MemberType 'NoteProperty' -Name "PoshCIProjectRootDirPath" -Value (Resolve-Path $ProjectRootDirPath) -Force
-
         $CIPlan = Get-CIPlan -ProjectRootDirPath $ProjectRootDirPath
 
         foreach($step in $CIPlan.Steps.Values){
@@ -451,8 +448,8 @@ Write-Debug "Using archived parameters "
 
 Write-Debug "Adding automatic parameters to pipeline"
             
-            Add-Member -InputObject $stepParameters -MemberType 'NoteProperty' -Name "PoshCIProjectRootDirPath" -Value (Resolve-Path $ProjectRootDirPath) -Force
-            Add-Member -InputObject $stepParameters -MemberType 'NoteProperty' -Name "PoshCIStepName" -Value $step.Name -Force
+            $stepParameters.PoshCIProjectRootDirPath = (Resolve-Path $ProjectRootDirPath)
+            $stepParameters.PoshCIStepName = $step.Name
 
 Write-Debug "Ensuring ci-step module package installed"
             nuget install $step.PackageId -Version $step.PackageVersion -OutputDirectory $packagesDirPath -Source $PackageSources -NonInteractive
