@@ -321,7 +321,7 @@ are you sure you want to change the value of parameter `"$parameterName`"?
 
                 $confirmationPromptCaption = "Confirm parameter value change"
 
-                if(!$Force.IsPresent -or !$PSCmdlet.ShouldContinue($confirmationPromptQuery,$confirmationPromptCaption)){
+                if($Force.IsPresent -or !$PSCmdlet.ShouldContinue($confirmationPromptQuery,$confirmationPromptCaption)){
 Write-Debug "Skipping parameter `"$parameterName`". Overwriting existing parameter value was not confirmed."
                     continue
                 }
