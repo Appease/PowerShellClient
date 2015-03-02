@@ -488,7 +488,8 @@ Write-Debug `
 Invoking ci-step $($step.Name) with parameters: 
 $($stepParameters|Out-String)
 "@
-            ([PSCustomObject]$stepParameters) | Invoke-CIStep
+            # Parameters must be PSCustomObject so [Parameter(ValueFromPipelineByPropertyName = $true)] works
+            [PSCustomObject]$stepParameters.Clone() | Invoke-CIStep
 
         }
     }
