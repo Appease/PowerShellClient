@@ -56,6 +56,6 @@ When you run `New-CIPlan` it creates a folder named `.PoshCI` at the root of you
 ###What's the build status
 ![](https://ci.appveyor.com/api/projects/status/ay2uucfxymlgk2ni?svg=true)
 
-###Interesting Reading
+###Interesting reading
 [Distributed Continuous Integration - Keep the Mainline Clean](http://blog.assembla.com/AssemblaBlog/tabid/12618/bid/96937/Distributed-Continuous-Integration-Keep-the-Mainline-Clean.aspx)
 
