@@ -5,12 +5,16 @@ Build/Deployment services today are extremely powerfull and easy to use. However
 ######-2 coupling of your ci-plan implementation to a proprietary build/deployment service.
 ######-3 no capability to run your ci-plan outside of a proprietary build/deployment service
 ######-4 expenses (subscriptions, licenses, hardware,  etc...)
+######-5 one off scripts lacking any any sort of modularity
+######-6 rampant copying/pasting, general lack of reuse amongst ci-plan components 
 
 ###How does PoshCI attempt to solve them?
 ######+1 ci-plan versioning side by side with source code
 ######+2 ci-plan implemented as plain old PowerShell modules
 ######+3 ability to run your ci-plan on anything capable of running PowerShell
 ######+4 no expenses (as long as you have something capable of running PowerShell ;))
+######+5 all ci-steps PowerShell modules
+######+6 native support for "packaging" ci-steps via any .nupkg source.
 
 ###How do I install it?
 Make sure you have [Chocolatey](https://chocolatey.org) installed, then from PowerShell run
