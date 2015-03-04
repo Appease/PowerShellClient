@@ -13,7 +13,7 @@ Build/Deployment services today are extremely powerfull and easy to use. However
 ######+2 ci-plan implemented as plain old PowerShell modules
 ######+3 ability to run your ci-plan on anything capable of running PowerShell
 ######+4 no expenses (as long as you have something capable of running PowerShell ;))
-######+5 all ci-steps PowerShell modules
+######+5 all ci-steps are PowerShell modules
 ######+6 native support for "packaging" ci-steps via any .nupkg source.
 
 ###How do I install it?
