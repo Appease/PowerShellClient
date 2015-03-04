@@ -14,7 +14,7 @@ Build/Deployment services today are extremely powerfull and easy to use. However
 ######+3 ability to run your ci-plan on anything capable of running PowerShell
 ######+4 no expenses (as long as you have something capable of running PowerShell ;))
 ######+5 all ci-steps are implemented as PowerShell modules
-######+6 all ci-steps are packaged as .nupkg's
+######+6 all ci-steps are package based
 
 ###How do I install it?
 Make sure you have [Chocolatey](https://chocolatey.org) installed, then from PowerShell run
