@@ -47,7 +47,7 @@ Add-CIStep -Name "Compile" -ModulePath "PATH-TO-DIR-CONTAINING-MODULE"
 ```
 invoke your ci plan:
 ```POWERSHELL
-[PSCustomObject]@{Var1='Var1Value';Var2='Var2Value'} | Invoke-CIPlan
+@{Compile=@{Var1='Value1';Var2='Value2'}} | Invoke-CIPlan
 ```
 
 ###How do I distribute my ci plan?
