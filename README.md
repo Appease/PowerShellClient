@@ -25,7 +25,7 @@ Import-Module "C:\Program Files\PoshCI\Modules\PoshCI" -Force
 ###In a nutshell, hows it work?
 ***Conceptually:***
 - `ci plans` contain an ordered set of `ci steps`
-- `ci steps` are arbitrary tasks which are implemented as PowerShell modules.
+- `ci steps` are arbitrary tasks which are implemented as PowerShell modules and packaged as .nupkg's.
 
 ***Operationally:***
 - everything takes place within PowerShell
