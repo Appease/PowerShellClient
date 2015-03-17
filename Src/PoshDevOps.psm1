@@ -1,7 +1,7 @@
 Write-Debug "Dot Sourcing $PSScriptRoot\PsonConverters.ps1"
 . "$PSScriptRoot\PsonConverters.ps1"
 
-$defaultPackageSources = @('https://www.myget.org/F/poshci')
+$defaultPackageSources = @('https://www.myget.org/F/poshdevops')
 
 function EnsureNuGetInstalled(){
     try{
@@ -179,28 +179,28 @@ $ProjectRootDirPath = '.'){
         Adds a new ci step to a ci plan
         
         .EXAMPLE
-        Add-PoshDevOpsTask -Name "LastStep" -PackageId "poshci.git" -PackageVersion "0.0.3"
+        Add-PoshDevOpsTask -Name "LastStep" -PackageId "DeployNupkgToAzureWebsites" -PackageVersion "0.0.3"
         
         Description:
 
         This command adds a new ci step (named LastStep) after all existing ci steps
 
         .EXAMPLE
-        Add-PoshDevOpsTask -Name "FirstStep" -PackageId "poshci.git" -First
+        Add-PoshDevOpsTask -Name "FirstStep" -PackageId "DeployNupkgToAzureWebsites" -First
 
         Description:
 
         This command adds a new ci step (named FirstStep) before all existing ci steps
 
         .EXAMPLE
-        Add-PoshDevOpsTask -Name "AfterSecondStep" -PackageId "poshci.git" -After "SecondStep"
+        Add-PoshDevOpsTask -Name "AfterSecondStep" -PackageId "DeployNupkgToAzureWebsites" -After "SecondStep"
 
         Description:
 
         This command adds a new ci step (named AfterSecondStep) after the existing ci step named SecondStep
 
         .EXAMPLE
-        Add-PoshDevOpsTask -Name "BeforeSecondStep" -PackageId "poshci.git" -Before "SecondStep"
+        Add-PoshDevOpsTask -Name "BeforeSecondStep" -PackageId "DeployNupkgToAzureWebsites" -Before "SecondStep"
 
         Description:
 
@@ -389,7 +389,7 @@ Write-Debug "Adding default files to path $ciPlanDirPath"
         Copy-Item -Path "$templatesDirPath\CIPlanArchive.psd1" $ciPlanDirPath
     }
     else{        
-throw "CIPlan directory already exists at $ciPlanDirPath. If you are trying to recreate your ci plan from scratch you must invoke Remove-CIPlan first"
+throw ".PoshDevOps directory already exists at $ciPlanDirPath. If you are trying to recreate your ci plan from scratch you must invoke Remove-CIPlan first"
     }
 }
 
