@@ -1,6 +1,6 @@
 try {    
     
-    . "$PSScriptRoot\PoshCI\Install.ps1"
+    . "$PSScriptRoot\PoshDevOps\Install.ps1"
 
     Write-ChocolateySuccess 'Posh-CI'
 

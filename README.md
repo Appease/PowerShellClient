@@ -1,4 +1,4 @@
-###What problems does PoshCI attempt to solve?
+###What problems does PoshDevOps attempt to solve?
 
 Build/Deployment services today are extremely powerfull and easy to use. However, if you throw your ci-plan together in most of these services you are left with: 
 ######-1 lack of ci-plan versioning side by side with source code 
@@ -8,7 +8,7 @@ Build/Deployment services today are extremely powerfull and easy to use. However
 ######-5 one off scripts lacking any any sort of modularity
 ######-6 rampant copying/pasting, general lack of reuse amongst ci-plan components
 
-###How does PoshCI attempt to solve them?
+###How does PoshDevOps attempt to solve them?
 ######+1 ci-plan versioning side by side with source code
 ######+2 ci-plan implemented as plain old PowerShell modules
 ######+3 ability to run your ci-plan on anything capable of running PowerShell
@@ -20,7 +20,7 @@ Build/Deployment services today are extremely powerfull and easy to use. However
 Make sure you have [Chocolatey](https://chocolatey.org) installed, then from PowerShell run
 ```POWERSHELL
 choco install poshci -version 0.0.167; # 0.0.167 was latest at time of writing
-Import-Module "C:\Program Files\PoshCI\Modules\PoshCI" -Force
+Import-Module "C:\Program Files\PoshDevOps\Modules\PoshDevOps" -Force
 ```
 ###In a nutshell, hows it work?
 ***Conceptually:***
@@ -43,7 +43,7 @@ New-CIPlan
 ```
 add a step to your plan:
 ```POWERSHELL
-Add-CIStep -Name "Compile" -ModulePath "PATH-TO-DIR-CONTAINING-MODULE"
+Add-PoshDevOpsTask -Name "Compile" -ModulePath "PATH-TO-DIR-CONTAINING-MODULE"
 ```
 invoke your ci plan:
 ```POWERSHELL
@@ -51,9 +51,9 @@ invoke your ci plan:
 ```
 
 ###How do I distribute my ci plan?
-When you run `New-CIPlan` it creates a folder named `.PoshCI` at the root of your project. From then on all modifications to your ci plan are maintained inside that folder so your .PoshCI folder is all you need!
+When you run `New-CIPlan` it creates a folder named `.PoshDevOps` at the root of your project. From then on all modifications to your ci plan are maintained inside that folder so your .PoshDevOps folder is all you need!
 
-(pro-tip: check your .PoshCI folder in to source control to version your ci plan along with your code.)
+(pro-tip: check your .PoshDevOps folder in to source control to version your ci plan along with your code.)
 
 ###Where's the documentation?
 [Here](Docs)

@@ -1,5 +1,5 @@
 # remove source
-$installRootDirPath = "C:\Program Files\PoshCI"
+$installRootDirPath = "C:\Program Files\PoshDevOps"
 $installDirPath = "$installRootDirPath\Modules"
 
 # make idempotent

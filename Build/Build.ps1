@@ -3,7 +3,7 @@ function CreateChocolateyPackage(
 [string][Parameter(Mandatory=$true)]$Tools,
 [string][Parameter(Mandatory=$true)]$OutputDirectory){
     # init working dir
-    $workingDirPath = "$env:TEMP\PoshCI-Build-Chocolatey"
+    $workingDirPath = "$env:TEMP\PoshDevOps-Build-Chocolatey"
     if(Test-Path $workingDirPath){
         Remove-Item $workingDirPath -Force -Recurse
     }
@@ -43,7 +43,7 @@ function Compile(
 [string][Parameter(Mandatory=$true)]$OutputDirPath){
 
     # Import-Module looks for module manifest with same name as containing folder
-    $compiledPowerShellModuleDirPath = "$OutputDirPath\PoshCI"
+    $compiledPowerShellModuleDirPath = "$OutputDirPath\PoshDevOps"
     New-Item $compiledPowerShellModuleDirPath -ItemType Directory | Out-Null
 
     # Copy the source files to the output
@@ -54,14 +54,14 @@ function Compile(
 
     # Generate powershell module manifest
     New-ModuleManifest `
-        -Path "$compiledPowerShellModuleDirPath\PoshCI.psd1" `
+        -Path "$compiledPowerShellModuleDirPath\PoshDevOps.psd1" `
         -ModuleVersion $Version `
         -Guid 15c1b906-eb08-4b0a-b4de-b5289cf35700 `
         -Author 'Chris Dostert' `
         -Description 'A build/deployment-service agnostic, continuous integration framework' `
         -PowerShellVersion '3.0' `
         -DotNetFrameworkVersion '4.5' `
-        -RootModule 'PoshCI.psm1'
+        -RootModule 'PoshDevOps.psm1'
 }
 
 function New-Build(
@@ -72,7 +72,7 @@ function New-Build(
     $ArtifactsDirPath = Resolve-Path $ArtifactsDirPath
     
     # init PowerShell module compiler output dir
-    $compilerOutputDir = "$env:TEMP\PoshCI-Compiler-Output"
+    $compilerOutputDir = "$env:TEMP\PoshDevOps-Compiler-Output"
     if(Test-Path $compilerOutputDir){
         Remove-Item $compilerOutputDir -Force -Recurse
     }
