@@ -58,7 +58,7 @@ function Compile(
         -ModuleVersion $Version `
         -Guid 15c1b906-eb08-4b0a-b4de-b5289cf35700 `
         -Author 'Chris Dostert' `
-        -Description 'A build/deployment-service agnostic, continuous integration framework' `
+        -Description 'PowerShell driven distributed DevOps' `
         -PowerShellVersion '3.0' `
         -DotNetFrameworkVersion '4.5' `
         -RootModule 'PoshDevOps.psm1'
