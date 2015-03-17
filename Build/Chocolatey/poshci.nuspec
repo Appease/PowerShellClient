@@ -7,7 +7,7 @@
 		<authors>Chris Dostert</authors>
 		<requireLicenseAcceptance>false</requireLicenseAcceptance>
 		<description>
-			A build/deployment-service agnostic, continuous integration framework
+			PowerShell driven distributed DevOps
 			
 			Installation notes: 
 			-	installs to:  C:\ProgramFiles\PoshDevOps
