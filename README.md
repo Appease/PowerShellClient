@@ -19,7 +19,7 @@ Build/Deployment services today are extremely powerfull and easy to use. However
 ###How do I install it?
 Make sure you have [Chocolatey](https://chocolatey.org) installed, then from PowerShell run
 ```POWERSHELL
-choco install poshci -version 0.0.167; # 0.0.167 was latest at time of writing
+choco install poshdevops -version 0.0.9; # 0.0.9 was latest at time of writing
 Import-Module "C:\Program Files\PoshDevOps\Modules\PoshDevOps" -Force
 ```
 ###In a nutshell, hows it work?
