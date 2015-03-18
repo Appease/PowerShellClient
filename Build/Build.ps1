@@ -26,7 +26,7 @@ function CreateChocolateyPackage(
     -Destination $workingDirPath `
     -Recurse
            
-    $nuspecFilePath = "$workingDirPath\poshci.nuspec"
+    $nuspecFilePath = "$workingDirPath\poshdevops.nuspec"
 
     # substitute vars into nuspec
     (gc $nuspecFilePath).Replace('$version$',$Version)|sc $nuspecFilePath
