@@ -24,7 +24,7 @@ Import-Module "C:\Program Files\PoshDevOps\Modules\PoshDevOps" -Force
 ```
 ###In a nutshell, hows it work?
 ***Conceptually:***
-- `ci plans` contain an ordered set of `ci steps`
+- `ci plans` contain an ordered set of steps
 - `ci steps` are arbitrary tasks which are implemented as PowerShell modules and packaged as .nupkg's.
 
 ***Operationally:***
@@ -59,7 +59,7 @@ When you run `New-CIPlan` it creates a folder named `.PoshDevOps` at the root of
 [Here](Docs)
 
 ###What's the build status
-![](https://ci.appveyor.com/api/projects/status/ay2uucfxymlgk2ni?svg=true)
+![](https://ci.appveyor.com/api/github/webhook?id=jt0ppwagy4kmreap)
 
 ###Interesting reading
 [Distributed Continuous Integration - Keep the Mainline Clean](http://blog.assembla.com/AssemblaBlog/tabid/12618/bid/96937/Distributed-Continuous-Integration-Keep-the-Mainline-Clean.aspx)
