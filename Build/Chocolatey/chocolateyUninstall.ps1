@@ -2,11 +2,11 @@ try {
 
     . "$PSScriptRoot\PoshDevOps\Uninstall.ps1"
 
-    Write-ChocolateySuccess 'Posh-CI'
+    Write-ChocolateySuccess 'PoshDevOps'
 
 } catch {
 
-    Write-ChocolateyFailure 'Posh-CI' $_.Exception.Message
+    Write-ChocolateyFailure 'PoshDevOps' $_.Exception.Message
 
     throw 
 }
