@@ -59,7 +59,7 @@ When you run `New-CIPlan` it creates a folder named `.PoshDevOps` at the root of
 [Here](Docs)
 
 ###What's the build status
-![](https://ci.appveyor.com/api/github/webhook?id=jt0ppwagy4kmreap)
+![](https://ci.appveyor.com/api/projects/status/jt0ppwagy4kmreap?svg=true)
 
 ###Interesting reading
 [Distributed Continuous Integration - Keep the Mainline Clean](http://blog.assembla.com/AssemblaBlog/tabid/12618/bid/96937/Distributed-Continuous-Integration-Keep-the-Mainline-Clean.aspx)
