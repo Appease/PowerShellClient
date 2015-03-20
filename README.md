@@ -1,20 +1,20 @@
 ###What problems does PoshDevOps attempt to solve?
 
-Build/Deployment services today are extremely powerfull and easy to use. However, if you throw your ci-plan together in most of these services you are left with: 
-######-1 lack of ci-plan versioning side by side with source code 
-######-2 coupling of your ci-plan implementation to a proprietary build/deployment service.
-######-3 no capability to run your ci-plan outside of a proprietary build/deployment service
+Build/Deployment services today are extremely powerfull and easy to use. However, if you throw your task group together in most of these services you are left with: 
+######-1 lack of task group versioning side by side with source code 
+######-2 coupling of your task group implementation to a proprietary build/deployment service.
+######-3 no capability to run your task group outside of a proprietary build/deployment service
 ######-4 expenses (subscriptions, licenses, hardware,  etc...)
 ######-5 one off scripts lacking any any sort of modularity
-######-6 rampant copying/pasting, general lack of reuse amongst ci-plan components
+######-6 rampant copying/pasting, general lack of reuse amongst task group components
 
 ###How does PoshDevOps attempt to solve them?
-######+1 ci-plan versioning side by side with source code
-######+2 ci-plan implemented as plain old PowerShell modules
-######+3 ability to run your ci-plan on anything capable of running PowerShell
+######+1 task group versioning side by side with source code
+######+2 task group implemented as plain old PowerShell modules
+######+3 ability to run your task group on anything capable of running PowerShell
 ######+4 no expenses (as long as you have something capable of running PowerShell ;))
-######+5 all DevOps tasks are implemented as PowerShell modules
-######+6 all DevOps tasks are package based and inherently reuseable
+######+5 all tasks are implemented as PowerShell modules
+######+6 all tasks are package based and inherently reuseable
 
 ###How do I install it?
 Make sure you have [Chocolatey](https://chocolatey.org) installed, then from PowerShell run
@@ -25,12 +25,12 @@ Import-Module "C:\Program Files\PoshDevOps\Modules\PoshDevOps" -Force
 ###In a nutshell, hows it work?
 ***Conceptually:***
 - `task groups` contain an ordered set of tasks
-- `DevOps tasks` are arbitrary tasks which are implemented as PowerShell modules and packaged as .nupkg's.
+- `tasks` are arbitrary tasks which are implemented as PowerShell modules and packaged as .nupkg's.
 
 ***Operationally:***
 - everything takes place within PowerShell
 - as you [CRUD](http://en.wikipedia.org/wiki/Create,_read,_update_and_delete) your `task group` a snapshot is maintained in a `TaskGroup.psd1` file.
-- at any time you can invoke your `task group` and pass in any variables your `DevOps tasks` rely on
+- at any time you can invoke your `task group` and pass in any variables your `tasks` rely on
 
 ###How do I get started?
 navigate to the root directory of your project:

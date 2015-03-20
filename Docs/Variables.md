@@ -14,7 +14,7 @@ function Invoke-PoshDevOpsTask(
 
 ###2 Automatic Parameters
 PoshDevOps will automatically populate certain DevOps task parameters, the names of which always start with the prefix `PoshDevOps`.
-These parameters provide information about the executing ci-plan/DevOps task. 
+These parameters provide information about the executing task group/DevOps task. 
 
 To use automatic parameters, add parameters matching the type and name of defined automatic parameters to your Invoke-PoshDevOpsTask method signature and PoshDevOps will populate them at invocation time.
 
@@ -30,7 +30,7 @@ function Invoke-PoshDevOpsTask(
 ```
 
 #####2.1 [string]$PoshDevOpsProjectRootDirPath
-Always available;equals the project root dir path of the currently executing ci-plan
+Always available;equals the project root dir path of the currently executing task group
 
 #####2.2 [string]$TaskName
 Always available;equals the name of the currently executing DevOps task
