@@ -13,8 +13,8 @@ Build/Deployment services today are extremely powerfull and easy to use. However
 ######+2 ci-plan implemented as plain old PowerShell modules
 ######+3 ability to run your ci-plan on anything capable of running PowerShell
 ######+4 no expenses (as long as you have something capable of running PowerShell ;))
-######+5 all DevOps steps are implemented as PowerShell modules
-######+6 all DevOps steps are package based and inherently reuseable
+######+5 all DevOps tasks are implemented as PowerShell modules
+######+6 all DevOps tasks are package based and inherently reuseable
 
 ###How do I install it?
 Make sure you have [Chocolatey](https://chocolatey.org) installed, then from PowerShell run
@@ -24,36 +24,36 @@ Import-Module "C:\Program Files\PoshDevOps\Modules\PoshDevOps" -Force
 ```
 ###In a nutshell, hows it work?
 ***Conceptually:***
-- `DevOps plans` contain an ordered set of steps
-- `DevOps steps` are arbitrary tasks which are implemented as PowerShell modules and packaged as .nupkg's.
+- `task groups` contain an ordered set of tasks
+- `DevOps tasks` are arbitrary tasks which are implemented as PowerShell modules and packaged as .nupkg's.
 
 ***Operationally:***
 - everything takes place within PowerShell
-- as you [CRUD](http://en.wikipedia.org/wiki/Create,_read,_update_and_delete) your `DevOps plan` a snapshot is maintained in a `DevOpsPlan.psd1` file.
-- at any time you can invoke your `DevOps plan` and pass in any variables your `DevOps steps` rely on
+- as you [CRUD](http://en.wikipedia.org/wiki/Create,_read,_update_and_delete) your `task group` a snapshot is maintained in a `TaskGroup.psd1` file.
+- at any time you can invoke your `task group` and pass in any variables your `DevOps tasks` rely on
 
 ###How do I get started?
 navigate to the root directory of your project:
 ```POWERSHELL
 Set-Location "PATH-TO-ROOT-DIR-OF-YOUR-PROJECT"
 ```
-create a new DevOps plan:
+create a new task group:
 ```POWERSHELL
-New-DevOpsPlan
+New-PoshDevOpsTaskGroup
 ```
-add a step to your plan:
+add a task to your plan:
 ```POWERSHELL
-Add-DevOpsPlanStep -Name "Compile" -ModulePath "PATH-TO-DIR-CONTAINING-MODULE"
+Add-PoshDevOpsTask -Name "Compile" -ModulePath "PATH-TO-DIR-CONTAINING-MODULE"
 ```
-invoke your DevOps plan:
+invoke your task group:
 ```POWERSHELL
-@{Compile=@{Var1='Value1';Var2='Value2'}} | Invoke-DevOpsPlan
+@{Compile=@{Var1='Value1';Var2='Value2'}} | Invoke-PoshDevOpsTaskGroup
 ```
 
-###How do I distribute my DevOps plan?
-When you run `New-DevOpsPlan` it creates a folder named `.PoshDevOps` at the root of your project. From then on all modifications to your DevOps plan are maintained inside that folder so your .PoshDevOps folder is all you need!
+###How do I distribute my task group?
+When you run `New-PoshDevOpsTaskGroup` it creates a folder named `.PoshDevOps` at the root of your project. From then on all modifications to your task group are maintained inside that folder so your .PoshDevOps folder is all you need!
 
-(pro-tip: check your .PoshDevOps folder in to source control to version your DevOps plan along with your code.)
+(pro-tip: check your .PoshDevOps folder in to source control to version your task group along with your code.)
 
 ###Where's the documentation?
 [Here](Docs)

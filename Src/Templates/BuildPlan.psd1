@@ -1,3 +1,3 @@
 [PSCustomObject]@{
-	Steps =[Ordered]@{}
+	Tasks =[Ordered]@{}
 }

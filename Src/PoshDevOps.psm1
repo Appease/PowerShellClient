@@ -13,7 +13,7 @@ Write-Debug "installing nuget.commandline"
     }
 }
 
-function Get-DevOpsPlan(
+function Get-PoshDevOpsTaskGroup(
 [string]
 [Parameter(
     ValueFromPipeline=$true,
@@ -21,17 +21,17 @@ function Get-DevOpsPlan(
 $ProjectRootDirPath = '.'){
     <#
         .SYNOPSIS
-        parses a DevOps plan file
+        parses a task group file
     #>
 
-    $devOpsPlanFilePath = Resolve-Path "$ProjectRootDirPath\.PoshDevOps\DevOpsPlan.psd1"   
-Write-Output (Get-Content $devOpsPlanFilePath | Out-String | ConvertFrom-Pson)
+    $taskGroupFilePath = Resolve-Path "$ProjectRootDirPath\.PoshDevOps\TaskGroup.psd1"   
+Write-Output (Get-Content $taskGroupFilePath | Out-String | ConvertFrom-Pson)
 
 }
 
-function Save-DevOpsPlan(
+function Save-TaskGroup(
 [PsCustomObject]
-$DevOpsPlan,
+$TaskGroup,
 
 [string]
 [Parameter(
@@ -40,12 +40,11 @@ $DevOpsPlan,
 $ProjectRootDirPath = '.'){
     <#
         .SYNOPSIS
-        an internal utility function to save a runtime DevOpsPlan object as 
-        a DevOps plan archive.
+        an internal utility function to snapshot and save a TaskGroup to disk
     #>
     
-    $devOpsPlanFilePath = Resolve-Path "$ProjectRootDirPath\.PoshDevOps\DevOpsPlan.psd1"    
-    Set-Content $devOpsPlanFilePath -Value (ConvertTo-Pson -InputObject $DevOpsPlan -Depth 12 -Layers 12 -Strict)
+    $taskGroupFilePath = Resolve-Path "$ProjectRootDirPath\.PoshDevOps\TaskGroup.psd1"    
+    Set-Content $taskGroupFilePath -Value (ConvertTo-Pson -InputObject $TaskGroup -Depth 12 -Layers 12 -Strict)
 }
 
 function Get-UnionOfHashtables(
@@ -97,11 +96,11 @@ Write-Output $indexOfKey
 }
 
 function Get-LatestPackageVersion(
+
 [string[]]
 [Parameter(
     Mandatory=$true)]
 $PackageSources = $defaultPackageSources,
-
 
 [string]
 [ValidateNotNullOrEmpty()]
@@ -124,9 +123,9 @@ throw "no versions of $PackageId could be located.` searched: $PackageSources"
 Write-Output ([Array]($versions| Sort-Object -Descending))[0]
 }
 
-function Add-DevOpsPlanStep(
+function Add-PoshDevOpsTask(
 [CmdletBinding(
-    DefaultParameterSetName="add-DevOpsPlanStepLast")]
+    DefaultParameterSetName="add-TaskLast")]
 
 [string]
 [ValidateNotNullOrEmpty()]
@@ -145,24 +144,24 @@ $PackageVersion,
 [switch]
 [Parameter(
     Mandatory=$true,
-    ParameterSetName='add-DevOpsPlanStepFirst')]
+    ParameterSetName='add-TaskFirst')]
 $First,
 
 [switch]
 [Parameter(
-    ParameterSetName='add-DevOpsPlanStepLast')]
+    ParameterSetName='add-TaskLast')]
 $Last,
 
 [string]
 [Parameter(
     Mandatory=$true,
-    ParameterSetName='add-DevOpsPlanStepAfter')]
+    ParameterSetName='add-TaskAfter')]
 $After,
 
 [string]
 [Parameter(
     Mandatory=$true,
-    ParameterSetName='add-DevOpsPlanStepBefore')]
+    ParameterSetName='add-TaskBefore')]
 $Before,
 
 [string[]]
@@ -176,43 +175,43 @@ $ProjectRootDirPath = '.'){
 
     <#
         .SYNOPSIS
-        Adds a new step to a DevOps plan
+        Adds a new task to a task group
         
         .EXAMPLE
-        Add-DevOpsPlanStep -Name "LastStep" -PackageId "DeployNupkgToAzureWebsites" -PackageVersion "0.0.3"
+        Add-PoshDevOpsTask -Name "LastTask" -PackageId "DeployNupkgToAzureWebsites" -PackageVersion "0.0.3"
         
         Description:
 
-        This command adds a DevOps plan step (named LastStep) after all existing steps
+        This command adds a task (named LastTask) after all existing tasks
 
         .EXAMPLE
-        Add-DevOpsPlanStep -Name "FirstStep" -PackageId "DeployNupkgToAzureWebsites" -First
+        Add-PoshDevOpsTask -Name "FirstTask" -PackageId "DeployNupkgToAzureWebsites" -First
 
         Description:
 
-        This command adds a DevOps plan step (named FirstStep) before all existing steps
+        This command adds a task (named FirstTask) before all existing tasks
 
         .EXAMPLE
-        Add-DevOpsPlanStep -Name "AfterSecondStep" -PackageId "DeployNupkgToAzureWebsites" -After "SecondStep"
+        Add-PoshDevOpsTask -Name "AfterSecondTask" -PackageId "DeployNupkgToAzureWebsites" -After "SecondTask"
 
         Description:
 
-        This command adds a DevOps plan step (named AfterSecondStep) after the existing step named SecondStep
+        This command adds a task (named AfterSecondTask) after the existing task named SecondTask
 
         .EXAMPLE
-        Add-DevOpsPlanStep -Name "BeforeSecondStep" -PackageId "DeployNupkgToAzureWebsites" -Before "SecondStep"
+        Add-PoshDevOpsTask -Name "BeforeSecondTask" -PackageId "DeployNupkgToAzureWebsites" -Before "SecondTask"
 
         Description:
 
-        This command adds a DevOps plan step (named BeforeSecondStep) before the existing step named SecondStep
+        This command adds a task (named BeforeSecondTask) before the existing task named SecondTask
 
     #>
 
-    $devOpsPlan = Get-DevOpsPlan -ProjectRootDirPath $ProjectRootDirPath
+    $taskGroup = Get-PoshDevOpsTaskGroup -ProjectRootDirPath $ProjectRootDirPath
     
-    if($devOpsPlan.Steps.Contains($Name)){
+    if($taskGroup.Tasks.Contains($Name)){
 
-throw "A step with name $Name already exists.`n Tip: You can remove the existing step by invoking Remove-DevOpsPlanStep"
+throw "A task with name $Name already exists.`n Tip: You can remove the existing task by invoking Remove-PoshDevOpsTask"
             
     }
     else{
@@ -228,48 +227,48 @@ Write-Debug "using greatest available module version : $PackageVersion"
 
         if($First.IsPresent){
         
-            $devOpsPlan.Steps.Insert(0,$key,$value)
+            $taskGroup.Tasks.Insert(0,$key,$value)
         
         }
-        elseif('add-DevOpsPlanStepAfter' -eq $PSCmdlet.ParameterSetName){
+        elseif('add-TaskAfter' -eq $PSCmdlet.ParameterSetName){
 
-            $indexOfAfter = Get-IndexOfKeyInOrderedDictionary -Key $After -OrderedDictionary $devOpsPlan.Steps
-            # ensure step with key $After exists
+            $indexOfAfter = Get-IndexOfKeyInOrderedDictionary -Key $After -OrderedDictionary $taskGroup.Tasks
+            # ensure task with key $After exists
             if($indexOfAfter -lt 0){
-                throw "A DevOps step with name $After could not be found."
+                throw "A task with name $After could not be found."
             }
-            $devOpsPlan.Steps.Insert($indexOfAfter + 1,$key,$value)
+            $taskGroup.Tasks.Insert($indexOfAfter + 1,$key,$value)
         
         }
-        elseif('add-DevOpsPlanStepBefore' -eq $PSCmdlet.ParameterSetName){        
+        elseif('add-TaskBefore' -eq $PSCmdlet.ParameterSetName){        
         
-            $indexOfBefore = Get-IndexOfKeyInOrderedDictionary -Key $Before -OrderedDictionary $devOpsPlan.Steps
-            # ensure step with key $Before exists
+            $indexOfBefore = Get-IndexOfKeyInOrderedDictionary -Key $Before -OrderedDictionary $taskGroup.Tasks
+            # ensure task with key $Before exists
             if($indexOfBefore -lt 0){
-                throw "A DevOps step with name $Before could not be found."
+                throw "A task with name $Before could not be found."
             }
-            $devOpsPlan.Steps.Insert($indexOfBefore,$key,$value)
+            $taskGroup.Tasks.Insert($indexOfBefore,$key,$value)
         
         }
         else{
         
-            # by default add as last step
-            $devOpsPlan.Steps.Add($key, $value)        
+            # by default add as last task
+            $taskGroup.Tasks.Add($key, $value)        
         }
 
-Write-Debug "saving DevOps plan"
-        Save-DevOpsPlan -DevOpsPlan $devOpsPlan -ProjectRootDirPath $ProjectRootDirPath    
+Write-Debug "saving task group"
+        Save-TaskGroup -TaskGroup $taskGroup -ProjectRootDirPath $ProjectRootDirPath    
 
     }
 }
 
-function Set-DevOpsPlanParameters(
+function Set-PoshDevOpsTaskParameters(
 
 [string]
 [ValidateNotNullOrEmpty()]
 [Parameter(
     Mandatory=$true)]
-$PoshDevOpsStepName,
+$PoshDevOpsTaskName,
 
 [hashtable]
 [Parameter(
@@ -285,22 +284,22 @@ $Parameters,
 $ProjectRootDirPath = '.'){
     <#
         .SYNOPSIS
-        Sets configurable parameters of a DevOps step
+        Sets configurable parameters of a task
         
         .EXAMPLE
-        Set-DevOpsPlanParameters -PoshDevOpsStepName "GitClone" -Parameters @{GitParameters=@("status")} -Force
+        Set-PoshDevOpsTaskParameters -PoshDevOpsTaskName "GitClone" -Parameters @{GitParameters=@("status")} -Force
         
         Description:
 
-        This command sets a parameter (named "GitParameters") for a DevOps step (named "GitClone") to @("status")
+        This command sets a parameter (named "GitParameters") for a task (named "GitClone") to @("status")
     #>
 
-    $devOpsPlan = Get-DevOpsPlan -ProjectRootDirPath $ProjectRootDirPath
-    $ciStep = $devOpsPlan.Steps.$PoshDevOpsStepName
+    $taskGroup = Get-PoshDevOpsTaskGroup -ProjectRootDirPath $ProjectRootDirPath
+    $ciTask = $taskGroup.Tasks.$PoshDevOpsTaskName
     $parametersPropertyName = "Parameters"
 
-Write-Debug "Checking DevOps step `"$PoshDevOpsStepName`" for property `"$parametersPropertyName`""
-    $parametersPropertyValue = $ciStep.$parametersPropertyName    
+Write-Debug "Checking task `"$PoshDevOpsTaskName`" for property `"$parametersPropertyName`""
+    $parametersPropertyValue = $ciTask.$parametersPropertyName    
     if($parametersPropertyValue){
         foreach($parameter in $Parameters.GetEnumerator()){
 
@@ -313,7 +312,7 @@ Write-Debug "Checking if parameter `"$parameterName`" previously set"
 Write-Debug "Found parameter `"$parameterName`" previously set to `"$($previousParameterValue|Out-String)`""
 $confirmationPromptQuery = 
 @"
-For DevOps step `"$PoshDevOpsStepName`",
+For task `"$PoshDevOpsTaskName`",
 are you sure you want to change the value of parameter `"$parameterName`"?
     old value: $($previousParameterValue|Out-String)
     new value: $($parameterValue|Out-String)
@@ -333,17 +332,17 @@ Write-Debug "Setting parameter `"$parameterName`" = `"$($parameterValue|Out-Stri
     else {        
 Write-Debug `
 @"
-Property `"$parametersPropertyName`" has not previously been set for DevOps step `"$PoshDevOpsStepName`"
+Property `"$parametersPropertyName`" has not previously been set for task `"$PoshDevOpsTaskName`"
 Adding with value:
 $($Parameters|Out-String)
 "@
-        Add-Member -InputObject $ciStep -MemberType 'NoteProperty' -Name $parametersPropertyName -Value $Parameters -Force
+        Add-Member -InputObject $ciTask -MemberType 'NoteProperty' -Name $parametersPropertyName -Value $Parameters -Force
     }
     
-    Save-DevOpsPlan -DevOpsPlan $devOpsPlan -ProjectRootDirPath $ProjectRootDirPath
+    Save-TaskGroup -TaskGroup $taskGroup -ProjectRootDirPath $ProjectRootDirPath
 }
 
-function Remove-DevOpsPlanStep(
+function Remove-PoshDevOpsTask(
 [string]
 [ValidateNotNullOrEmpty()]
 [Parameter(
@@ -358,42 +357,42 @@ $Name,
     ValueFromPipelineByPropertyName=$true)]
 $ProjectRootDirPath = '.'){
 
-    $confirmationPromptQuery = "Are you sure you want to delete the DevOps step with name $Name`?"
-    $confirmationPromptCaption = 'Confirm DevOps step removal'
+    $confirmationPromptQuery = "Are you sure you want to delete the task with name $Name`?"
+    $confirmationPromptCaption = 'Confirm task removal'
 
     if($Force.IsPresent -or $PSCmdlet.ShouldContinue($confirmationPromptQuery,$confirmationPromptCaption)){
 
-        $devOpsPlan = Get-DevOpsPlan -ProjectRootDirPath $ProjectRootDirPath
-Write-Debug "Removing DevOps step $Name"
-        $devOpsPlan.Steps.Remove($Name)
-        Save-DevOpsPlan -DevOpsPlan $devOpsPlan -ProjectRootDirPath $ProjectRootDirPath
+        $taskGroup = Get-PoshDevOpsTaskGroup -ProjectRootDirPath $ProjectRootDirPath
+Write-Debug "Removing task $Name"
+        $taskGroup.Tasks.Remove($Name)
+        Save-TaskGroup -TaskGroup $taskGroup -ProjectRootDirPath $ProjectRootDirPath
     }
 
 }
 
-function New-DevOpsPlan(
+function New-PoshDevOpsTaskGroup(
 [string]
 [Parameter(
     ValueFromPipeline=$true,
     ValueFromPipelineByPropertyName=$true)]
 $ProjectRootDirPath = '.'){
-    $devOpsPlanDirPath = "$(Resolve-Path $ProjectRootDirPath)\.PoshDevOps"
+    $taskGroupDirPath = "$(Resolve-Path $ProjectRootDirPath)\.PoshDevOps"
 
-    if(!(Test-Path $devOpsPlanDirPath)){    
+    if(!(Test-Path $taskGroupDirPath)){    
         $templatesDirPath = "$PSScriptRoot\Templates"
 
-Write-Debug "Creating a directory for the DevOps plan at path $devOpsPlanDirPath"
-        New-Item -ItemType Directory -Path $devOpsPlanDirPath
+Write-Debug "Creating a directory for the task group at path $taskGroupDirPath"
+        New-Item -ItemType Directory -Path $taskGroupDirPath
 
-Write-Debug "Adding default files to path $devOpsPlanDirPath"
-        Copy-Item -Path "$templatesDirPath\DevOpsPlan.psd1" $devOpsPlanDirPath
+Write-Debug "Adding default files to path $taskGroupDirPath"
+        Copy-Item -Path "$templatesDirPath\TaskGroup.psd1" $taskGroupDirPath
     }
     else{        
-throw ".PoshDevOps directory already exists at $devOpsPlanDirPath. If you are trying to recreate your DevOps plan from scratch you must invoke Remove-DevOpsPlan first"
+throw ".PoshDevOps directory already exists at $taskGroupDirPath. If you are trying to recreate your task group from scratch you must invoke Remove-PoshDevOpsTaskGroup first"
     }
 }
 
-function Remove-DevOpsPlan(
+function Remove-PoshDevOpsTaskGroup(
 [switch]$Force,
 [string]
 [Parameter(
@@ -401,17 +400,17 @@ function Remove-DevOpsPlan(
     ValueFromPipelineByPropertyName=$true)]
 $ProjectRootDirPath = '.'){
     
-    $devOpsPlanDirPath = Resolve-Path "$ProjectRootDirPath\.PoshDevOps"
+    $taskGroupDirPath = Resolve-Path "$ProjectRootDirPath\.PoshDevOps"
 
-    $confirmationPromptQuery = "Are you sure you want to delete the DevOps plan located at $DevOpsPlanDirPath`?"
-    $confirmationPromptCaption = 'Confirm DevOps plan removal'
+    $confirmationPromptQuery = "Are you sure you want to delete the task group located at $TaskGroupDirPath`?"
+    $confirmationPromptCaption = 'Confirm task group removal'
 
     if($Force.IsPresent -or $PSCmdlet.ShouldContinue($confirmationPromptQuery,$confirmationPromptCaption)){
-        Remove-Item -Path $devOpsPlanDirPath -Recurse -Force
+        Remove-Item -Path $taskGroupDirPath -Recurse -Force
     }
 }
 
-function Invoke-DevOpsPlan(
+function Invoke-PoshDevOpsTaskGroup(
 
 [Hashtable]
 [Parameter(
@@ -429,75 +428,75 @@ $PackageSources = $defaultPackageSources,
     ValueFromPipelineByPropertyName=$true)]
 $ProjectRootDirPath='.'){
     
-    $devOpsPlanDirPath = Resolve-Path "$ProjectRootDirPath\.PoshDevOps"
-    $devOpsPlanFilePath = "$devOpsPlanDirPath\DevOpsPlan.psd1"
-    $packagesDirPath = "$devOpsPlanDirPath\Packages"
+    $taskGroupDirPath = Resolve-Path "$ProjectRootDirPath\.PoshDevOps"
+    $taskGroupFilePath = "$taskGroupDirPath\TaskGroup.psd1"
+    $packagesDirPath = "$taskGroupDirPath\Packages"
 
-    if(Test-Path $devOpsPlanFilePath){
+    if(Test-Path $taskGroupFilePath){
 
         EnsureNuGetInstalled
 
-        $DevOpsPlan = Get-DevOpsPlan -ProjectRootDirPath $ProjectRootDirPath
+        $TaskGroup = Get-PoshDevOpsTaskGroup -ProjectRootDirPath $ProjectRootDirPath
 
-        foreach($step in $DevOpsPlan.Steps.Values){
+        foreach($task in $TaskGroup.Tasks.Values){
                     
-            if($Parameters.($step.Name)){
+            if($Parameters.($task.Name)){
 
-                if($step.Parameters){
+                if($task.Parameters){
 
 Write-Debug "Adding union of passed parameters and archived parameters to pipeline. Passed parameters will override archived parameters"
                 
-                    $stepParameters = Get-UnionOfHashtables -Source1 $Parameters.($step.Name) -Source2 $step.Parameters
+                    $taskParameters = Get-UnionOfHashtables -Source1 $Parameters.($task.Name) -Source2 $task.Parameters
 
                 }
                 else{
 
 Write-Debug "Adding passed parameters to pipeline"
 
-                    $stepParameters = $Parameters.($step.Name)
+                    $taskParameters = $Parameters.($task.Name)
             
                 }
 
             }
-            elseif($step.Parameters){
+            elseif($task.Parameters){
 
 Write-Debug "Adding archived parameters to pipeline"    
-                $stepParameters = $step.Parameters
+                $taskParameters = $task.Parameters
 
             }
             else{
                 
-                $stepParameters = @{}
+                $taskParameters = @{}
             
             }
 
 Write-Debug "Adding automatic parameters to pipeline"
             
-            $stepParameters.PoshDevOpsProjectRootDirPath = (Resolve-Path $ProjectRootDirPath)
-            $stepParameters.PoshDevOpsStepName = $step.Name
+            $taskParameters.PoshDevOpsProjectRootDirPath = (Resolve-Path $ProjectRootDirPath)
+            $taskParameters.PoshDevOpsTaskName = $task.Name
 
-Write-Debug "Ensuring DevOps step module package installed"
-            nuget install $step.PackageId -Version $step.PackageVersion -OutputDirectory $packagesDirPath -Source $PackageSources -NonInteractive
+Write-Debug "Ensuring task module package installed"
+            nuget install $task.PackageId -Version $task.PackageVersion -OutputDirectory $packagesDirPath -Source $PackageSources -NonInteractive
 
-            $moduleDirPath = "$packagesDirPath\$($step.PackageId).$($step.PackageVersion)\tools\$($step.PackageId)"
+            $moduleDirPath = "$packagesDirPath\$($task.PackageId).$($task.PackageVersion)\tools\$($task.PackageId)"
 Write-Debug "Importing module located at: $moduleDirPath"
             Import-Module $moduleDirPath -Force
 
 Write-Debug `
 @"
-Invoking DevOps step $($step.Name) with parameters: 
-$($stepParameters|Out-String)
+Invoking task $($task.Name) with parameters: 
+$($taskParameters|Out-String)
 "@
             # Parameters must be PSCustomObject so [Parameter(ValueFromPipelineByPropertyName = $true)] works
-            [PSCustomObject]$stepParameters.Clone() | Invoke-PoshDevOpsTask
+            [PSCustomObject]$taskParameters.Clone() | Invoke-PoshDevOpsTask
 
         }
     }
     else{
 
-throw "DevOpsPlan.psd1 not found at: $devOpsPlanFilePath"
+throw "TaskGroup.psd1 not found at: $taskGroupFilePath"
 
     }
 }
 
-Export-ModuleMember -Function Invoke-DevOpsPlan,New-DevOpsPlan,Remove-DevOpsPlan,Add-DevOpsPlanStep,Set-DevOpsPlanParameters,Remove-DevOpsPlanStep,Get-DevOpsPlan
+Export-ModuleMember -Function Invoke-PoshDevOpsTaskGroup,New-PoshDevOpsTaskGroup,Remove-PoshDevOpsTaskGroup,Add-PoshDevOpsTask,Set-PoshDevOpsTaskParameters,Remove-PoshDevOpsTask,Get-PoshDevOpsTaskGroup
