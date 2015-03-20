@@ -13,10 +13,10 @@ function Invoke-PoshDevOpsTask(
 ```
 
 ###2 Automatic Parameters
-Posh-CI will automatically populate certain DevOps task parameters, the names of which always start with the prefix `PoshDevOps`.
+PoshDevOps will automatically populate certain DevOps task parameters, the names of which always start with the prefix `PoshDevOps`.
 These parameters provide information about the executing ci-plan/DevOps task. 
 
-To use automatic parameters, add parameters matching the type and name of defined automatic parameters to your Invoke-PoshDevOpsTask method signature and Posh-CI will populate them at invocation time.
+To use automatic parameters, add parameters matching the type and name of defined automatic parameters to your Invoke-PoshDevOpsTask method signature and PoshDevOps will populate them at invocation time.
 
 Example:
 ```PowerShell
