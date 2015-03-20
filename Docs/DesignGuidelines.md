@@ -14,4 +14,4 @@ PowerShell usage must be consistent with, [MSDN guidelines](https://msdn.microso
 
 ####2 CI-Steps
 #####2.1 Use string[] For Parameters Being Passed To Things Outside Powershell
-When defining a ci-step, if a parameter will be used asa pass-through to something outside Powershell (example: invoking a .exe), make the parameter of type string[]. For a great background on why see [powershell-call-operator-using-an-array-of-parameters-to-solve-all-your-quoting-problems](https://com2kid.wordpress.com/2011/09/25/powershell-call-operator-using-an-array-of-parameters-to-solve-all-your-quoting-problems/)
+When defining a DevOps step, if a parameter will be used asa pass-through to something outside Powershell (example: invoking a .exe), make the parameter of type string[]. For a great background on why see [powershell-call-operator-using-an-array-of-parameters-to-solve-all-your-quoting-problems](https://com2kid.wordpress.com/2011/09/25/powershell-call-operator-using-an-array-of-parameters-to-solve-all-your-quoting-problems/)

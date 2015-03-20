@@ -13,8 +13,8 @@ Build/Deployment services today are extremely powerfull and easy to use. However
 ######+2 ci-plan implemented as plain old PowerShell modules
 ######+3 ability to run your ci-plan on anything capable of running PowerShell
 ######+4 no expenses (as long as you have something capable of running PowerShell ;))
-######+5 all ci-steps are implemented as PowerShell modules
-######+6 all ci-steps are package based and inherently reuseable
+######+5 all DevOps steps are implemented as PowerShell modules
+######+6 all DevOps steps are package based and inherently reuseable
 
 ###How do I install it?
 Make sure you have [Chocolatey](https://chocolatey.org) installed, then from PowerShell run
@@ -24,36 +24,36 @@ Import-Module "C:\Program Files\PoshDevOps\Modules\PoshDevOps" -Force
 ```
 ###In a nutshell, hows it work?
 ***Conceptually:***
-- `ci plans` contain an ordered set of steps
-- `ci steps` are arbitrary tasks which are implemented as PowerShell modules and packaged as .nupkg's.
+- `DevOps plans` contain an ordered set of steps
+- `DevOps steps` are arbitrary tasks which are implemented as PowerShell modules and packaged as .nupkg's.
 
 ***Operationally:***
 - everything takes place within PowerShell
-- as you [CRUD](http://en.wikipedia.org/wiki/Create,_read,_update_and_delete) your `ci plan` a snapshot is maintained in a `CIPlanArchive.psd1` file.
-- at any time you can invoke your `ci plan` and pass in any variables your `ci steps` rely on
+- as you [CRUD](http://en.wikipedia.org/wiki/Create,_read,_update_and_delete) your `DevOps plan` a snapshot is maintained in a `DevOpsPlan.psd1` file.
+- at any time you can invoke your `DevOps plan` and pass in any variables your `DevOps steps` rely on
 
 ###How do I get started?
 navigate to the root directory of your project:
 ```POWERSHELL
 Set-Location "PATH-TO-ROOT-DIR-OF-YOUR-PROJECT"
 ```
-create a new ci plan:
+create a new DevOps plan:
 ```POWERSHELL
-New-CIPlan
+New-DevOpsPlan
 ```
 add a step to your plan:
 ```POWERSHELL
-Add-PoshDevOpsTask -Name "Compile" -ModulePath "PATH-TO-DIR-CONTAINING-MODULE"
+Add-DevOpsPlanStep -Name "Compile" -ModulePath "PATH-TO-DIR-CONTAINING-MODULE"
 ```
-invoke your ci plan:
+invoke your DevOps plan:
 ```POWERSHELL
-@{Compile=@{Var1='Value1';Var2='Value2'}} | Invoke-CIPlan
+@{Compile=@{Var1='Value1';Var2='Value2'}} | Invoke-DevOpsPlan
 ```
 
-###How do I distribute my ci plan?
-When you run `New-CIPlan` it creates a folder named `.PoshDevOps` at the root of your project. From then on all modifications to your ci plan are maintained inside that folder so your .PoshDevOps folder is all you need!
+###How do I distribute my DevOps plan?
+When you run `New-DevOpsPlan` it creates a folder named `.PoshDevOps` at the root of your project. From then on all modifications to your DevOps plan are maintained inside that folder so your .PoshDevOps folder is all you need!
 
-(pro-tip: check your .PoshDevOps folder in to source control to version your ci plan along with your code.)
+(pro-tip: check your .PoshDevOps folder in to source control to version your DevOps plan along with your code.)
 
 ###Where's the documentation?
 [Here](Docs)

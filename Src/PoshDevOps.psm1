@@ -13,7 +13,7 @@ Write-Debug "installing nuget.commandline"
     }
 }
 
-function Get-CIPlan(
+function Get-DevOpsPlan(
 [string]
 [Parameter(
     ValueFromPipeline=$true,
@@ -21,17 +21,17 @@ function Get-CIPlan(
 $ProjectRootDirPath = '.'){
     <#
         .SYNOPSIS
-        parses a ci plan archive and returns the archived ci plan
+        parses a DevOps plan file
     #>
 
-    $ciPlanFilePath = Resolve-Path "$ProjectRootDirPath\.PoshDevOps\CIPlanArchive.psd1"   
-Write-Output (Get-Content $ciPlanFilePath | Out-String | ConvertFrom-Pson)
+    $devOpsPlanFilePath = Resolve-Path "$ProjectRootDirPath\.PoshDevOps\DevOpsPlan.psd1"   
+Write-Output (Get-Content $devOpsPlanFilePath | Out-String | ConvertFrom-Pson)
 
 }
 
-function Save-CIPlan(
+function Save-DevOpsPlan(
 [PsCustomObject]
-$CIPlan,
+$DevOpsPlan,
 
 [string]
 [Parameter(
@@ -40,12 +40,12 @@ $CIPlan,
 $ProjectRootDirPath = '.'){
     <#
         .SYNOPSIS
-        an internal utility function to save a runtime CIPlan object as 
-        a ci plan archive.
+        an internal utility function to save a runtime DevOpsPlan object as 
+        a DevOps plan archive.
     #>
     
-    $ciPlanFilePath = Resolve-Path "$ProjectRootDirPath\.PoshDevOps\CIPlanArchive.psd1"    
-    Set-Content $ciPlanFilePath -Value (ConvertTo-Pson -InputObject $CIPlan -Depth 12 -Layers 12 -Strict)
+    $devOpsPlanFilePath = Resolve-Path "$ProjectRootDirPath\.PoshDevOps\DevOpsPlan.psd1"    
+    Set-Content $devOpsPlanFilePath -Value (ConvertTo-Pson -InputObject $DevOpsPlan -Depth 12 -Layers 12 -Strict)
 }
 
 function Get-UnionOfHashtables(
@@ -124,9 +124,9 @@ throw "no versions of $PackageId could be located.` searched: $PackageSources"
 Write-Output ([Array]($versions| Sort-Object -Descending))[0]
 }
 
-function Add-PoshDevOpsTask(
+function Add-DevOpsPlanStep(
 [CmdletBinding(
-    DefaultParameterSetName="add-PoshDevOpsTaskLast")]
+    DefaultParameterSetName="add-DevOpsPlanStepLast")]
 
 [string]
 [ValidateNotNullOrEmpty()]
@@ -145,24 +145,24 @@ $PackageVersion,
 [switch]
 [Parameter(
     Mandatory=$true,
-    ParameterSetName='add-PoshDevOpsTaskFirst')]
+    ParameterSetName='add-DevOpsPlanStepFirst')]
 $First,
 
 [switch]
 [Parameter(
-    ParameterSetName='add-PoshDevOpsTaskLast')]
+    ParameterSetName='add-DevOpsPlanStepLast')]
 $Last,
 
 [string]
 [Parameter(
     Mandatory=$true,
-    ParameterSetName='add-PoshDevOpsTaskAfter')]
+    ParameterSetName='add-DevOpsPlanStepAfter')]
 $After,
 
 [string]
 [Parameter(
     Mandatory=$true,
-    ParameterSetName='add-PoshDevOpsTaskBefore')]
+    ParameterSetName='add-DevOpsPlanStepBefore')]
 $Before,
 
 [string[]]
@@ -176,43 +176,43 @@ $ProjectRootDirPath = '.'){
 
     <#
         .SYNOPSIS
-        Adds a new ci step to a ci plan
+        Adds a new step to a DevOps plan
         
         .EXAMPLE
-        Add-PoshDevOpsTask -Name "LastStep" -PackageId "DeployNupkgToAzureWebsites" -PackageVersion "0.0.3"
+        Add-DevOpsPlanStep -Name "LastStep" -PackageId "DeployNupkgToAzureWebsites" -PackageVersion "0.0.3"
         
         Description:
 
-        This command adds a new ci step (named LastStep) after all existing ci steps
+        This command adds a DevOps plan step (named LastStep) after all existing steps
 
         .EXAMPLE
-        Add-PoshDevOpsTask -Name "FirstStep" -PackageId "DeployNupkgToAzureWebsites" -First
+        Add-DevOpsPlanStep -Name "FirstStep" -PackageId "DeployNupkgToAzureWebsites" -First
 
         Description:
 
-        This command adds a new ci step (named FirstStep) before all existing ci steps
+        This command adds a DevOps plan step (named FirstStep) before all existing steps
 
         .EXAMPLE
-        Add-PoshDevOpsTask -Name "AfterSecondStep" -PackageId "DeployNupkgToAzureWebsites" -After "SecondStep"
+        Add-DevOpsPlanStep -Name "AfterSecondStep" -PackageId "DeployNupkgToAzureWebsites" -After "SecondStep"
 
         Description:
 
-        This command adds a new ci step (named AfterSecondStep) after the existing ci step named SecondStep
+        This command adds a DevOps plan step (named AfterSecondStep) after the existing step named SecondStep
 
         .EXAMPLE
-        Add-PoshDevOpsTask -Name "BeforeSecondStep" -PackageId "DeployNupkgToAzureWebsites" -Before "SecondStep"
+        Add-DevOpsPlanStep -Name "BeforeSecondStep" -PackageId "DeployNupkgToAzureWebsites" -Before "SecondStep"
 
         Description:
 
-        This command adds a new ci step (named BeforeSecondStep) before the existing ci step named SecondStep
+        This command adds a DevOps plan step (named BeforeSecondStep) before the existing step named SecondStep
 
     #>
 
-    $ciPlan = Get-CIPlan -ProjectRootDirPath $ProjectRootDirPath
+    $devOpsPlan = Get-DevOpsPlan -ProjectRootDirPath $ProjectRootDirPath
     
-    if($ciPlan.Steps.Contains($Name)){
+    if($devOpsPlan.Steps.Contains($Name)){
 
-throw "A ci step with name $Name already exists.`n Tip: You can remove the existing step by invoking Remove-PoshDevOpsTask"
+throw "A step with name $Name already exists.`n Tip: You can remove the existing step by invoking Remove-DevOpsPlanStep"
             
     }
     else{
@@ -228,48 +228,48 @@ Write-Debug "using greatest available module version : $PackageVersion"
 
         if($First.IsPresent){
         
-            $ciPlan.Steps.Insert(0,$key,$value)
+            $devOpsPlan.Steps.Insert(0,$key,$value)
         
         }
-        elseif('add-PoshDevOpsTaskAfter' -eq $PSCmdlet.ParameterSetName){
+        elseif('add-DevOpsPlanStepAfter' -eq $PSCmdlet.ParameterSetName){
 
-            $indexOfAfter = Get-IndexOfKeyInOrderedDictionary -Key $After -OrderedDictionary $ciPlan.Steps
+            $indexOfAfter = Get-IndexOfKeyInOrderedDictionary -Key $After -OrderedDictionary $devOpsPlan.Steps
             # ensure step with key $After exists
             if($indexOfAfter -lt 0){
-                throw "A ci step with name $After could not be found."
+                throw "A DevOps step with name $After could not be found."
             }
-            $ciPlan.Steps.Insert($indexOfAfter + 1,$key,$value)
+            $devOpsPlan.Steps.Insert($indexOfAfter + 1,$key,$value)
         
         }
-        elseif('add-PoshDevOpsTaskBefore' -eq $PSCmdlet.ParameterSetName){        
+        elseif('add-DevOpsPlanStepBefore' -eq $PSCmdlet.ParameterSetName){        
         
-            $indexOfBefore = Get-IndexOfKeyInOrderedDictionary -Key $Before -OrderedDictionary $ciPlan.Steps
+            $indexOfBefore = Get-IndexOfKeyInOrderedDictionary -Key $Before -OrderedDictionary $devOpsPlan.Steps
             # ensure step with key $Before exists
             if($indexOfBefore -lt 0){
-                throw "A ci step with name $Before could not be found."
+                throw "A DevOps step with name $Before could not be found."
             }
-            $ciPlan.Steps.Insert($indexOfBefore,$key,$value)
+            $devOpsPlan.Steps.Insert($indexOfBefore,$key,$value)
         
         }
         else{
         
             # by default add as last step
-            $ciPlan.Steps.Add($key, $value)        
+            $devOpsPlan.Steps.Add($key, $value)        
         }
 
-Write-Debug "saving ci plan"
-        Save-CIPlan -CIPlan $ciPlan -ProjectRootDirPath $ProjectRootDirPath    
+Write-Debug "saving DevOps plan"
+        Save-DevOpsPlan -DevOpsPlan $devOpsPlan -ProjectRootDirPath $ProjectRootDirPath    
 
     }
 }
 
-function Set-PoshDevOpsTaskParameters(
+function Set-DevOpsPlanParameters(
 
 [string]
 [ValidateNotNullOrEmpty()]
 [Parameter(
     Mandatory=$true)]
-$PoshDevOpsTaskName,
+$PoshDevOpsStepName,
 
 [hashtable]
 [Parameter(
@@ -285,21 +285,21 @@ $Parameters,
 $ProjectRootDirPath = '.'){
     <#
         .SYNOPSIS
-        Sets configurable parameters of a ci step
+        Sets configurable parameters of a DevOps step
         
         .EXAMPLE
-        Set-PoshDevOpsTaskParameters -PoshDevOpsTaskName "GitClone" -Parameters @{GitParameters=@("status")} -Force
+        Set-DevOpsPlanParameters -PoshDevOpsStepName "GitClone" -Parameters @{GitParameters=@("status")} -Force
         
         Description:
 
-        This command sets a parameter (named "GitParameters") for a ci step (named "GitClone") to @("status")
+        This command sets a parameter (named "GitParameters") for a DevOps step (named "GitClone") to @("status")
     #>
 
-    $ciPlan = Get-CIPlan -ProjectRootDirPath $ProjectRootDirPath
-    $ciStep = $ciPlan.Steps.$PoshDevOpsTaskName
+    $devOpsPlan = Get-DevOpsPlan -ProjectRootDirPath $ProjectRootDirPath
+    $ciStep = $devOpsPlan.Steps.$PoshDevOpsStepName
     $parametersPropertyName = "Parameters"
 
-Write-Debug "Checking ci step `"$PoshDevOpsTaskName`" for property `"$parametersPropertyName`""
+Write-Debug "Checking DevOps step `"$PoshDevOpsStepName`" for property `"$parametersPropertyName`""
     $parametersPropertyValue = $ciStep.$parametersPropertyName    
     if($parametersPropertyValue){
         foreach($parameter in $Parameters.GetEnumerator()){
@@ -313,7 +313,7 @@ Write-Debug "Checking if parameter `"$parameterName`" previously set"
 Write-Debug "Found parameter `"$parameterName`" previously set to `"$($previousParameterValue|Out-String)`""
 $confirmationPromptQuery = 
 @"
-For ci step `"$PoshDevOpsTaskName`",
+For DevOps step `"$PoshDevOpsStepName`",
 are you sure you want to change the value of parameter `"$parameterName`"?
     old value: $($previousParameterValue|Out-String)
     new value: $($parameterValue|Out-String)
@@ -333,17 +333,17 @@ Write-Debug "Setting parameter `"$parameterName`" = `"$($parameterValue|Out-Stri
     else {        
 Write-Debug `
 @"
-Property `"$parametersPropertyName`" has not previously been set for ci step `"$PoshDevOpsTaskName`"
+Property `"$parametersPropertyName`" has not previously been set for DevOps step `"$PoshDevOpsStepName`"
 Adding with value:
 $($Parameters|Out-String)
 "@
         Add-Member -InputObject $ciStep -MemberType 'NoteProperty' -Name $parametersPropertyName -Value $Parameters -Force
     }
     
-    Save-CIPlan -CIPlan $ciPlan -ProjectRootDirPath $ProjectRootDirPath
+    Save-DevOpsPlan -DevOpsPlan $devOpsPlan -ProjectRootDirPath $ProjectRootDirPath
 }
 
-function Remove-PoshDevOpsTask(
+function Remove-DevOpsPlanStep(
 [string]
 [ValidateNotNullOrEmpty()]
 [Parameter(
@@ -358,42 +358,42 @@ $Name,
     ValueFromPipelineByPropertyName=$true)]
 $ProjectRootDirPath = '.'){
 
-    $confirmationPromptQuery = "Are you sure you want to delete the CI step with name $Name`?"
-    $confirmationPromptCaption = 'Confirm ci step removal'
+    $confirmationPromptQuery = "Are you sure you want to delete the DevOps step with name $Name`?"
+    $confirmationPromptCaption = 'Confirm DevOps step removal'
 
     if($Force.IsPresent -or $PSCmdlet.ShouldContinue($confirmationPromptQuery,$confirmationPromptCaption)){
 
-        $ciPlan = Get-CIPlan -ProjectRootDirPath $ProjectRootDirPath
-Write-Debug "Removing ci step $Name"
-        $ciPlan.Steps.Remove($Name)
-        Save-CIPlan -CIPlan $ciPlan -ProjectRootDirPath $ProjectRootDirPath
+        $devOpsPlan = Get-DevOpsPlan -ProjectRootDirPath $ProjectRootDirPath
+Write-Debug "Removing DevOps step $Name"
+        $devOpsPlan.Steps.Remove($Name)
+        Save-DevOpsPlan -DevOpsPlan $devOpsPlan -ProjectRootDirPath $ProjectRootDirPath
     }
 
 }
 
-function New-CIPlan(
+function New-DevOpsPlan(
 [string]
 [Parameter(
     ValueFromPipeline=$true,
     ValueFromPipelineByPropertyName=$true)]
 $ProjectRootDirPath = '.'){
-    $ciPlanDirPath = "$(Resolve-Path $ProjectRootDirPath)\.PoshDevOps"
+    $devOpsPlanDirPath = "$(Resolve-Path $ProjectRootDirPath)\.PoshDevOps"
 
-    if(!(Test-Path $ciPlanDirPath)){    
+    if(!(Test-Path $devOpsPlanDirPath)){    
         $templatesDirPath = "$PSScriptRoot\Templates"
 
-Write-Debug "Creating a directory for the ci plan at path $ciPlanDirPath"
-        New-Item -ItemType Directory -Path $ciPlanDirPath
+Write-Debug "Creating a directory for the DevOps plan at path $devOpsPlanDirPath"
+        New-Item -ItemType Directory -Path $devOpsPlanDirPath
 
-Write-Debug "Adding default files to path $ciPlanDirPath"
-        Copy-Item -Path "$templatesDirPath\CIPlanArchive.psd1" $ciPlanDirPath
+Write-Debug "Adding default files to path $devOpsPlanDirPath"
+        Copy-Item -Path "$templatesDirPath\DevOpsPlan.psd1" $devOpsPlanDirPath
     }
     else{        
-throw ".PoshDevOps directory already exists at $ciPlanDirPath. If you are trying to recreate your ci plan from scratch you must invoke Remove-CIPlan first"
+throw ".PoshDevOps directory already exists at $devOpsPlanDirPath. If you are trying to recreate your DevOps plan from scratch you must invoke Remove-DevOpsPlan first"
     }
 }
 
-function Remove-CIPlan(
+function Remove-DevOpsPlan(
 [switch]$Force,
 [string]
 [Parameter(
@@ -401,17 +401,17 @@ function Remove-CIPlan(
     ValueFromPipelineByPropertyName=$true)]
 $ProjectRootDirPath = '.'){
     
-    $ciPlanDirPath = Resolve-Path "$ProjectRootDirPath\.PoshDevOps"
+    $devOpsPlanDirPath = Resolve-Path "$ProjectRootDirPath\.PoshDevOps"
 
-    $confirmationPromptQuery = "Are you sure you want to delete the CI plan located at $CIPlanDirPath`?"
-    $confirmationPromptCaption = 'Confirm ci plan removal'
+    $confirmationPromptQuery = "Are you sure you want to delete the DevOps plan located at $DevOpsPlanDirPath`?"
+    $confirmationPromptCaption = 'Confirm DevOps plan removal'
 
     if($Force.IsPresent -or $PSCmdlet.ShouldContinue($confirmationPromptQuery,$confirmationPromptCaption)){
-        Remove-Item -Path $ciPlanDirPath -Recurse -Force
+        Remove-Item -Path $devOpsPlanDirPath -Recurse -Force
     }
 }
 
-function Invoke-CIPlan(
+function Invoke-DevOpsPlan(
 
 [Hashtable]
 [Parameter(
@@ -429,17 +429,17 @@ $PackageSources = $defaultPackageSources,
     ValueFromPipelineByPropertyName=$true)]
 $ProjectRootDirPath='.'){
     
-    $ciPlanDirPath = Resolve-Path "$ProjectRootDirPath\.PoshDevOps"
-    $ciPlanFilePath = "$ciPlanDirPath\CIPlanArchive.psd1"
-    $packagesDirPath = "$ciPlanDirPath\Packages"
+    $devOpsPlanDirPath = Resolve-Path "$ProjectRootDirPath\.PoshDevOps"
+    $devOpsPlanFilePath = "$devOpsPlanDirPath\DevOpsPlan.psd1"
+    $packagesDirPath = "$devOpsPlanDirPath\Packages"
 
-    if(Test-Path $ciPlanFilePath){
+    if(Test-Path $devOpsPlanFilePath){
 
         EnsureNuGetInstalled
 
-        $CIPlan = Get-CIPlan -ProjectRootDirPath $ProjectRootDirPath
+        $DevOpsPlan = Get-DevOpsPlan -ProjectRootDirPath $ProjectRootDirPath
 
-        foreach($step in $CIPlan.Steps.Values){
+        foreach($step in $DevOpsPlan.Steps.Values){
                     
             if($Parameters.($step.Name)){
 
@@ -476,7 +476,7 @@ Write-Debug "Adding automatic parameters to pipeline"
             $stepParameters.PoshDevOpsProjectRootDirPath = (Resolve-Path $ProjectRootDirPath)
             $stepParameters.PoshDevOpsStepName = $step.Name
 
-Write-Debug "Ensuring ci-step module package installed"
+Write-Debug "Ensuring DevOps step module package installed"
             nuget install $step.PackageId -Version $step.PackageVersion -OutputDirectory $packagesDirPath -Source $PackageSources -NonInteractive
 
             $moduleDirPath = "$packagesDirPath\$($step.PackageId).$($step.PackageVersion)\tools\$($step.PackageId)"
@@ -485,7 +485,7 @@ Write-Debug "Importing module located at: $moduleDirPath"
 
 Write-Debug `
 @"
-Invoking ci-step $($step.Name) with parameters: 
+Invoking DevOps step $($step.Name) with parameters: 
 $($stepParameters|Out-String)
 "@
             # Parameters must be PSCustomObject so [Parameter(ValueFromPipelineByPropertyName = $true)] works
@@ -495,9 +495,9 @@ $($stepParameters|Out-String)
     }
     else{
 
-throw "CIPlanArchive.psd1 not found at: $ciPlanFilePath"
+throw "DevOpsPlan.psd1 not found at: $devOpsPlanFilePath"
 
     }
 }
 
-Export-ModuleMember -Function Invoke-CIPlan,New-CIPlan,Remove-CIPlan,Add-PoshDevOpsTask,Set-PoshDevOpsTaskParameters,Remove-PoshDevOpsTask,Get-CIPlan
+Export-ModuleMember -Function Invoke-DevOpsPlan,New-DevOpsPlan,Remove-DevOpsPlan,Add-DevOpsPlanStep,Set-DevOpsPlanParameters,Remove-DevOpsPlanStep,Get-DevOpsPlan
