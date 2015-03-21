@@ -1,6 +1,9 @@
 Write-Debug "Dot Sourcing $PSScriptRoot\PsonConverters.ps1"
 . "$PSScriptRoot\PsonConverters.ps1"
 
+Write-Debug "Dot Sourcing $PSScriptRoot\SemanticVersioning.ps1"
+. "$PSScriptRoot\SemanticVersioning.ps1"
+
 $defaultPackageSources = @('https://www.myget.org/F/poshdevops')
 
 function EnsureNuGetInstalled(){
@@ -95,46 +98,6 @@ $OrderedDictionary){
 Write-Output $indexOfKey
 }
 
-function Get-SortedSemanticVersions(
-[string[]]
-$SemanticVersions,
-[switch]
-$Descending){
-    <#
-        .SYNOPSIS
-            an internal utility function to sort version 1.0 semantic versions.
-            Note: v2 semantics will not be taken into account.
-    #>
-    $majorKey = "Major"
-    $minorKey = "Minor"
-    $patchKey = "Patch"
-    $preReleaseKey = "PreRelease"
-    $semanticVersionRegex = "(?<$majorKey>\d+)\.(?<$minorKey>\d+)\.(?<$patchKey>\d+)(?:-(?<$preReleaseKey>[0-9A-Za-z-.]*))?"
-        
-    $semanticVersionObjects = New-Object 'System.Collections.Generic.List[object]'
-    foreach($semanticVersionString in $SemanticVersions){
-        $semanticVersionString -match $semanticVersionRegex |Out-Null
-        $Matches.Remove(0)
-        $semanticVersionObjects.Add([PSCustomObject]$Matches)
-    }
-
-    $semanticVersionObjects `
-    | Sort-Object `
-        @{Expression={[int]$_.($majorKey)}},
-        @{Expression={[int]$_.($minorKey)}}, 
-        @{Expression={[int]$_.($patchKey)}},
-        @{Expression={
-            if(!$_.($preReleaseKey)){
-                '1'
-            }
-            else{            
-                # prefixing with 0 forces to sort lower than versions lacking pre-release identifiers
-                $preReleaseSortText = "0$($_.($preReleaseKey))"
-            }}} `
-        -Descending:$Descending `
-    | Write-Output
-}
-
 function Get-LatestPackageVersion(
 
 [string[]]
@@ -160,7 +123,7 @@ Write-Debug "response from $uri was: ` $versions"
 throw "no versions of $Id could be located.` searched: $Source"
     }
 
-Write-Output ([Array](Get-SortedSemanticVersions -SemanticVersions $versions))[0]
+Write-Output ([Array](Get-SortedSemanticVersions -InputArray $versions -Descending))[0]
 }
 
 function Add-PoshDevOpsTask(
@@ -517,7 +480,7 @@ Invoking nuget:
 
 }
 
-function Remove-PoshDevOpsPackageIfExists(
+function Uninstall-PoshDevOpsPackageIfExists(
 [string]
 [ValidateNotNullOrEmpty()]
 [Parameter(
@@ -642,7 +605,7 @@ $ProjectRootDirPath='.'){
 
         if($null -ne $updatedPackageVersion){
 
-            Remove-PoshDevOpsPackageIfExists -Id $task.PackageId -Version $task.PackageVersion -ProjectRootDirPath $ProjectRootDirPath
+            Uninstall-PoshDevOpsPackageIfExists -Id $task.PackageId -Version $task.PackageVersion -ProjectRootDirPath $ProjectRootDirPath
 
 Write-Debug `
 @"
