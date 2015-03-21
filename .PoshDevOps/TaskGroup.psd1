@@ -3,9 +3,9 @@
 		CreateChocolateyPackage = [PSCustomObject]@{
 			Name = [String]"CreateChocolateyPackage"; 
 			PackageId = [String]"CreateChocolateyPackage"; 
-			PackageVersion = [String]"0.0.21"
+			PackageVersion = [String]"0.0.25"
 		}; 
-		PushChocolateyPackage = [PSCustomObject]@{
+		<#PushChocolateyPackage = [PSCustomObject]@{
 			Name = [String]"PushChocolateyPackage"; 
 			PackageId = [String]"PushChocolateyPackage"; 
 			PackageVersion = [String]"0.0.11"; 
@@ -14,6 +14,6 @@
 					[String]".\Src\*"
 				)
 			}
-		}
+		}#>
 	}
 }

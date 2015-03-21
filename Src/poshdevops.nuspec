@@ -17,6 +17,7 @@
 		<projectUrl>https://github.com/PoshDevOps/PoshDevOps</projectUrl>
 	</metadata>	
 	<files>
-		<file src="**" target="tools" exclude="*.nuspec;chocolatey*.ps1" />
+		<file src="**" target="tools/PoshDevOps" exclude="*.nuspec;chocolateyInstall.ps1;chocolateyUninstall.ps1" />
+        <file src="chocolateyInstall.ps1;chocolateyUninstall.ps1" target="tools" />        
 	</files>
 </package>
