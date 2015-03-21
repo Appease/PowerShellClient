@@ -1,6 +1,6 @@
 try {    
     
-    . "$PSScriptRoot\Install.ps1"
+    . "$PSScriptRoot\PoshDevOps\Install.ps1"
 
 } catch {
 

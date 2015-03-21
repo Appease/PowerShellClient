@@ -1,6 +1,6 @@
 try {
 
-    . "$PSScriptRoot\Uninstall.ps1"
+    . "$PSScriptRoot\PoshDevOps\Uninstall.ps1"
 
 } catch {
 
