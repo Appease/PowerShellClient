@@ -8,10 +8,10 @@
 		PushChocolateyPackage = [PSCustomObject]@{
 			Name = [String]"PushChocolateyPackage"; 
 			PackageId = [String]"PushChocolateyPackage"; 
-			PackageVersion = [String]"0.0.9"; 
+			PackageVersion = [String]"0.0.11"; 
 			Parameters = [Hashtable]@{
 				IncludeNupkgFilePath = [String[]]@(
-					[String]".\*"
+					[String]".\Src\*"
 				)
 			}
 		}
