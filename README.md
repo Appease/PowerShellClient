@@ -1,6 +1,6 @@
 ###What problems does PoshDevOps attempt to solve?
 
-Build/Deployment services today are extremely powerfull and easy to use. However, if you throw your task group together in most of these services you are left with: 
+Build/Deployment services today are extremely powerfull and easy to use. However, if you throw your DevOps together in most of these services you are left with: 
 ######-1 lack of versioning side by side source code 
 ######-2 coupling of implementation to a proprietary build/deployment service.
 ######-3 no capability to run outside of a proprietary build/deployment
