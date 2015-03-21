@@ -95,32 +95,72 @@ $OrderedDictionary){
 Write-Output $indexOfKey
 }
 
+function Get-SortedSemanticVersions(
+[string[]]
+$SemanticVersions,
+[switch]
+$Descending){
+    <#
+        .SYNOPSIS
+            an internal utility function to sort version 1.0 semantic versions.
+            Note: v2 semantics will not be taken into account.
+    #>
+    $majorKey = "Major"
+    $minorKey = "Minor"
+    $patchKey = "Patch"
+    $preReleaseKey = "PreRelease"
+    $semanticVersionRegex = "(?<$majorKey>\d+)\.(?<$minorKey>\d+)\.(?<$patchKey>\d+)(?:-(?<$preReleaseKey>[0-9A-Za-z-.]*))?"
+        
+    $semanticVersionObjects = New-Object 'System.Collections.Generic.List[object]'
+    foreach($semanticVersionString in $SemanticVersions){
+        $semanticVersionString -match $semanticVersionRegex |Out-Null
+        $Matches.Remove(0)
+        $semanticVersionObjects.Add([PSCustomObject]$Matches)
+    }
+
+    $semanticVersionObjects `
+    | Sort-Object `
+        @{Expression={[int]$_.($majorKey)}},
+        @{Expression={[int]$_.($minorKey)}}, 
+        @{Expression={[int]$_.($patchKey)}},
+        @{Expression={
+            if(!$_.($preReleaseKey)){
+                '1'
+            }
+            else{            
+                # prefixing with 0 forces to sort lower than versions lacking pre-release identifiers
+                $preReleaseSortText = "0$($_.($preReleaseKey))"
+            }}} `
+        -Descending:$Descending `
+    | Write-Output
+}
+
 function Get-LatestPackageVersion(
 
 [string[]]
 [Parameter(
     Mandatory=$true)]
-$PackageSources = $defaultPackageSources,
+$Source = $defaultPackageSources,
 
 [string]
 [ValidateNotNullOrEmpty()]
 [Parameter(
     Mandatory=$true)]
-$PackageId){
+$Id){
     
     $versions = @()
 
-    foreach($packageSource in $PackageSources){
-        $uri = "$packageSource/api/v2/package-versions/$PackageId"
+    foreach($packageSource in $Source){
+        $uri = "$packageSource/api/v2/package-versions/$Id"
 Write-Debug "Attempting to fetch package versions:` uri: $uri "
         $versions = $versions + (Invoke-RestMethod -Uri $uri)
 Write-Debug "response from $uri was: ` $versions"
     }
     if(!$versions -or ($versions.Count -lt 1)){
-throw "no versions of $PackageId could be located.` searched: $PackageSources"
+throw "no versions of $Id could be located.` searched: $Source"
     }
 
-Write-Output ([Array]($versions| Sort-Object -Descending))[0]
+Write-Output ([Array](Get-SortedSemanticVersions -SemanticVersions $versions))[0]
 }
 
 function Add-PoshDevOpsTask(
@@ -165,9 +205,11 @@ $After,
 $Before,
 
 [string[]]
-$PackageSources=$defaultPackageSources,
+[ValidateNotNullOrEmpty()]
+$PackageSource=$defaultPackageSources,
 
 [string]
+[ValidateNotNullOrEmpty()]
 [Parameter(
     ValueFromPipeline=$true,
     ValueFromPipelineByPropertyName=$true)]
@@ -217,8 +259,8 @@ throw "A task with name $Name already exists.`n Tip: You can remove the existing
     else{
         
         if([string]::IsNullOrWhiteSpace($PackageVersion)){
-            $PackageVersion = Get-LatestPackageVersion -PackageSources $PackageSources -PackageId $PackageId
-Write-Debug "using greatest available module version : $PackageVersion"
+            $PackageVersion = Get-LatestPackageVersion -Source $PackageSource -Id $PackageId
+Write-Debug "using greatest available pacakge version : $PackageVersion"
         }
 
 
@@ -256,7 +298,6 @@ Write-Debug "using greatest available module version : $PackageVersion"
             $taskGroup.Tasks.Add($key, $value)        
         }
 
-Write-Debug "saving task group"
         Save-TaskGroup -TaskGroup $taskGroup -ProjectRootDirPath $ProjectRootDirPath    
 
     }
@@ -393,10 +434,12 @@ throw ".PoshDevOps directory already exists at $taskGroupDirPath. If you are try
 }
 
 function Remove-PoshDevOpsTaskGroup(
-[switch]$Force,
+[switch]
+$Force,
+
 [string]
+[ValidateNotNullOrEmpty()]
 [Parameter(
-    ValueFromPipeline=$true,
     ValueFromPipelineByPropertyName=$true)]
 $ProjectRootDirPath = '.'){
     
@@ -410,6 +453,212 @@ $ProjectRootDirPath = '.'){
     }
 }
 
+function Install-PoshDevOpsPackage(
+[string]
+[ValidateNotNullOrEmpty()]
+[Parameter(
+    Mandatory=$true,
+    ValueFromPipelineByPropertyName=$true)]
+$Id,
+
+[string]
+[Parameter(
+    ValueFromPipelineByPropertyName=$true)]
+$Version,
+
+[string[]]
+[ValidateCount( 1, [Int]::MaxValue)]
+[ValidateNotNullOrEmpty()]
+[Parameter(
+    ValueFromPipelineByPropertyName=$true)]
+$Source = $defaultPackageSources,
+
+[string]
+[ValidateNotNullOrEmpty()]
+[Parameter(
+    ValueFromPipelineByPropertyName=$true)]
+$ProjectRootDirPath='.'){
+
+    $taskGroupDirPath = Resolve-Path "$ProjectRootDirPath\.PoshDevOps"
+    $packagesDirPath = "$taskGroupDirPath\Packages"
+
+    if([string]::IsNullOrWhiteSpace($Version)){
+
+        $Version = Get-LatestPackageVersion -Source $Source -Id $Id
+
+Write-Debug "using greatest available package version : $Version"
+    
+    }
+
+    $initialOFS = $OFS
+    
+    try{
+
+        $OFS = ';'
+        $nugetExecutable = 'nuget'
+        $nugetParameters = @('install','-Source',($Source|Out-String),'-Id',$Id,'-RepositoryPath',$packagesDirPath,'-NonInteractive')
+
+Write-Debug `
+@"
+Invoking nuget:
+& $nugetExecutable $($nugetParameters|Out-String)
+"@
+        & $nugetExecutable $nugetParameters
+
+        # handle errors
+        if ($LastExitCode -ne 0) {
+            throw $Error
+        }
+    
+    }
+    Finally{
+        $OFS = $initialOFS
+    }
+
+}
+
+function Remove-PoshDevOpsPackageIfExists(
+[string]
+[ValidateNotNullOrEmpty()]
+[Parameter(
+    Mandatory=$true,
+    ValueFromPipelineByPropertyName=$true)]
+$Id,
+
+[string]
+[ValidateNotNullOrEmpty()]
+[Parameter(
+    Mandatory=$true,
+    ValueFromPipelineByPropertyName=$true)]
+$Version,
+
+[string]
+[ValidateNotNullOrEmpty()]
+[Parameter(
+    ValueFromPipelineByPropertyName=$true)]
+$ProjectRootDirPath='.'){
+
+    $taskGroupDirPath = Resolve-Path "$ProjectRootDirPath\.PoshDevOps"
+    $packagesDirPath = "$taskGroupDirPath\Packages"
+
+    $packageInstallationDir = "$packagesDirPath\$($Id).$($Version)"
+
+
+    If(Test-Path $packageInstallationDir){
+Write-Debug `
+@"
+Removing package at:
+$packageInstallationDir
+"@
+        Remove-Item $packageInstallationDir -Recurse -Force -UseTransaction  
+    }
+    Else{
+Write-Debug `
+@"
+No package to remove at:
+$packageInstallationDir
+"@
+    }
+
+}
+
+function Update-PoshDevOpsPackage(
+
+[CmdletBinding(
+    DefaultParameterSetName="Update-All")]
+
+[string[]]
+[ValidateCount( 1, [Int]::MaxValue)]
+[Parameter(
+    Mandatory=$true,
+    ValueFromPipelineByPropertyName=$true,
+    ParameterSetName="Update-Single")]
+[Parameter(
+    Mandatory=$true,
+    ValueFromPipelineByPropertyName=$true,
+    ParameterSetName="Update-Multiple")]
+$Id,
+
+[string]
+[Parameter(
+    Mandatory=$true,
+    ValueFromPipelineByPropertyName=$true,
+    ParameterSetName="Update-Single")]
+$Version,
+
+[switch]
+[Parameter(
+    ParameterSetName="Update-All")]
+$All,
+
+[string[]]
+[ValidateCount( 1, [Int]::MaxValue)]
+[ValidateNotNullOrEmpty()]
+[Parameter(
+    ValueFromPipelineByPropertyName=$true)]
+$Source = $defaultPackageSources,
+
+[String]
+[ValidateNotNullOrEmpty()]
+[Parameter(
+    ValueFromPipelineByPropertyName=$true)]
+$ProjectRootDirPath='.'){
+
+    $taskGroupDirPath = Resolve-Path "$ProjectRootDirPath\.PoshDevOps"
+    $taskGroupFilePath = "$taskGroupDirPath\TaskGroup.psd1"
+    $packagesDirPath = "$taskGroupDirPath\Packages"
+    $taskGroup = Get-PoshDevOpsTaskGroup -ProjectRootDirPath $ProjectRootDirPath 
+
+    # build up list of package updates
+    $packageUpdates = @{}
+    If('Update-Multiple' -eq $PSCmdlet.ParameterSetName){
+
+        foreach($packageId in $Id){
+
+            $packageUpdates.Add($packageId,(Get-LatestPackageVersion -Source $Source -Id $packageId))
+
+        }
+    }
+    ElseIf('Update-Single' -eq $PSCmdlet.ParameterSetName){
+        
+        if($Id.Length -ne 1){
+            throw "Updating to an explicit package version is only allowed when updating a single package"
+        }
+
+        $packageUpdates.Add($Id,$Version)
+    }
+    Else{        
+        
+        foreach($task in $taskGroup.Tasks.Values){
+
+            $packageUpdates.Add($task.PackageId,(Get-LatestPackageVersion -Source $Source -Id $task.PackageId))
+        
+        }
+    }
+
+    foreach($task in $taskGroup.Tasks.Values){
+
+        $updatedPackageVersion = $packageUpdates.($task.PackageId)
+
+        if($null -ne $updatedPackageVersion){
+
+            Remove-PoshDevOpsPackageIfExists -Id $task.PackageId -Version $task.PackageVersion -ProjectRootDirPath $ProjectRootDirPath
+
+Write-Debug `
+@"
+Updating task (with name $($task.Name)) package (with id $($task.PackageId))
+from version: $($task.PackageVersion)
+to version: $($updatedPackageVersion)
+"@
+            $task.PackageVersion = $updatedPackageVersion
+
+        }
+    }
+
+    Save-TaskGroup -TaskGroup $taskGroup -ProjectRootDirPath $ProjectRootDirPath
+
+}
+
 function Invoke-PoshDevOpsTaskGroup(
 
 [Hashtable]
@@ -419,11 +668,13 @@ function Invoke-PoshDevOpsTaskGroup(
 $Parameters,
 
 [string[]]
+[ValidateCount( 1, [Int]::MaxValue)]
 [Parameter(
     ValueFromPipelineByPropertyName=$true)]
-$PackageSources = $defaultPackageSources,
+$PackageSource = $defaultPackageSources,
 
 [String]
+[ValidateNotNullOrEmpty()]
 [Parameter(
     ValueFromPipelineByPropertyName=$true)]
 $ProjectRootDirPath='.'){
@@ -476,7 +727,7 @@ Write-Debug "Adding automatic parameters to pipeline"
             $taskParameters.PoshDevOpsTaskName = $task.Name
 
 Write-Debug "Ensuring task module package installed"
-            nuget install $task.PackageId -Version $task.PackageVersion -OutputDirectory $packagesDirPath -Source $PackageSources -NonInteractive
+            Install-PoshDevOpsPackage -Id $task.PackageId -Version $task.PackageVersion -Source $PackageSource
 
             $moduleDirPath = "$packagesDirPath\$($task.PackageId).$($task.PackageVersion)\tools\$($task.PackageId)"
 Write-Debug "Importing module located at: $moduleDirPath"
@@ -499,4 +750,14 @@ throw "TaskGroup.psd1 not found at: $taskGroupFilePath"
     }
 }
 
-Export-ModuleMember -Function Invoke-PoshDevOpsTaskGroup,New-PoshDevOpsTaskGroup,Remove-PoshDevOpsTaskGroup,Add-PoshDevOpsTask,Set-PoshDevOpsTaskParameters,Remove-PoshDevOpsTask,Get-PoshDevOpsTaskGroup
+Export-ModuleMember `
+-Function `
+@(
+    'Invoke-PoshDevOpsTaskGroup',
+    'New-PoshDevOpsTaskGroup',
+    'Remove-PoshDevOpsTaskGroup',
+    'Update-PoshDevOpsPackage',
+    'Add-PoshDevOpsTask',
+    'Set-PoshDevOpsTaskParameters',
+    'Remove-PoshDevOpsTask',
+    'Get-PoshDevOpsTaskGroup')
