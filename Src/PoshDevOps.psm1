@@ -576,14 +576,11 @@ throw "TaskGroup.psd1 not found at: $taskGroupFilePath"
     }
 }
 
-Export-ModuleMember `
--Function `
-@(
-    'Invoke-PoshDevOpsTaskGroup',
-    'New-PoshDevOpsTaskGroup',
-    'Remove-PoshDevOpsTaskGroup',
-    'Update-PoshDevOpsPackage',
-    'Add-PoshDevOpsTask',
-    'Set-PoshDevOpsTaskParameters',
-    'Remove-PoshDevOpsTask',
-    'Get-PoshDevOpsTaskGroup')
+Export-ModuleMember -Function Invoke-PoshDevOpsTaskGroup
+Export-ModuleMember -Function New-PoshDevOpsTaskGroup
+Export-ModuleMember -Function Remove-PoshDevOpsTaskGroup
+Export-ModuleMember -Function Update-PoshDevOpsPackage
+Export-ModuleMember -Function Add-PoshDevOpsTask
+Export-ModuleMember -Function Set-PoshDevOpsTaskParameters
+Export-ModuleMember -Function Remove-PoshDevOpsTask
+Export-ModuleMember -Function Get-PoshDevOpsTaskGroup
