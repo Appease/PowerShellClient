@@ -1,7 +1,7 @@
-﻿$defaultPackageSources = @('https://www.myget.org/F/poshdevops')
+﻿Import-Module "$PSScriptRoot\SemanticVersioning" -Force -Global
 
-Write-Debug "Dot Sourcing $PSScriptRoot\SemanticVersioning.ps1"
-. "$PSScriptRoot\SemanticVersioning.ps1"
+$DefaultPackageSources = @('https://www.myget.org/F/poshdevops')
+$nugetExecutable = "$PSScriptRoot\nuget.exe"
 
 function Install-PoshDevOpsPackage(
 [string]
@@ -44,8 +44,7 @@ Write-Debug "using greatest available package version : $Version"
     
     try{
 
-        $OFS = ';'
-        $nugetExecutable = 'nuget'
+        $OFS = ';'        
         $nugetParameters = @('install','-Source',($Source|Out-String),'-Id',$Id,'-RepositoryPath',$packagesDirPath,'-NonInteractive')
 
 Write-Debug `
@@ -139,3 +138,9 @@ throw "no versions of $Id could be located.` searched: $Source"
 
 Write-Output ([Array](Get-SortedSemanticVersions -InputArray $versions -Descending))[0]
 }
+
+Export-ModuleMember -Variable DefaultPackageSources
+
+Export-ModuleMember -Function Install-PoshDevOpsPackage
+Export-ModuleMember -Function Uninstall-PoshDevOpsPackageIfExists
+Export-ModuleMember -Function Get-LatestPackageVersion

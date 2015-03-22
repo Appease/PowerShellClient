@@ -1,67 +1,16 @@
-Write-Debug "Dot Sourcing $PSScriptRoot\Pson.ps1"
-. "$PSScriptRoot\Pson.ps1"
-
-Write-Debug "Dot Sourcing $PSScriptRoot\PackageManagement.ps1"
-. "$PSScriptRoot\PackageManagement.ps1"
-
-$defaultPackageSources = @('https://www.myget.org/F/poshdevops')
-
-function EnsureNuGetInstalled(){
-    try{
-        Get-Command nuget -ErrorAction Stop | Out-Null
-    }
-    catch{
-Write-Debug "installing nuget.commandline"
-        chocolatey install nuget.commandline | Out-Null
-    }
-}
-
-function Get-PoshDevOpsTaskGroup(
-[string]
-[Parameter(
-    ValueFromPipeline=$true,
-    ValueFromPipelineByPropertyName=$true)]
-$ProjectRootDirPath = '.'){
-    <#
-        .SYNOPSIS
-        parses a task group file
-    #>
-
-    $taskGroupFilePath = Resolve-Path "$ProjectRootDirPath\.PoshDevOps\TaskGroup.psd1"   
-Write-Output (Get-Content $taskGroupFilePath | Out-String | ConvertFrom-Pson)
-
-}
-
-function Save-TaskGroup(
-[PsCustomObject]
-$TaskGroup,
-
-[string]
-[Parameter(
-    ValueFromPipeline=$true,
-    ValueFromPipelineByPropertyName=$true)]
-$ProjectRootDirPath = '.'){
-    <#
-        .SYNOPSIS
-        an internal utility function to snapshot and save a TaskGroup to disk
-    #>
-    
-    $taskGroupFilePath = Resolve-Path "$ProjectRootDirPath\.PoshDevOps\TaskGroup.psd1"    
-    Set-Content $taskGroupFilePath -Value (ConvertTo-Pson -InputObject $TaskGroup -Depth 12 -Layers 12 -Strict)
-}
+Import-Module "$PSScriptRoot\PoshDevOpsPackageManager" -Force -Global
+Import-Module "$PSScriptRoot\TaskGroupStorage" -Force -Global
 
 function Get-UnionOfHashtables(
 [Hashtable]
 [ValidateNotNull()]
 [Parameter(
-    ValueFromPipeline=$true,
     ValueFromPipelineByPropertyName=$true)]
 $Source1,
 
 [Hashtable]
 [ValidateNotNull()]
 [Parameter(
-    ValueFromPipeline=$true,
     ValueFromPipelineByPropertyName=$true)]
 $Source2){
     $destination = $Source1.Clone()
@@ -141,10 +90,10 @@ $Before,
 
 [string[]]
 [ValidateNotNullOrEmpty()]
-$PackageSource=$defaultPackageSources,
+$PackageSource= $DefaultPackageSources,
 
 [string]
-[ValidateNotNullOrEmpty()]
+[ValidateScript({Test-Path $_ -PathType Container})]
 [Parameter(
     ValueFromPipeline=$true,
     ValueFromPipelineByPropertyName=$true)]
@@ -195,7 +144,7 @@ throw "A task with name $Name already exists.`n Tip: You can remove the existing
         
         if([string]::IsNullOrWhiteSpace($PackageVersion)){
             $PackageVersion = Get-LatestPackageVersion -Source $PackageSource -Id $PackageId
-Write-Debug "using greatest available pacakge version : $PackageVersion"
+Write-Debug "using greatest available package version : $PackageVersion"
         }
 
 
@@ -233,7 +182,7 @@ Write-Debug "using greatest available pacakge version : $PackageVersion"
             $taskGroup.Tasks.Add($key, $value)        
         }
 
-        Save-TaskGroup -TaskGroup $taskGroup -ProjectRootDirPath $ProjectRootDirPath    
+        Save-PoshDevOpsTaskGroup -TaskGroup $taskGroup -ProjectRootDirPath $ProjectRootDirPath    
 
     }
 }
@@ -254,8 +203,8 @@ $Parameters,
 [switch]$Force,
 
 [string]
+[ValidateScript({Test-Path $_ -PathType Container})]
 [Parameter(
-    ValueFromPipeline=$true,
     ValueFromPipelineByPropertyName=$true)]
 $ProjectRootDirPath = '.'){
     <#
@@ -315,7 +264,7 @@ $($Parameters|Out-String)
         Add-Member -InputObject $ciTask -MemberType 'NoteProperty' -Name $parametersPropertyName -Value $Parameters -Force
     }
     
-    Save-TaskGroup -TaskGroup $taskGroup -ProjectRootDirPath $ProjectRootDirPath
+    Save-PoshDevOpsTaskGroup -TaskGroup $taskGroup -ProjectRootDirPath $ProjectRootDirPath
 }
 
 function Remove-PoshDevOpsTask(
@@ -328,8 +277,8 @@ $Name,
 [switch]$Force,
 
 [string]
+[ValidateScript({Test-Path $_ -PathType Container})]
 [Parameter(
-    ValueFromPipeline=$true,
     ValueFromPipelineByPropertyName=$true)]
 $ProjectRootDirPath = '.'){
 
@@ -341,15 +290,22 @@ $ProjectRootDirPath = '.'){
         $taskGroup = Get-PoshDevOpsTaskGroup -ProjectRootDirPath $ProjectRootDirPath
 Write-Debug "Removing task $Name"
         $taskGroup.Tasks.Remove($Name)
-        Save-TaskGroup -TaskGroup $taskGroup -ProjectRootDirPath $ProjectRootDirPath
+        Save-PoshDevOpsTaskGroup -TaskGroup $taskGroup -ProjectRootDirPath $ProjectRootDirPath
     }
 
 }
 
 function New-PoshDevOpsTaskGroup(
+
 [string]
+[ValidateNotNullOrEmpty()]
 [Parameter(
-    ValueFromPipeline=$true,
+    ValueFromPipelineByPropertyName=$true)]
+$Name,
+
+[string]
+[ValidateScript({Test-Path $_ -PathType Container})]
+[Parameter(
     ValueFromPipelineByPropertyName=$true)]
 $ProjectRootDirPath = '.'){
     $taskGroupDirPath = "$(Resolve-Path $ProjectRootDirPath)\.PoshDevOps"
@@ -365,26 +321,6 @@ Write-Debug "Adding default files to path $taskGroupDirPath"
     }
     else{        
 throw ".PoshDevOps directory already exists at $taskGroupDirPath. If you are trying to recreate your task group from scratch you must invoke Remove-PoshDevOpsTaskGroup first"
-    }
-}
-
-function Remove-PoshDevOpsTaskGroup(
-[switch]
-$Force,
-
-[string]
-[ValidateNotNullOrEmpty()]
-[Parameter(
-    ValueFromPipelineByPropertyName=$true)]
-$ProjectRootDirPath = '.'){
-    
-    $taskGroupDirPath = Resolve-Path "$ProjectRootDirPath\.PoshDevOps"
-
-    $confirmationPromptQuery = "Are you sure you want to delete the task group located at $TaskGroupDirPath`?"
-    $confirmationPromptCaption = 'Confirm task group removal'
-
-    if($Force.IsPresent -or $PSCmdlet.ShouldContinue($confirmationPromptQuery,$confirmationPromptCaption)){
-        Remove-Item -Path $taskGroupDirPath -Recurse -Force
     }
 }
 
@@ -422,10 +358,10 @@ $All,
 [ValidateNotNullOrEmpty()]
 [Parameter(
     ValueFromPipelineByPropertyName=$true)]
-$Source = $defaultPackageSources,
+$Source = $DefaultPackageSources,
 
 [String]
-[ValidateNotNullOrEmpty()]
+[ValidateScript({Test-Path $_ -PathType Container})]
 [Parameter(
     ValueFromPipelineByPropertyName=$true)]
 $ProjectRootDirPath='.'){
@@ -481,7 +417,7 @@ to version: $($updatedPackageVersion)
         }
     }
 
-    Save-TaskGroup -TaskGroup $taskGroup -ProjectRootDirPath $ProjectRootDirPath
+    Save-PoshDevOpsTaskGroup -TaskGroup $taskGroup -ProjectRootDirPath $ProjectRootDirPath
 
 }
 
@@ -497,10 +433,10 @@ $Parameters,
 [ValidateCount( 1, [Int]::MaxValue)]
 [Parameter(
     ValueFromPipelineByPropertyName=$true)]
-$PackageSource = $defaultPackageSources,
+$PackageSource = $DefaultPackageSources,
 
 [String]
-[ValidateNotNullOrEmpty()]
+[ValidateScript({Test-Path $_ -PathType Container})]
 [Parameter(
     ValueFromPipelineByPropertyName=$true)]
 $ProjectRootDirPath='.'){
@@ -510,8 +446,6 @@ $ProjectRootDirPath='.'){
     $packagesDirPath = "$taskGroupDirPath\Packages"
 
     if(Test-Path $taskGroupFilePath){
-
-        EnsureNuGetInstalled
 
         $TaskGroup = Get-PoshDevOpsTaskGroup -ProjectRootDirPath $ProjectRootDirPath
 
