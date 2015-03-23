@@ -89,7 +89,7 @@ $Strict) {
             
             If ($Depth -gt 1){
 
-                $InputObject.GetEnumerator() | ForEach {$_.Name + "$Space=$Space" + (ConvertTo-PSON $_.Value ($Depth - 1) ($Layers - 1) -Strict:$Strict)}
+                $InputObject.GetEnumerator() | ForEach {"$Quote$($_.Name)$Quote" + "$Space=$Space" + (ConvertTo-PSON $_.Value ($Depth - 1) ($Layers - 1) -Strict:$Strict)}
             
             }
         } ElseIf ($InputObject -is [Object]) {

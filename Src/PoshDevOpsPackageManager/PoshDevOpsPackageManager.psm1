@@ -21,10 +21,10 @@ $Version,
 [ValidateNotNullOrEmpty()]
 [Parameter(
     ValueFromPipelineByPropertyName=$true)]
-$Source = $defaultPackageSources,
+$Source = $DefaultPackageSources,
 
 [string]
-[ValidateNotNullOrEmpty()]
+[ValidateScript({Test-Path $_ -PathType Container})]
 [Parameter(
     ValueFromPipelineByPropertyName=$true)]
 $ProjectRootDirPath='.'){
@@ -45,7 +45,7 @@ Write-Debug "using greatest available package version : $Version"
     try{
 
         $OFS = ';'        
-        $nugetParameters = @('install','-Source',($Source|Out-String),'-Id',$Id,'-RepositoryPath',$packagesDirPath,'-NonInteractive')
+        $nugetParameters = @('install',$Id,'-Source',($Source|Out-String),'-OutputDirectory',$packagesDirPath,'-Version',$Version,'-NonInteractive')
 
 Write-Debug `
 @"
@@ -82,7 +82,7 @@ $Id,
 $Version,
 
 [string]
-[ValidateNotNullOrEmpty()]
+[ValidateScript({Test-Path $_ -PathType Container})]
 [Parameter(
     ValueFromPipelineByPropertyName=$true)]
 $ProjectRootDirPath='.'){
@@ -140,7 +140,6 @@ Write-Output ([Array](Get-SortedSemanticVersions -InputArray $versions -Descendi
 }
 
 Export-ModuleMember -Variable DefaultPackageSources
-
 Export-ModuleMember -Function Install-PoshDevOpsPackage
 Export-ModuleMember -Function Uninstall-PoshDevOpsPackageIfExists
 Export-ModuleMember -Function Get-LatestPackageVersion

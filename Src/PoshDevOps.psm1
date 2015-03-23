@@ -1,55 +1,17 @@
 Import-Module "$PSScriptRoot\PoshDevOpsPackageManager" -Force -Global
 Import-Module "$PSScriptRoot\TaskGroupStorage" -Force -Global
-
-function Get-UnionOfHashtables(
-[Hashtable]
-[ValidateNotNull()]
-[Parameter(
-    ValueFromPipelineByPropertyName=$true)]
-$Source1,
-
-[Hashtable]
-[ValidateNotNull()]
-[Parameter(
-    ValueFromPipelineByPropertyName=$true)]
-$Source2){
-    $destination = $Source1.Clone()
-    Write-Debug "After adding `$Source1, destination is $($destination|Out-String)"
-
-    $Source2.GetEnumerator() | ?{!$destination.ContainsKey($_.Key)} |%{$destination[$_.Key] = $_.Value}
-    Write-Debug "After adding `$Source2, destination is $($destination|Out-String)"
-
-    Write-Output $destination
-}
-
-function Get-IndexOfKeyInOrderedDictionary(
-[string]
-[ValidateNotNullOrEmpty()]
-$Key,
-
-[System.Collections.Specialized.OrderedDictionary]
-[ValidateNotNullOrEmpty()]
-$OrderedDictionary){
-    <#
-        .SYNOPSIS
-        an internal utility function to find the index of a key in an ordered dictionary
-    #>
-
-    $indexOfKey = -1
-    $keysArray = [string[]]$OrderedDictionary.Keys
-    for ($i = 0; $i -lt $OrderedDictionary.Count; $i++){
-        if($keysArray[$i] -eq $Key){
-            $indexOfKey = $i
-            break
-        }
-    }
-
-Write-Output $indexOfKey
-}
+Import-Module "$PSScriptRoot\HashtableExtensions" -Force -Global
+Import-Module "$PSScriptRoot\OrderedDictionaryExtensions" -Force -Global
 
 function Add-PoshDevOpsTask(
 [CmdletBinding(
     DefaultParameterSetName="add-TaskLast")]
+
+[string]
+[ValidateNotNullOrEmpty()]
+[Parameter(
+    Mandatory=$true)]
+$TaskGroupName,
 
 [string]
 [ValidateNotNullOrEmpty()]
@@ -88,6 +50,9 @@ $After,
     ParameterSetName='add-TaskBefore')]
 $Before,
 
+[switch]
+$Force,
+
 [string[]]
 [ValidateNotNullOrEmpty()]
 $PackageSource= $DefaultPackageSources,
@@ -104,103 +69,111 @@ $ProjectRootDirPath = '.'){
         Adds a new task to a task group
         
         .EXAMPLE
-        Add-PoshDevOpsTask -Name "LastTask" -PackageId "DeployNupkgToAzureWebsites" -PackageVersion "0.0.3"
+        Add-PoshDevOpsTask -TaskGroup "Azure" -Name "LastTask" -PackageId "DeployNupkgToAzureWebsites" -PackageVersion "0.0.3"
         
         Description:
 
-        This command adds a task (named LastTask) after all existing tasks
+        This command adds task "LastTask" after all existing tasks in task group "Azure"
 
         .EXAMPLE
-        Add-PoshDevOpsTask -Name "FirstTask" -PackageId "DeployNupkgToAzureWebsites" -First
+        Add-PoshDevOpsTask -TaskGroup "Azure" -Name "FirstTask" -PackageId "DeployNupkgToAzureWebsites" -First
 
         Description:
 
-        This command adds a task (named FirstTask) before all existing tasks
+        This command adds task "FirstTask" before all existing tasks in task group "Azure"
 
         .EXAMPLE
-        Add-PoshDevOpsTask -Name "AfterSecondTask" -PackageId "DeployNupkgToAzureWebsites" -After "SecondTask"
+        Add-PoshDevOpsTask -TaskGroup "Azure" -Name "AfterSecondTask" -PackageId "DeployNupkgToAzureWebsites" -After "SecondTask"
 
         Description:
 
-        This command adds a task (named AfterSecondTask) after the existing task named SecondTask
+        This command adds task "AfterSecondTask" after the existing task "SecondTask" in task group "Azure"
 
         .EXAMPLE
-        Add-PoshDevOpsTask -Name "BeforeSecondTask" -PackageId "DeployNupkgToAzureWebsites" -Before "SecondTask"
+        Add-PoshDevOpsTask -TaskGroup "Azure" -Name "BeforeSecondTask" -PackageId "DeployNupkgToAzureWebsites" -Before "SecondTask"
 
         Description:
 
-        This command adds a task (named BeforeSecondTask) before the existing task named SecondTask
+        This command adds task "BeforeSecondTask" before the existing task "SecondTask" in task group "Azure"
 
     #>
 
-    $taskGroup = Get-PoshDevOpsTaskGroup -ProjectRootDirPath $ProjectRootDirPath
-    
-    if($taskGroup.Tasks.Contains($Name)){
-
-throw "A task with name $Name already exists.`n Tip: You can remove the existing task by invoking Remove-PoshDevOpsTask"
-            
-    }
-    else{
         
         if([string]::IsNullOrWhiteSpace($PackageVersion)){
             $PackageVersion = Get-LatestPackageVersion -Source $PackageSource -Id $PackageId
 Write-Debug "using greatest available package version : $PackageVersion"
         }
-
-
-        $key = $Name
-        $value = [PSCustomObject]@{'Name'=$Name;'PackageId'=$PackageId;'PackageVersion'=$PackageVersion}
-
+                
         if($First.IsPresent){
         
-            $taskGroup.Tasks.Insert(0,$key,$value)
+            $TaskIndex = 0
         
         }
         elseif('add-TaskAfter' -eq $PSCmdlet.ParameterSetName){
-
-            $indexOfAfter = Get-IndexOfKeyInOrderedDictionary -Key $After -OrderedDictionary $taskGroup.Tasks
+            
+            $TaskGroup = TaskGroupStorage\Get-TaskGroup -Name $TaskGroupName -ProjectRootDirPath $ProjectRootDirPath
+            $indexOfAfter = Get-IndexOfKeyInOrderedDictionary -Key $After -OrderedDictionary $TaskGroup.Tasks
             # ensure task with key $After exists
             if($indexOfAfter -lt 0){
                 throw "A task with name $After could not be found."
             }
-            $taskGroup.Tasks.Insert($indexOfAfter + 1,$key,$value)
+            $TaskIndex = $indexOfAfter + 1
         
         }
         elseif('add-TaskBefore' -eq $PSCmdlet.ParameterSetName){        
         
-            $indexOfBefore = Get-IndexOfKeyInOrderedDictionary -Key $Before -OrderedDictionary $taskGroup.Tasks
+            $TaskGroup = TaskGroupStorage\Get-TaskGroup -Name $TaskGroupName -ProjectRootDirPath $ProjectRootDirPath
+            $indexOfBefore = Get-IndexOfKeyInOrderedDictionary -Key $Before -OrderedDictionary $TaskGroup.Tasks
             # ensure task with key $Before exists
             if($indexOfBefore -lt 0){
                 throw "A task with name $Before could not be found."
             }
-            $taskGroup.Tasks.Insert($indexOfBefore,$key,$value)
+            $TaskIndex = $indexOfBefore
         
         }
         else{
         
-            # by default add as last task
-            $taskGroup.Tasks.Add($key, $value)        
+            $TaskGroup = TaskGroupStorage\Get-TaskGroup -Name $TaskGroupName -ProjectRootDirPath $ProjectRootDirPath
+            $TaskIndex = $TaskGroup.Tasks.Count  
         }
 
-        Save-PoshDevOpsTaskGroup -TaskGroup $taskGroup -ProjectRootDirPath $ProjectRootDirPath    
-
-    }
+        TaskGroupStorage\Add-Task `
+            -TaskGroupName $TaskGroupName `
+            -Name $Name `
+            -PackageId $PackageId `
+            -PackageVersion $PackageVersion `
+            -Index $TaskIndex `
+            -Force:$Force `
+            -ProjectRootDirPath $ProjectRootDirPath
 }
 
-function Set-PoshDevOpsTaskParameters(
+function Set-PoshDevOpsTaskParameter(
 
 [string]
 [ValidateNotNullOrEmpty()]
 [Parameter(
     Mandatory=$true)]
-$PoshDevOpsTaskName,
+$TaskGroupName,
 
-[hashtable]
+[string]
+[ValidateNotNullOrEmpty()]
 [Parameter(
     Mandatory=$true)]
-$Parameters,
+$TaskName,
 
-[switch]$Force,
+[string]
+[ValidateNotNullOrEmpty()]
+[Parameter(
+    Mandatory=$true)]
+$Name,
+
+[object]
+[Parameter(
+    Mandatory=$true)]
+$Value,
+
+[switch]
+$Force,
 
 [string]
 [ValidateScript({Test-Path $_ -PathType Container})]
@@ -212,62 +185,29 @@ $ProjectRootDirPath = '.'){
         Sets configurable parameters of a task
         
         .EXAMPLE
-        Set-PoshDevOpsTaskParameters -PoshDevOpsTaskName "GitClone" -Parameters @{GitParameters=@("status")} -Force
+        Set-PoshDevOpsTaskParameters -TaskGroupName Build -TaskName GitClone -Name GitParameters -Value Status -Force
         
         Description:
 
-        This command sets a parameter (named "GitParameters") for a task (named "GitClone") to @("status")
+        This command sets the parameter "GitParameters" to "Status" for a task "GitClone" in task group "Build"
     #>
 
-    $taskGroup = Get-PoshDevOpsTaskGroup -ProjectRootDirPath $ProjectRootDirPath
-    $ciTask = $taskGroup.Tasks.$PoshDevOpsTaskName
-    $parametersPropertyName = "Parameters"
-
-Write-Debug "Checking task `"$PoshDevOpsTaskName`" for property `"$parametersPropertyName`""
-    $parametersPropertyValue = $ciTask.$parametersPropertyName    
-    if($parametersPropertyValue){
-        foreach($parameter in $Parameters.GetEnumerator()){
-
-            $parameterName = $parameter.Key
-            $parameterValue = $parameter.Value
-
-Write-Debug "Checking if parameter `"$parameterName`" previously set"
-            $previousParameterValue = $parametersPropertyValue.$parameterName
-            if($previousParameterValue){
-Write-Debug "Found parameter `"$parameterName`" previously set to `"$($previousParameterValue|Out-String)`""
-$confirmationPromptQuery = 
-@"
-For task `"$PoshDevOpsTaskName`",
-are you sure you want to change the value of parameter `"$parameterName`"?
-    old value: $($previousParameterValue|Out-String)
-    new value: $($parameterValue|Out-String)
-"@
-
-                $confirmationPromptCaption = "Confirm parameter value change"
-
-                if($Force.IsPresent -or !$PSCmdlet.ShouldContinue($confirmationPromptQuery,$confirmationPromptCaption)){
-Write-Debug "Skipping parameter `"$parameterName`". Overwriting existing parameter value was not confirmed."
-                    continue
-                }
-            }
-Write-Debug "Setting parameter `"$parameterName`" = `"$($parameterValue|Out-String)`" "
-            $parametersPropertyValue.$parameterName = $parameterValue
-        }
-    }
-    else {        
-Write-Debug `
-@"
-Property `"$parametersPropertyName`" has not previously been set for task `"$PoshDevOpsTaskName`"
-Adding with value:
-$($Parameters|Out-String)
-"@
-        Add-Member -InputObject $ciTask -MemberType 'NoteProperty' -Name $parametersPropertyName -Value $Parameters -Force
-    }
-    
-    Save-PoshDevOpsTaskGroup -TaskGroup $taskGroup -ProjectRootDirPath $ProjectRootDirPath
+    TaskGroupStorage\Set-TaskParameter `
+        -TaskGroupName $TaskGroupName `
+        -TaskName $TaskName `
+        -Name $Name `
+        -Value $Value `
+        -Force:$Force
 }
 
 function Remove-PoshDevOpsTask(
+
+[string]
+[ValidateNotNullOrEmpty()]
+[Parameter(
+    Mandatory=$true)]
+$TaskGroupName,
+
 [string]
 [ValidateNotNullOrEmpty()]
 [Parameter(
@@ -287,10 +227,8 @@ $ProjectRootDirPath = '.'){
 
     if($Force.IsPresent -or $PSCmdlet.ShouldContinue($confirmationPromptQuery,$confirmationPromptCaption)){
 
-        $taskGroup = Get-PoshDevOpsTaskGroup -ProjectRootDirPath $ProjectRootDirPath
-Write-Debug "Removing task $Name"
-        $taskGroup.Tasks.Remove($Name)
-        Save-PoshDevOpsTaskGroup -TaskGroup $taskGroup -ProjectRootDirPath $ProjectRootDirPath
+        TaskGroupStorage\Remove-Task -TaskGroupName $TaskGroupName -Name $Name -ProjectRootDirPath $ProjectRootDirPath
+
     }
 
 }
@@ -300,34 +238,34 @@ function New-PoshDevOpsTaskGroup(
 [string]
 [ValidateNotNullOrEmpty()]
 [Parameter(
+    Mandatory=$true,
     ValueFromPipelineByPropertyName=$true)]
 $Name,
+
+[switch]
+$Force,
 
 [string]
 [ValidateScript({Test-Path $_ -PathType Container})]
 [Parameter(
     ValueFromPipelineByPropertyName=$true)]
 $ProjectRootDirPath = '.'){
-    $taskGroupDirPath = "$(Resolve-Path $ProjectRootDirPath)\.PoshDevOps"
+    
+    $TaskGroup = @{Name=$Name;Tasks=[ordered]@{}}
 
-    if(!(Test-Path $taskGroupDirPath)){    
-        $templatesDirPath = "$PSScriptRoot\Templates"
-
-Write-Debug "Creating a directory for the task group at path $taskGroupDirPath"
-        New-Item -ItemType Directory -Path $taskGroupDirPath
-
-Write-Debug "Adding default files to path $taskGroupDirPath"
-        Copy-Item -Path "$templatesDirPath\TaskGroup.psd1" $taskGroupDirPath
-    }
-    else{        
-throw ".PoshDevOps directory already exists at $taskGroupDirPath. If you are trying to recreate your task group from scratch you must invoke Remove-PoshDevOpsTaskGroup first"
-    }
+    TaskGroupStorage\Add-TaskGroup -Value $TaskGroup -Force:$Force -ProjectRootDirPath $ProjectRootDirPath
 }
 
 function Update-PoshDevOpsPackage(
 
 [CmdletBinding(
     DefaultParameterSetName="Update-All")]
+
+[string]
+[ValidateNotNullOrEmpty()]
+[Parameter(
+    Mandatory=$true)]
+$TaskGroupName,
 
 [string[]]
 [ValidateCount( 1, [Int]::MaxValue)]
@@ -366,10 +304,7 @@ $Source = $DefaultPackageSources,
     ValueFromPipelineByPropertyName=$true)]
 $ProjectRootDirPath='.'){
 
-    $taskGroupDirPath = Resolve-Path "$ProjectRootDirPath\.PoshDevOps"
-    $taskGroupFilePath = "$taskGroupDirPath\TaskGroup.psd1"
-    $packagesDirPath = "$taskGroupDirPath\Packages"
-    $taskGroup = Get-PoshDevOpsTaskGroup -ProjectRootDirPath $ProjectRootDirPath 
+    $TaskGroup = TaskGroupStorage\Get-TaskGroup -Name $TaskGroupName -ProjectRootDirPath $ProjectRootDirPath
 
     # build up list of package updates
     $packageUpdates = @{}
@@ -408,20 +343,26 @@ $ProjectRootDirPath='.'){
 
 Write-Debug `
 @"
-Updating task (with name $($task.Name)) package (with id $($task.PackageId))
-from version: $($task.PackageVersion)
-to version: $($updatedPackageVersion)
+Updating task "$($task.Name)" package "$($task.PackageId)"
+from version "$($task.PackageVersion)"
+to version "$($updatedPackageVersion)"
 "@
-            $task.PackageVersion = $updatedPackageVersion
-
+            TaskGroupStorage\Update-TaskPackageVersion `
+                -TaskGroupName $TaskGroupName `
+                -TaskName $task.Name `
+                -PackageVersion $updatedPackageVersion `
+                -ProjectRootDirPath $ProjectRootDirPath
         }
     }
-
-    Save-PoshDevOpsTaskGroup -TaskGroup $taskGroup -ProjectRootDirPath $ProjectRootDirPath
-
 }
 
 function Invoke-PoshDevOpsTaskGroup(
+
+[string]
+[ValidateNotNullOrEmpty()]
+[Parameter(
+    Mandatory=$true)]
+$Name,
 
 [Hashtable]
 [Parameter(
@@ -441,13 +382,9 @@ $PackageSource = $DefaultPackageSources,
     ValueFromPipelineByPropertyName=$true)]
 $ProjectRootDirPath='.'){
     
-    $taskGroupDirPath = Resolve-Path "$ProjectRootDirPath\.PoshDevOps"
-    $taskGroupFilePath = "$taskGroupDirPath\TaskGroup.psd1"
-    $packagesDirPath = "$taskGroupDirPath\Packages"
+    $TaskGroup = TaskGroupStorage\Get-TaskGroup -Name $Name -ProjectRootDirPath $ProjectRootDirPath
 
-    if(Test-Path $taskGroupFilePath){
-
-        $TaskGroup = Get-PoshDevOpsTaskGroup -ProjectRootDirPath $ProjectRootDirPath
+    if($TaskGroup){        
 
         foreach($task in $TaskGroup.Tasks.Values){
                     
@@ -489,7 +426,7 @@ Write-Debug "Adding automatic parameters to pipeline"
 Write-Debug "Ensuring task module package installed"
             Install-PoshDevOpsPackage -Id $task.PackageId -Version $task.PackageVersion -Source $PackageSource
 
-            $moduleDirPath = "$packagesDirPath\$($task.PackageId).$($task.PackageVersion)\tools\$($task.PackageId)"
+            $moduleDirPath = "$ProjectRootDirPath\.PoshDevOps\Packages\$($task.PackageId).$($task.PackageVersion)\tools\$($task.PackageId)"
 Write-Debug "Importing module located at: $moduleDirPath"
             Import-Module $moduleDirPath -Force
 
@@ -515,6 +452,6 @@ Export-ModuleMember -Function New-PoshDevOpsTaskGroup
 Export-ModuleMember -Function Remove-PoshDevOpsTaskGroup
 Export-ModuleMember -Function Update-PoshDevOpsPackage
 Export-ModuleMember -Function Add-PoshDevOpsTask
-Export-ModuleMember -Function Set-PoshDevOpsTaskParameters
+Export-ModuleMember -Function Set-PoshDevOpsTaskParameter
 Export-ModuleMember -Function Remove-PoshDevOpsTask
 Export-ModuleMember -Function Get-PoshDevOpsTaskGroup
