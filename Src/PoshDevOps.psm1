@@ -1,4 +1,4 @@
-Import-Module "$PSScriptRoot\PoshDevOpsPackageManager" -Force -Global
+Import-Module "$PSScriptRoot\PackageManagement" -Force -Global
 Import-Module "$PSScriptRoot\TaskGroupStorage" -Force -Global
 Import-Module "$PSScriptRoot\HashtableExtensions" -Force -Global
 Import-Module "$PSScriptRoot\OrderedDictionaryExtensions" -Force -Global
