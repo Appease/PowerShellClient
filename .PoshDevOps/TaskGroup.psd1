@@ -1,11 +1,11 @@
-[PSCustomObject]@{
+[Hashtable]@{
 	Tasks = [Ordered]@{
-		CreateChocolateyPackage = [PSCustomObject]@{
+		CreateChocolateyPackage = [Hashtable]@{
 			Name = [String]"CreateChocolateyPackage"; 
 			PackageId = [String]"CreateChocolateyPackage"; 
 			PackageVersion = [String]"0.0.25"
 		}; 
-		PushChocolateyPackage = [PSCustomObject]@{
+		PushChocolateyPackage = [Hashtable]@{
 			Name = [String]"PushChocolateyPackage"; 
 			PackageId = [String]"PushChocolateyPackage"; 
 			PackageVersion = [String]"0.0.11"; 
