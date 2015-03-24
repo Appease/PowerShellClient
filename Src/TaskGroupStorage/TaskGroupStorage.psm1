@@ -116,7 +116,7 @@ If you want to overwrite the existing task group use the -Force parameter
         
     #save
     mv $OldTaskGroupFilePath $NewTaskGroupFilePath -Force
-    sc $TaskGroupFilePath -Value (ConvertTo-Pson -InputObject $TaskGroup -Depth 12 -Layers 12 -Strict) -Force
+    sc $NewTaskGroupFilePath -Value (ConvertTo-Pson -InputObject $TaskGroup -Depth 12 -Layers 12 -Strict) -Force
 }
 
 function Remove-TaskGroup(
