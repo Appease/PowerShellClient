@@ -30,7 +30,7 @@ $Source = $DefaultPackageSources,
 $ProjectRootDirPath='.'){
 
     $taskGroupDirPath = Resolve-Path "$ProjectRootDirPath\.PoshDevOps"
-    $packagesDirPath = "$taskGroupDirPath\Packages"
+    $packagesDirPath = "$taskGroupDirPath\packages"
 
     if([string]::IsNullOrWhiteSpace($Version)){
 
@@ -88,7 +88,7 @@ $Version,
 $ProjectRootDirPath='.'){
 
     $taskGroupDirPath = Resolve-Path "$ProjectRootDirPath\.PoshDevOps"
-    $packagesDirPath = "$taskGroupDirPath\Packages"
+    $packagesDirPath = "$taskGroupDirPath\packages"
 
     $packageInstallationDir = "$packagesDirPath\$($Id).$($Version)"
 
@@ -99,7 +99,7 @@ Write-Debug `
 Removing package at:
 $packageInstallationDir
 "@
-        Remove-Item $packageInstallationDir -Recurse -Force -UseTransaction  
+        Remove-Item $packageInstallationDir -Recurse -Force
     }
     Else{
 Write-Debug `
