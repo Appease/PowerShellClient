@@ -62,12 +62,10 @@ Creating task group file at:
 $TaskGroupFilePath
 Creating...
 "@
-    Start-Transaction
 
-        New-Item -Path $TaskGroupFilePath -ItemType File -Force        
-        Set-Content $TaskGroupFilePath -Value (ConvertTo-Pson -InputObject $Value -Depth 12 -Layers 12 -Strict) -Force
+    New-Item -Path $TaskGroupFilePath -ItemType File -Force        
+    Set-Content $TaskGroupFilePath -Value (ConvertTo-Pson -InputObject $Value -Depth 12 -Layers 12 -Strict) -Force
     
-    Complete-Transaction
 }
 
 
@@ -115,13 +113,10 @@ If you want to overwrite the existing task group use the -Force parameter
     # update name
     $TaskGroup.Name = $NewName
 
-    Start-Transaction
         
-        #save
-        mv $OldTaskGroupFilePath $NewTaskGroupFilePath -Force -UseTransaction
-        sc $TaskGroupFilePath -Value (ConvertTo-Pson -InputObject $TaskGroup -Depth 12 -Layers 12 -Strict) -Force -UseTransaction
-    
-    Complete-Transaction
+    #save
+    mv $OldTaskGroupFilePath $NewTaskGroupFilePath -Force
+    sc $TaskGroupFilePath -Value (ConvertTo-Pson -InputObject $TaskGroup -Depth 12 -Layers 12 -Strict) -Force
 }
 
 function Remove-TaskGroup(
