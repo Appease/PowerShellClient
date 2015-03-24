@@ -31,8 +31,7 @@ Import-Module "C:\Program Files\PoshDevOps\Modules\PoshDevOps" -Force
 
 ***Operationally:***
 - everything takes place within PowerShell
-- as you [CRUD](http://en.wikipedia.org/wiki/Create,_read,_update_and_delete) each `task group` a snapshot is maintained in a `TaskGroup.psd1` file.
-- at any time you can invoke your `task group` and pass in any parameters your `tasks` rely on
+- as you create/edit `task groups` a snapshot is maintained in a `YOUR-TASKGROUP-NAME.psd1` file (under the .PoshDevOps directory).
 
 ###How do I get started?
 navigate to the root directory of your project:
