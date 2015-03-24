@@ -24,9 +24,9 @@ Import-Module "C:\Program Files\PoshDevOps\Modules\PoshDevOps" -Force
 ```
 ###In a nutshell, hows it work?
 ***Conceptually:***
-- `task groups` are an arbitrary set of tasks working towards a common goal 
-  for example: "Build", "Unit Test", "Package", "Deploy", "Integration Test", .. etc 
-- `tasks` are arbitrary operations implemented as PowerShell modules and packaged as .nupkg's. 
+- `task groups` are an arbitrary set of tasks working towards a common goal   
+  for example: "Build", "Unit Test", "Package", "Deploy", "Integration Test", .. etc
+- `tasks` are arbitrary operations implemented as PowerShell modules and packaged as .nupkg's.    
   for example: a "Package" task group might have tasks: Copy Artifacts To Temp, Create NuGet Package
 
 ***Operationally:***
