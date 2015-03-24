@@ -19,13 +19,15 @@ Build/Deployment services today are extremely powerfull and easy to use. However
 ###How do I install it?
 Make sure you have [Chocolatey](https://chocolatey.org) installed, then from PowerShell run
 ```POWERSHELL
-choco install poshdevops -version 0.0.27; # 0.0.27 was latest at time of writing
+choco install poshdevops -version 0.0.45; # 0.0.45 was latest at time of writing
 Import-Module "C:\Program Files\PoshDevOps\Modules\PoshDevOps" -Force
 ```
 ###In a nutshell, hows it work?
 ***Conceptually:***
-- `task groups` contain an ordered set of tasks
-- `tasks` are arbitrary operations implemented as PowerShell modules and packaged as .nupkg's.
+- `task groups` are an arbitrary set of tasks working towards a common goal   
+  for example: "Build", "Unit Test", "Package", "Deploy", "Integration Test", .. etc
+- `tasks` are arbitrary operations implemented as PowerShell modules and packaged as .nupkg's.    
+  for example: a "Package" task group might have tasks: Copy Artifacts To Temp, Create NuGet Package
 
 ***Operationally:***
 - everything takes place within PowerShell
@@ -39,15 +41,18 @@ Set-Location "PATH-TO-ROOT-DIR-OF-YOUR-PROJECT"
 ```
 create a new task group:
 ```POWERSHELL
-New-PoshDevOpsTaskGroup
+New-PoshDevOpsTaskGroup -Name Build
 ```
-add a task to your plan:
+add a few tasks to your task group:
 ```POWERSHELL
-Add-PoshDevOpsTask -Name "Compile" -ModulePath "PATH-TO-DIR-CONTAINING-MODULE"
+Add-PoshDevOpsTask -Name "Restore NuGet Packages" -PackageId RestoreNuGetPackages
+Add-PoshDevOpsTask -Name "Build Visual Studio Sln" -PackageId BuildVisualStudioSln
+Add-PoshDevOpsTask -Name "Execute Unit Tests" -PackageId "InvokeVSTestConsole"
+Add-PoshDevOpsTask -Name "Create NuGet Package" -PackageId "CreateNuGetPackage"
 ```
 invoke your task group:
 ```POWERSHELL
-@{Compile=@{Var1='Value1';Var2='Value2'}} | Invoke-PoshDevOpsTaskGroup
+@{"Create NuGet Package"=@{Version="0.0.1";OutputDirectoryPath=.}} | Invoke-PoshDevOpsTaskGroup -Name Build
 ```
 
 ###How do I distribute my task group?
