@@ -3,6 +3,201 @@ Import-Module "$PSScriptRoot\TaskGroupStorage" -Force -Global
 Import-Module "$PSScriptRoot\HashtableExtensions" -Force -Global
 Import-Module "$PSScriptRoot\OrderedDictionaryExtensions" -Force -Global
 
+function Invoke-PoshDevOpsTaskGroup(
+
+[string]
+[ValidateNotNullOrEmpty()]
+[Parameter(
+    Mandatory=$true)]
+$Name,
+
+[Hashtable]
+[Parameter(
+    ValueFromPipeline=$true,
+    ValueFromPipelineByPropertyName=$true)]
+$Parameters,
+
+[string[]]
+[ValidateCount( 1, [Int]::MaxValue)]
+[Parameter(
+    ValueFromPipelineByPropertyName=$true)]
+$PackageSource = $DefaultPackageSources,
+
+[String]
+[ValidateScript({Test-Path $_ -PathType Container})]
+[Parameter(
+    ValueFromPipelineByPropertyName=$true)]
+$ProjectRootDirPath='.'){
+    
+    $TaskGroup = TaskGroupStorage\Get-TaskGroup -Name $Name -ProjectRootDirPath $ProjectRootDirPath
+
+    if($TaskGroup){        
+
+        foreach($task in $TaskGroup.Tasks.Values){
+                    
+            if($Parameters.($task.Name)){
+
+                if($task.Parameters){
+
+Write-Debug "Adding union of passed parameters and archived parameters to pipeline. Passed parameters will override archived parameters"
+                
+                    $taskParameters = Get-UnionOfHashtables -Source1 $Parameters.($task.Name) -Source2 $task.Parameters
+
+                }
+                else{
+
+Write-Debug "Adding passed parameters to pipeline"
+
+                    $taskParameters = $Parameters.($task.Name)
+            
+                }
+
+            }
+            elseif($task.Parameters){
+
+Write-Debug "Adding archived parameters to pipeline"    
+                $taskParameters = $task.Parameters
+
+            }
+            else{
+                
+                $taskParameters = @{}
+            
+            }
+
+Write-Debug "Adding automatic parameters to pipeline"
+            
+            $taskParameters.PoshDevOpsProjectRootDirPath = (Resolve-Path $ProjectRootDirPath)
+            $taskParameters.PoshDevOpsTaskName = $task.Name
+
+Write-Debug "Ensuring task module package installed"
+            Install-PoshDevOpsPackage -Id $task.PackageId -Version $task.PackageVersion -Source $PackageSource
+
+            $moduleDirPath = "$ProjectRootDirPath\.PoshDevOps\Packages\$($task.PackageId).$($task.PackageVersion)\tools\$($task.PackageId)"
+Write-Debug "Importing module located at: $moduleDirPath"
+            Import-Module $moduleDirPath -Force
+
+Write-Debug `
+@"
+Invoking task $($task.Name) with parameters: 
+$($taskParameters|Out-String)
+"@
+            # Parameters must be PSCustomObject so [Parameter(ValueFromPipelineByPropertyName = $true)] works
+            [PSCustomObject]$taskParameters.Clone() | Invoke-PoshDevOpsTask
+
+        }
+    }
+    else{
+
+throw "TaskGroup.psd1 not found at: $taskGroupFilePath"
+
+    }
+}
+
+function New-PoshDevOpsTaskGroup(
+
+[string]
+[ValidateNotNullOrEmpty()]
+[Parameter(
+    Mandatory=$true,
+    ValueFromPipelineByPropertyName=$true)]
+$Name,
+
+[switch]
+$Force,
+
+[string]
+[ValidateScript({Test-Path $_ -PathType Container})]
+[Parameter(
+    ValueFromPipelineByPropertyName=$true)]
+$ProjectRootDirPath = '.'){
+    
+    $TaskGroup = @{Name=$Name;Tasks=[ordered]@{}}
+
+    TaskGroupStorage\Add-TaskGroup `
+        -Value $TaskGroup `
+        -Force:$Force `
+        -ProjectRootDirPath $ProjectRootDirPath
+}
+
+function Remove-PoshDevOpsTaskGroup(
+
+[string]
+[ValidateNotNullOrEmpty()]
+[Parameter(
+    Mandatory=$true)]
+$Name,
+
+[switch]$Force,
+
+[string]
+[ValidateScript({Test-Path $_ -PathType Container})]
+[Parameter(
+    ValueFromPipelineByPropertyName=$true)]
+$ProjectRootDirPath = '.'){
+
+    $confirmationPromptQuery = "Are you sure you want to delete the task group `"$Name`"`?"
+    $confirmationPromptCaption = 'Confirm task removal'
+
+    if($Force.IsPresent -or $PSCmdlet.ShouldContinue($confirmationPromptQuery,$confirmationPromptCaption)){
+
+        TaskGroupStorage\Remove-TaskGroup `
+            -Name $Name `
+            -ProjectRootDirPath $ProjectRootDirPath
+
+    }
+
+}
+
+function Get-PoshDevOpsTaskGroup(
+
+[string]
+[ValidateNotNullOrEmpty()]
+[Parameter(
+    Mandatory=$true)]
+$Name,
+
+[string]
+[ValidateScript({Test-Path $_ -PathType Container})]
+[Parameter(
+    ValueFromPipelineByPropertyName=$true)]
+$ProjectRootDirPath = '.'){
+
+    TaskGroupStorage\Get-TaskGroup -Name $Name -ProjectRootDirPath $ProjectRootDirPath | Write-Output
+
+}
+
+function Rename-PoshDevOpsTaskGroup(
+[string]
+[ValidateNotNullOrEmpty()]
+[Parameter(
+    Mandatory=$true)]
+$OldName,
+
+[string]
+[ValidateNotNullOrEmpty()]
+[Parameter(
+    Mandatory=$true)]
+$NewName,
+
+[switch]
+$Force,
+
+[string]
+[ValidateScript({Test-Path $_ -PathType Container})]
+[Parameter(
+    ValueFromPipeline=$true,
+    ValueFromPipelineByPropertyName=$true)]
+$ProjectRootDirPath = '.'){
+
+    TaskGroupStorage\Rename-TaskGroup `
+        -OldName $OldName `
+        -NewName $NewName `
+        -Force:$Force `
+        -ProjectRootDirPath $ProjectRootDirPath    
+
+}
+
 function Add-PoshDevOpsTask(
 [CmdletBinding(
     DefaultParameterSetName="add-TaskLast")]
@@ -227,33 +422,50 @@ $ProjectRootDirPath = '.'){
 
     if($Force.IsPresent -or $PSCmdlet.ShouldContinue($confirmationPromptQuery,$confirmationPromptCaption)){
 
-        TaskGroupStorage\Remove-Task -TaskGroupName $TaskGroupName -Name $Name -ProjectRootDirPath $ProjectRootDirPath
+        TaskGroupStorage\Remove-Task `
+            -TaskGroupName $TaskGroupName `
+            -Name $Name `
+            -ProjectRootDirPath $ProjectRootDirPath
 
     }
 
 }
 
-function New-PoshDevOpsTaskGroup(
+function Rename-PoshDevOpsTask(
 
 [string]
 [ValidateNotNullOrEmpty()]
 [Parameter(
-    Mandatory=$true,
-    ValueFromPipelineByPropertyName=$true)]
-$Name,
+    Mandatory=$true)]
+$TaskGroupName,
 
-[switch]
-$Force,
+[string]
+[ValidateNotNullOrEmpty()]
+[Parameter(
+    Mandatory=$true)]
+$OldName,
+
+[string]
+[ValidateNotNullOrEmpty()]
+[Parameter(
+    Mandatory=$true)]
+$NewName,
+
+[switch]$Force,
 
 [string]
 [ValidateScript({Test-Path $_ -PathType Container})]
 [Parameter(
     ValueFromPipelineByPropertyName=$true)]
 $ProjectRootDirPath = '.'){
-    
-    $TaskGroup = @{Name=$Name;Tasks=[ordered]@{}}
 
-    TaskGroupStorage\Add-TaskGroup -Value $TaskGroup -Force:$Force -ProjectRootDirPath $ProjectRootDirPath
+    TaskGroupStorage\Rename-Task `
+        -TaskGroupName $TaskGroupName `
+        -OldName $OldName `
+        -NewName $NewName `
+        -Force:$Force `
+        -ProjectRootDirPath $ProjectRootDirPath
+
 }
 
 function Update-PoshDevOpsPackage(
@@ -356,102 +568,18 @@ to version "$($updatedPackageVersion)"
     }
 }
 
-function Invoke-PoshDevOpsTaskGroup(
-
-[string]
-[ValidateNotNullOrEmpty()]
-[Parameter(
-    Mandatory=$true)]
-$Name,
-
-[Hashtable]
-[Parameter(
-    ValueFromPipeline=$true,
-    ValueFromPipelineByPropertyName=$true)]
-$Parameters,
-
-[string[]]
-[ValidateCount( 1, [Int]::MaxValue)]
-[Parameter(
-    ValueFromPipelineByPropertyName=$true)]
-$PackageSource = $DefaultPackageSources,
-
-[String]
-[ValidateScript({Test-Path $_ -PathType Container})]
-[Parameter(
-    ValueFromPipelineByPropertyName=$true)]
-$ProjectRootDirPath='.'){
-    
-    $TaskGroup = TaskGroupStorage\Get-TaskGroup -Name $Name -ProjectRootDirPath $ProjectRootDirPath
-
-    if($TaskGroup){        
-
-        foreach($task in $TaskGroup.Tasks.Values){
-                    
-            if($Parameters.($task.Name)){
-
-                if($task.Parameters){
-
-Write-Debug "Adding union of passed parameters and archived parameters to pipeline. Passed parameters will override archived parameters"
-                
-                    $taskParameters = Get-UnionOfHashtables -Source1 $Parameters.($task.Name) -Source2 $task.Parameters
-
-                }
-                else{
-
-Write-Debug "Adding passed parameters to pipeline"
-
-                    $taskParameters = $Parameters.($task.Name)
-            
-                }
-
-            }
-            elseif($task.Parameters){
-
-Write-Debug "Adding archived parameters to pipeline"    
-                $taskParameters = $task.Parameters
-
-            }
-            else{
-                
-                $taskParameters = @{}
-            
-            }
-
-Write-Debug "Adding automatic parameters to pipeline"
-            
-            $taskParameters.PoshDevOpsProjectRootDirPath = (Resolve-Path $ProjectRootDirPath)
-            $taskParameters.PoshDevOpsTaskName = $task.Name
-
-Write-Debug "Ensuring task module package installed"
-            Install-PoshDevOpsPackage -Id $task.PackageId -Version $task.PackageVersion -Source $PackageSource
-
-            $moduleDirPath = "$ProjectRootDirPath\.PoshDevOps\Packages\$($task.PackageId).$($task.PackageVersion)\tools\$($task.PackageId)"
-Write-Debug "Importing module located at: $moduleDirPath"
-            Import-Module $moduleDirPath -Force
-
-Write-Debug `
-@"
-Invoking task $($task.Name) with parameters: 
-$($taskParameters|Out-String)
-"@
-            # Parameters must be PSCustomObject so [Parameter(ValueFromPipelineByPropertyName = $true)] works
-            [PSCustomObject]$taskParameters.Clone() | Invoke-PoshDevOpsTask
-
-        }
-    }
-    else{
-
-throw "TaskGroup.psd1 not found at: $taskGroupFilePath"
-
-    }
-}
-
+#task group operations
 Export-ModuleMember -Function Invoke-PoshDevOpsTaskGroup
 Export-ModuleMember -Function New-PoshDevOpsTaskGroup
 Export-ModuleMember -Function Remove-PoshDevOpsTaskGroup
-Export-ModuleMember -Function Update-PoshDevOpsPackage
+Export-ModuleMember -Function Rename-PoshDevOpsTaskGroup
+Export-ModuleMember -Function Get-PoshDevOpsTaskGroup
+
+#task operations
 Export-ModuleMember -Function Add-PoshDevOpsTask
 Export-ModuleMember -Function Set-PoshDevOpsTaskParameter
 Export-ModuleMember -Function Remove-PoshDevOpsTask
-Export-ModuleMember -Function Get-PoshDevOpsTaskGroup
+Export-ModuleMember -Function Rename-PoshDevOpsTask
+
+#package operations
+Export-ModuleMember -Function Update-PoshDevOpsPackage
