@@ -134,5 +134,6 @@ $Strict) {
     }
 }
 
-
+Export-ModuleMember -Alias ConvertFrom-Pson
+Export-ModuleMember -Function ConvertTo-Pson
 
