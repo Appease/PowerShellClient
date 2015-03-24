@@ -41,15 +41,18 @@ Set-Location "PATH-TO-ROOT-DIR-OF-YOUR-PROJECT"
 ```
 create a new task group:
 ```POWERSHELL
-New-PoshDevOpsTaskGroup
+New-PoshDevOpsTaskGroup -Name Build
 ```
-add a task to your plan:
+add a few tasks to your task group:
 ```POWERSHELL
-Add-PoshDevOpsTask -Name "Compile" -ModulePath "PATH-TO-DIR-CONTAINING-MODULE"
+Add-PoshDevOpsTask -Name "Restore NuGet Packages" -PackageId RestoreNuGetPackages
+Add-PoshDevOpsTask -Name "Build Visual Studio Sln" -PackageId BuildVisualStudioSln
+Add-PoshDevOpsTask -Name "Execute Unit Tests" -PackageId "InvokeVSTestConsole"
+Add-PoshDevOpsTask -Name "Create NuGet Package" -PackageId "CreateNuGetPackage"
 ```
 invoke your task group:
 ```POWERSHELL
-@{Compile=@{Var1='Value1';Var2='Value2'}} | Invoke-PoshDevOpsTaskGroup
+@{"Create NuGet Package"=@{Version="0.0.1";OutputDirectoryPath=.}} | Invoke-PoshDevOpsTaskGroup -Name Build
 ```
 
 ###How do I distribute my task group?
