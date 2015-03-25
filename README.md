@@ -5,16 +5,14 @@ Build/Deployment services today are extremely powerfull and easy to use. However
 ######-2 coupling of implementation to a proprietary build/deployment service.
 ######-3 no capability to run outside of a proprietary build/deployment
 ######-4 expenses (subscriptions, licenses, hardware,  etc...)
-######-5 one off scripts lacking any any sort of modularity
-######-6 rampant copying/pasting, general lack of reuse
+######-5 one off scripts lacking any any sort of modularity or reuse
 
 ###How does PoshDevOps attempt to solve them?
 ######+1 versioning side by side source code
 ######+2 implemented as plain old PowerShell modules
 ######+3 ability to run anything capable of running PowerShell
 ######+4 no expenses (as long as you have something capable of running PowerShell ;))
-######+5 all tasks are implemented as PowerShell modules
-######+6 all tasks are package sourced and inherently reuseable
+######+5 all tasks are implemented as PowerShell modules and packaged as .nupkg files
 
 ###How do I install it?
 Make sure you have [Chocolatey](https://chocolatey.org) installed, then from PowerShell run
