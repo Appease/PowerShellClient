@@ -5,7 +5,7 @@ Build/Deployment services today are extremely powerfull and easy to use. However
 ######-2 coupling of implementation to a proprietary build/deployment service.
 ######-3 no capability to run outside of a proprietary build/deployment
 ######-4 expenses (subscriptions, licenses, hardware,  etc...)
-######-5 one off scripts lacking any any sort of modularity or reuse
+######-5 one off scripts lacking modularity/reusability
 
 ###How does PoshDevOps attempt to solve them?
 ######+1 versioning side by side source code
