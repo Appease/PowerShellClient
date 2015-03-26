@@ -44,8 +44,8 @@ add a few tasks to your DevOp:
 ```POWERSHELL
 Add-DevOpTask -DevOpName Build -Name "Restore NuGet Packages" -PackageId RestoreNuGetPackages
 Add-DevOpTask -DevOpName Build -Name "Build Visual Studio Sln" -PackageId BuildVisualStudioSln
-Add-DevOpTask -DevOpName Build -Name "Execute Unit Tests" -PackageId "InvokeVSTestConsole"
-Add-DevOpTask -DevOpName Build -Name "Create NuGet Package" -PackageId "CreateNuGetPackage"
+Add-DevOpTask -DevOpName Build -Name "Execute Unit Tests" -PackageId InvokeVSTestConsole
+Add-DevOpTask -DevOpName Build -Name "Create NuGet Package" -PackageId CreateNuGetPackage
 ```
 invoke your DevOp:
 ```POWERSHELL
