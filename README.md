@@ -17,45 +17,45 @@ Build/Deployment services today are extremely powerfull and easy to use. However
 ###How do I install it?
 Make sure you have [Chocolatey](https://chocolatey.org) installed, then from PowerShell run
 ```POWERSHELL
-choco install poshdevops -version 0.0.62; # 0.0.62 was latest at time of writing
+choco install poshdevops -version 0.0.65; # 0.0.65 was latest at time of writing
 Import-Module "C:\Program Files\PoshDevOps\Modules\PoshDevOps" -Force
 ```
 ###In a nutshell, hows it work?
 ***Conceptually:***
-- `task groups` are an arbitrary set of tasks working towards a common goal   
+- A `DevOp` (development operation) is set of related tasks
   for example: "Build", "Unit Test", "Package", "Deploy", "Integration Test", .. etc
 - `tasks` are arbitrary operations implemented as PowerShell modules and packaged as .nupkg's.    
-  for example: a "Package" task group might have tasks: Copy Artifacts To Temp, Create NuGet Package
+  for example: a "Package Artifacts" DevOp might have tasks: Copy Artifacts To Temp, Create NuGet Package
 
 ***Operationally:***
 - everything takes place within PowerShell
-- as you create/edit `task groups` a snapshot is maintained in a `YOUR-TASKGROUP-NAME.psd1` file (under the .PoshDevOps directory).
+- as you create/edit your `DevOps` a snapshot of each is maintained in a `YOUR-DEVOP-NAME.psd1` file (under the .PoshDevOps directory).
 
 ###How do I get started?
 navigate to the root directory of your project:
 ```POWERSHELL
 Set-Location "PATH-TO-ROOT-DIR-OF-YOUR-PROJECT"
 ```
-create a new task group:
+create a new DevOp:
 ```POWERSHELL
-New-PoshDevOpsTaskGroup -Name Build
+New-DevOp -Name Build
 ```
-add a few tasks to your task group:
+add a few tasks to your DevOp:
 ```POWERSHELL
-Add-PoshDevOpsTask -Name "Restore NuGet Packages" -PackageId RestoreNuGetPackages
-Add-PoshDevOpsTask -Name "Build Visual Studio Sln" -PackageId BuildVisualStudioSln
-Add-PoshDevOpsTask -Name "Execute Unit Tests" -PackageId "InvokeVSTestConsole"
-Add-PoshDevOpsTask -Name "Create NuGet Package" -PackageId "CreateNuGetPackage"
+Add-DevOpTask -DevOpName Build -Name "Restore NuGet Packages" -PackageId RestoreNuGetPackages
+Add-DevOpTask -DevOpName Build -Name "Build Visual Studio Sln" -PackageId BuildVisualStudioSln
+Add-DevOpTask -DevOpName Build -Name "Execute Unit Tests" -PackageId "InvokeVSTestConsole"
+Add-DevOpTask -DevOpName Build -Name "Create NuGet Package" -PackageId "CreateNuGetPackage"
 ```
-invoke your task group:
+invoke your DevOp:
 ```POWERSHELL
-@{"Create NuGet Package"=@{Version="0.0.1";OutputDirectoryPath=.}} | Invoke-PoshDevOpsTaskGroup -Name Build
+@{"Create NuGet Package"=@{Version="0.0.1";OutputDirectoryPath=.}} | Invoke-DevOp -Name Build
 ```
 
-###How do I distribute my task group?
-When you run `New-PoshDevOpsTaskGroup` it creates a folder named `.PoshDevOps` at the root of your project. From then on all modifications to your task groups are maintained inside that folder so your .PoshDevOps folder is all you need!
+###How do I distribute my DevOps?
+When you invoke `New-DevOp` for the first time it creates a folder named `.PoshDevOps` at the root of your project. Make sure you add this directory to version control and you're done. 
 
-(pro-tip: check your .PoshDevOps folder in to source control to version your task group along with your code.)
+pro-tip: exclude the `.PoshDevops\packages` folder from version control. PoshDevOps is smart enough to handle re-downloading any DevOp packages when it needs them and this way you don't bloat your version control. 
 
 ###Where's the documentation?
 [Here](Docs)
