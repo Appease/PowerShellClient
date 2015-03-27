@@ -84,7 +84,7 @@ $($taskParameters|Out-String)
     }
     else{
 
-throw "DevOp.psd1 not found at: $taskGroupFilePath"
+throw "$Name.psd1 not found for project at $ProjectRootDirPath"
 
     }
 }
@@ -533,14 +533,14 @@ $ProjectRootDirPath='.'){
     }
     Else{        
         
-        foreach($task in $taskGroup.Tasks.Values){
+        foreach($task in $DevOp.Tasks.Values){
 
             $packageUpdates.Add($task.PackageId,(PackageManagement\Get-LatestPackageVersion -Source $Source -Id $task.PackageId))
         
         }
     }
 
-    foreach($task in $taskGroup.Tasks.Values){
+    foreach($task in $DevOp.Tasks.Values){
 
         $updatedPackageVersion = $packageUpdates.($task.PackageId)
 
@@ -563,14 +563,14 @@ to version "$($updatedPackageVersion)"
     }
 }
 
-#Goal API
+#DevOp API
 Export-ModuleMember -Function Invoke-DevOp
 Export-ModuleMember -Function New-DevOp
 Export-ModuleMember -Function Remove-DevOp
 Export-ModuleMember -Function Rename-DevOp
 Export-ModuleMember -Function Get-DevOp
 
-#Operation API
+#Task API
 Export-ModuleMember -Function New-DevOpTask
 Export-ModuleMember -Function Set-DevOpParameter
 Export-ModuleMember -Function Remove-DevOpTask
