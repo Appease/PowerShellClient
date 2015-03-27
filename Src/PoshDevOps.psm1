@@ -1,8 +1,3 @@
-Import-Module "$PSScriptRoot\PackageManagement" -Force -Global
-Import-Module "$PSScriptRoot\DevOpStorage" -Force -Global
-Import-Module "$PSScriptRoot\HashtableExtensions" -Force -Global
-Import-Module "$PSScriptRoot\OrderedDictionaryExtensions" -Force -Global
-
 function Invoke-DevOp(
 
 [string]
