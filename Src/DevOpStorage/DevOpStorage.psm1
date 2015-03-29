@@ -1,5 +1,5 @@
-Import-Module "$PSScriptRoot\Pson" -Force -Global
-Import-Module "$PSScriptRoot\..\OrderedDictionaryExtensions" -Force -Global
+Import-Module "$PSScriptRoot\..\OrderedDictionaryExtensions"
+Import-Module "$PSScriptRoot\..\Pson"
 
 function Get-DevOp(
 
@@ -143,7 +143,7 @@ $ProjectRootDirPath = '.'){
     Remove-Item -Path $DevOpFilePath -Force
 }
 
-function Add-Task(
+function Add-DevOpTask(
 [string]
 [ValidateNotNullOrEmpty()]
 [Parameter(
@@ -219,7 +219,7 @@ If you want to overwrite the existing task use the -Force parameter
     sc $DevOpFilePath -Value (ConvertTo-Pson -InputObject $DevOp -Depth 12 -Layers 12 -Strict) -Force
 }
 
-function Remove-Task(
+function Remove-DevOpTask(
 [string]
 [ValidateNotNullOrEmpty()]
 [Parameter(
@@ -252,7 +252,7 @@ $ProjectRootDirPath = '.'){
     sc $DevOpFilePath -Value (ConvertTo-Pson -InputObject $DevOp -Depth 12 -Layers 12 -Strict) -Force
 }
 
-function Rename-Task(
+function Rename-DevOpTask(
 [string]
 [ValidateNotNullOrEmpty()]
 [Parameter(
@@ -328,59 +328,7 @@ If you want to overwrite the existing task use the -Force parameter
     sc $DevOpFilePath -Value (ConvertTo-Pson -InputObject $DevOp -Depth 12 -Layers 12 -Strict) -Force
 }
 
-function Update-TaskPackageVersion(
-[string]
-[ValidateNotNullOrEmpty()]
-[Parameter(
-    Mandatory=$true,
-    ValueFromPipelineByPropertyName=$true)]
-$DevOpName,
-
-[string]
-[ValidateNotNullOrEmpty()]
-[Parameter(
-    Mandatory=$true,
-    ValueFromPipelineByPropertyName=$true)]
-$TaskName,
-
-[string]
-[ValidateNotNullOrEmpty()]
-[Parameter(
-    Mandatory=$true,
-    ValueFromPipelineByPropertyName=$true)]
-$PackageVersion,
-
-[string]
-[ValidateScript({Test-Path $_ -PathType Container})]
-[Parameter(
-    ValueFromPipelineByPropertyName=$true)]
-$ProjectRootDirPath = '.'){
-    
-    $DevOpFilePath = "$ProjectRootDirPath\.PoshDevOps\$DevOpName.psd1"
-    
-    # fetch DevOp
-    $DevOp = Get-DevOp -Name $DevOpName -ProjectRootDirPath $ProjectRootDirPath
-
-    # fetch task
-    $Task = $DevOp.Tasks.$TaskName
-
-    # handle task not found
-    if(!$Task){
-throw `
-@"
-Task "$TaskName" not found in DevOp "$DevOpName"
-for project "$(Resolve-Path $ProjectRootDirPath)".
-"@
-    }
-
-    # update task version
-    $Task.PackageVersion = $PackageVersion
-    
-    # save
-    sc $DevOpFilePath -Value (ConvertTo-Pson -InputObject $DevOp -Depth 12 -Layers 12 -Strict) -Force
-}
-
-function Set-DevOpParameter(
+function Set-DevOpTaskParameter(
 [string]
 [ValidateNotNullOrEmpty()]
 [Parameter(
@@ -454,15 +402,67 @@ If you want to overwrite the existing parameter value use the -Force parameter
     sc $DevOpFilePath -Value (ConvertTo-Pson -InputObject $DevOp -Depth 12 -Layers 12 -Strict) -Force
 }
 
-# DevOp API
-Export-ModuleMember -Function Get-DevOp
-Export-ModuleMember -Function Add-DevOp
-Export-ModuleMember -Function Rename-DevOp
-Export-ModuleMember -Function Remove-DevOp
+function Update-DevOpTaskPackageVersion(
+[string]
+[ValidateNotNullOrEmpty()]
+[Parameter(
+    Mandatory=$true,
+    ValueFromPipelineByPropertyName=$true)]
+$DevOpName,
 
-# Task API
-Export-ModuleMember -Function Add-Task
-Export-ModuleMember -Function Remove-Task
-Export-ModuleMember -Function Rename-Task
-Export-ModuleMember -Function Update-TaskPackageVersion
-Export-ModuleMember -Function Set-DevOpParameter
+[string]
+[ValidateNotNullOrEmpty()]
+[Parameter(
+    Mandatory=$true,
+    ValueFromPipelineByPropertyName=$true)]
+$TaskName,
+
+[string]
+[ValidateNotNullOrEmpty()]
+[Parameter(
+    Mandatory=$true,
+    ValueFromPipelineByPropertyName=$true)]
+$PackageVersion,
+
+[string]
+[ValidateScript({Test-Path $_ -PathType Container})]
+[Parameter(
+    ValueFromPipelineByPropertyName=$true)]
+$ProjectRootDirPath = '.'){
+    
+    $DevOpFilePath = "$ProjectRootDirPath\.PoshDevOps\$DevOpName.psd1"
+    
+    # fetch DevOp
+    $DevOp = Get-DevOp -Name $DevOpName -ProjectRootDirPath $ProjectRootDirPath
+
+    # fetch task
+    $Task = $DevOp.Tasks.$TaskName
+
+    # handle task not found
+    if(!$Task){
+throw `
+@"
+Task "$TaskName" not found in DevOp "$DevOpName"
+for project "$(Resolve-Path $ProjectRootDirPath)".
+"@
+    }
+
+    # update task version
+    $Task.PackageVersion = $PackageVersion
+    
+    # save
+    sc $DevOpFilePath -Value (ConvertTo-Pson -InputObject $DevOp -Depth 12 -Layers 12 -Strict) -Force
+}
+
+Export-ModuleMember -Function @(
+                    # DevOp API
+                    'Get-DevOp',
+                    'Add-DevOp',
+                    'Rename-DevOp',
+                    'Remove-DevOp',
+                    # DevOp Task API
+                    'Add-DevOpTask',
+                    'Remove-DevOpTask',
+                    'Rename-DevOpTask',
+                    'Set-DevOpTaskParameter',
+                    'Update-DevOpTaskPackageVersion')

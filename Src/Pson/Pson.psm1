@@ -1,6 +1,5 @@
 Set-Alias ConvertFrom-Pson Invoke-Expression -Description "Convert variable from PSON"
 
-
 Function ConvertTo-Pson(
 [Parameter(
     ValueFromPipeline=$true)]
@@ -134,6 +133,5 @@ $Strict) {
     }
 }
 
-Export-ModuleMember -Alias ConvertFrom-Pson
 Export-ModuleMember -Function ConvertTo-Pson
-
+Export-ModuleMember -Alias ConvertFrom-Pson

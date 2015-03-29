@@ -1,5 +1,22 @@
-﻿function ConvertTo-SemanticVersionObject(
+﻿$SemanticVersionRegex = "(?<Major>\d+)\.(?<Minor>\d+)\.(?<Patch>\d+)(?:-(?<PreRelease>[0-9A-Za-z-.]*))?(?:\+(?<Build>[0-9A-Za-z-.]*))?"
+
+function Test-SemanticVersion(
     [string]
+    [ValidateNotNullOrEmpty()]
+    [Parameter(
+        Mandatory=$true,
+        ValueFromPipeline=$true)]
+    $SemanticVersionString){
+
+    $SemanticVersionString -match $SemanticVersionRegex
+
+}
+
+function ConvertTo-SemanticVersionObject(
+    [string]
+    [ValidateNotNullOrEmpty()]
+    [Parameter(
+        Mandatory=$true)]
     $SemanticVersionString){
 
     <#
@@ -7,9 +24,7 @@
         creates an object representing a v1.0 & v2.0 semantic version (see: http://semver.org/)
     #>
 
-    $semanticVersionRegex = "(?<Major>\d+)\.(?<Minor>\d+)\.(?<Patch>\d+)(?:-(?<PreRelease>[0-9A-Za-z-.]*))?(?:\+(?<Build>[0-9A-Za-z-.]*))?"
-
-    $semanticVersionString -match $semanticVersionRegex |Out-Null
+    $SemanticVersionString -match $SemanticVersionRegex |Out-Null
     $Matches.Remove(0)
     $Matches.Major = [int]$Matches.Major
     $Matches.Minor = [int]$Matches.Minor
@@ -142,3 +157,7 @@ $Descending){
 
     Write-Output $InputArray
 }
+
+Export-ModuleMember -Function @(
+                                'Get-SortedSemanticVersions',
+                                'Test-SemanticVersion')

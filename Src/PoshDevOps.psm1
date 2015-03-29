@@ -1,28 +1,33 @@
+Import-Module "$PSScriptRoot\PackageManagement"
+Import-Module "$PSScriptRoot\DevOpStorage"
+Import-Module "$PSScriptRoot\HashtableExtensions"
+Import-Module "$PSScriptRoot\OrderedDictionaryExtensions"
+
 function Invoke-DevOp(
 
-[string]
-[ValidateNotNullOrEmpty()]
-[Parameter(
-    Mandatory=$true)]
-$Name,
+    [string]
+    [ValidateNotNullOrEmpty()]
+    [Parameter(
+        Mandatory=$true)]
+    $Name,
 
-[Hashtable]
-[Parameter(
-    ValueFromPipeline=$true,
-    ValueFromPipelineByPropertyName=$true)]
-$Parameters,
+    [Hashtable]
+    [Parameter(
+        ValueFromPipeline=$true,
+        ValueFromPipelineByPropertyName=$true)]
+    $Parameters,
 
-[string[]]
-[ValidateCount( 1, [Int]::MaxValue)]
-[Parameter(
-    ValueFromPipelineByPropertyName=$true)]
-$PackageSource = $DefaultPackageSources,
+    [string[]]
+    [ValidateCount( 1, [Int]::MaxValue)]
+    [Parameter(
+        ValueFromPipelineByPropertyName=$true)]
+    $PackageSource = $DefaultPackageSources,
 
-[String]
-[ValidateScript({Test-Path $_ -PathType Container})]
-[Parameter(
-    ValueFromPipelineByPropertyName=$true)]
-$ProjectRootDirPath='.'){
+    [String]
+    [ValidateScript({Test-Path $_ -PathType Container})]
+    [Parameter(
+        ValueFromPipelineByPropertyName=$true)]
+    $ProjectRootDirPath='.'){
     
     $DevOp = DevOpStorage\Get-DevOp -Name $Name -ProjectRootDirPath $ProjectRootDirPath
 
@@ -66,9 +71,9 @@ Write-Debug "Adding automatic parameters to pipeline"
             $taskParameters.PoshDevOpsTaskName = $task.Name
 
 Write-Debug "Ensuring task module package installed"
-            PackageManagement\Install-PoshDevOpsPackage -Id $task.PackageId -Version $task.PackageVersion -Source $PackageSource
+            PackageManagement\Install-DevOpTaskPackage -Id $task.PackageId -Version $task.PackageVersion -Source $PackageSource
 
-            $moduleDirPath = "$ProjectRootDirPath\.PoshDevOps\Packages\$($task.PackageId).$($task.PackageVersion)\tools\$($task.PackageId)"
+            $moduleDirPath = "$ProjectRootDirPath\.PoshDevOps\packages\$($task.PackageId).$($task.PackageVersion)\$($task.PackageId)"
 Write-Debug "Importing module located at: $moduleDirPath"
             Import-Module $moduleDirPath -Force
 
@@ -78,7 +83,9 @@ Invoking task $($task.Name) with parameters:
 $($taskParameters|Out-String)
 "@
             # Parameters must be PSCustomObject so [Parameter(ValueFromPipelineByPropertyName = $true)] works
-            [PSCustomObject]$taskParameters.Clone() | Invoke-PoshDevOpsTask
+            [PSCustomObject]$taskParameters.Clone() | & "$($task.PackageId)\Invoke"
+
+            Remove-Module $task.PackageId
 
         }
     }
@@ -144,24 +151,6 @@ $ProjectRootDirPath = '.'){
 
 }
 
-function Get-DevOp(
-
-[string]
-[ValidateNotNullOrEmpty()]
-[Parameter(
-    Mandatory=$true)]
-$Name,
-
-[string]
-[ValidateScript({Test-Path $_ -PathType Container})]
-[Parameter(
-    ValueFromPipelineByPropertyName=$true)]
-$ProjectRootDirPath = '.'){
-
-    DevOpStorage\Get-DevOp -Name $Name -ProjectRootDirPath $ProjectRootDirPath | Write-Output
-
-}
-
 function Rename-DevOp(
 [string]
 [ValidateNotNullOrEmpty()]
@@ -193,9 +182,27 @@ $ProjectRootDirPath = '.'){
 
 }
 
-function New-DevOpTask(
+function Get-DevOp(
+
+[string]
+[ValidateNotNullOrEmpty()]
+[Parameter(
+    Mandatory=$true)]
+$Name,
+
+[string]
+[ValidateScript({Test-Path $_ -PathType Container})]
+[Parameter(
+    ValueFromPipelineByPropertyName=$true)]
+$ProjectRootDirPath = '.'){
+
+    DevOpStorage\Get-DevOp -Name $Name -ProjectRootDirPath $ProjectRootDirPath | Write-Output
+
+}
+
+function Add-DevOpTask(
 [CmdletBinding(
-    DefaultParameterSetName="add-TaskLast")]
+    DefaultParameterSetName="Add-DevOpTaskLast")]
 
 [string]
 [ValidateNotNullOrEmpty()]
@@ -220,24 +227,24 @@ $PackageVersion,
 [switch]
 [Parameter(
     Mandatory=$true,
-    ParameterSetName='add-TaskFirst')]
+    ParameterSetName='Add-DevOpTaskFirst')]
 $First,
 
 [switch]
 [Parameter(
-    ParameterSetName='add-TaskLast')]
+    ParameterSetName='Add-DevOpTaskLast')]
 $Last,
 
 [string]
 [Parameter(
     Mandatory=$true,
-    ParameterSetName='add-TaskAfter')]
+    ParameterSetName='Add-DevOpTaskAfter')]
 $After,
 
 [string]
 [Parameter(
     Mandatory=$true,
-    ParameterSetName='add-TaskBefore')]
+    ParameterSetName='Add-DevOpTaskBefore')]
 $Before,
 
 [switch]
@@ -290,7 +297,7 @@ $ProjectRootDirPath = '.'){
 
         
         if([string]::IsNullOrWhiteSpace($PackageVersion)){
-            $PackageVersion = Get-LatestPackageVersion -Source $PackageSource -Id $PackageId
+            $PackageVersion = PackageManagement\Get-LatestDevOpTaskPackageVersion -Source $PackageSource -Id $PackageId
 Write-Debug "using greatest available package version : $PackageVersion"
         }
                 
@@ -299,7 +306,7 @@ Write-Debug "using greatest available package version : $PackageVersion"
             $TaskIndex = 0
         
         }
-        elseif('add-TaskAfter' -eq $PSCmdlet.ParameterSetName){
+        elseif('Add-DevOpTaskAfter' -eq $PSCmdlet.ParameterSetName){
             
             $DevOp = DevOpStorage\Get-DevOp -Name $DevOpName -ProjectRootDirPath $ProjectRootDirPath
             $indexOfAfter = OrderedDictionaryExtensions\Get-IndexOfKeyInOrderedDictionary -Key $After -OrderedDictionary $DevOp.Tasks
@@ -310,7 +317,7 @@ Write-Debug "using greatest available package version : $PackageVersion"
             $TaskIndex = $indexOfAfter + 1
         
         }
-        elseif('add-TaskBefore' -eq $PSCmdlet.ParameterSetName){        
+        elseif('Add-DevOpTaskBefore' -eq $PSCmdlet.ParameterSetName){        
         
             $DevOp = DevOpStorage\Get-DevOp -Name $DevOpName -ProjectRootDirPath $ProjectRootDirPath
             $indexOfBefore = OrderedDictionaryExtensions\Get-IndexOfKeyInOrderedDictionary -Key $Before -OrderedDictionary $DevOp.Tasks
@@ -327,7 +334,7 @@ Write-Debug "using greatest available package version : $PackageVersion"
             $TaskIndex = $DevOp.Tasks.Count  
         }
 
-        DevOpStorage\Add-Task `
+        DevOpStorage\Add-DevOpTask `
             -DevOpName $DevOpName `
             -Name $Name `
             -PackageId $PackageId `
@@ -337,7 +344,80 @@ Write-Debug "using greatest available package version : $PackageVersion"
             -ProjectRootDirPath $ProjectRootDirPath
 }
 
-function Set-DevOpParameter(
+function Remove-DevOpTask(
+
+[string]
+[ValidateNotNullOrEmpty()]
+[Parameter(
+    Mandatory=$true)]
+$DevOpName,
+
+[string]
+[ValidateNotNullOrEmpty()]
+[Parameter(
+    Mandatory=$true)]
+$Name,
+
+[switch]$Force,
+
+[string]
+[ValidateScript({Test-Path $_ -PathType Container})]
+[Parameter(
+    ValueFromPipelineByPropertyName=$true)]
+$ProjectRootDirPath = '.'){
+
+    $confirmationPromptQuery = "Are you sure you want to remove the task with name $Name`?"
+    $confirmationPromptCaption = 'Confirm task removal'
+
+    if($Force.IsPresent -or $PSCmdlet.ShouldContinue($confirmationPromptQuery,$confirmationPromptCaption)){
+
+        DevOpStorage\Remove-DevOpTask `
+            -DevOpName $DevOpName `
+            -Name $Name `
+            -ProjectRootDirPath $ProjectRootDirPath
+
+    }
+
+}
+
+function Rename-DevOpTask(
+
+[string]
+[ValidateNotNullOrEmpty()]
+[Parameter(
+    Mandatory=$true)]
+$DevOpName,
+
+[string]
+[ValidateNotNullOrEmpty()]
+[Parameter(
+    Mandatory=$true)]
+$OldName,
+
+[string]
+[ValidateNotNullOrEmpty()]
+[Parameter(
+    Mandatory=$true)]
+$NewName,
+
+[switch]$Force,
+
+[string]
+[ValidateScript({Test-Path $_ -PathType Container})]
+[Parameter(
+    ValueFromPipelineByPropertyName=$true)]
+$ProjectRootDirPath = '.'){
+
+    DevOpStorage\Rename-DevOpTask `
+        -DevOpName $DevOpName `
+        -OldName $OldName `
+        -NewName $NewName `
+        -Force:$Force `
+        -ProjectRootDirPath $ProjectRootDirPath
+
+}
+
+function Set-DevOpTaskParameter(
 
 [string]
 [ValidateNotNullOrEmpty()]
@@ -375,14 +455,14 @@ $ProjectRootDirPath = '.'){
         Sets configurable parameters of a task
         
         .EXAMPLE
-        Set-DevOpParameter -DevOpName Build -TaskName GitClone -Name GitParameters -Value Status -Force
+        Set-DevOpTaskParameter -DevOpName Build -TaskName GitClone -Name GitParameters -Value Status -Force
         
         Description:
 
         This command sets the parameter "GitParameters" to "Status" for a task "GitClone" in DevOp "Build"
     #>
 
-    DevOpStorage\Set-DevOpParameter `
+    DevOpStorage\Set-DevOpTaskParameter `
         -DevOpName $DevOpName `
         -TaskName $TaskName `
         -Name $Name `
@@ -390,80 +470,7 @@ $ProjectRootDirPath = '.'){
         -Force:$Force
 }
 
-function Remove-DevOpTask(
-
-[string]
-[ValidateNotNullOrEmpty()]
-[Parameter(
-    Mandatory=$true)]
-$DevOpName,
-
-[string]
-[ValidateNotNullOrEmpty()]
-[Parameter(
-    Mandatory=$true)]
-$Name,
-
-[switch]$Force,
-
-[string]
-[ValidateScript({Test-Path $_ -PathType Container})]
-[Parameter(
-    ValueFromPipelineByPropertyName=$true)]
-$ProjectRootDirPath = '.'){
-
-    $confirmationPromptQuery = "Are you sure you want to remove the task with name $Name`?"
-    $confirmationPromptCaption = 'Confirm task removal'
-
-    if($Force.IsPresent -or $PSCmdlet.ShouldContinue($confirmationPromptQuery,$confirmationPromptCaption)){
-
-        DevOpStorage\Remove-Task `
-            -DevOpName $DevOpName `
-            -Name $Name `
-            -ProjectRootDirPath $ProjectRootDirPath
-
-    }
-
-}
-
-function Rename-DevOpTask(
-
-[string]
-[ValidateNotNullOrEmpty()]
-[Parameter(
-    Mandatory=$true)]
-$DevOpName,
-
-[string]
-[ValidateNotNullOrEmpty()]
-[Parameter(
-    Mandatory=$true)]
-$OldName,
-
-[string]
-[ValidateNotNullOrEmpty()]
-[Parameter(
-    Mandatory=$true)]
-$NewName,
-
-[switch]$Force,
-
-[string]
-[ValidateScript({Test-Path $_ -PathType Container})]
-[Parameter(
-    ValueFromPipelineByPropertyName=$true)]
-$ProjectRootDirPath = '.'){
-
-    DevOpStorage\Rename-Task `
-        -DevOpName $DevOpName `
-        -OldName $OldName `
-        -NewName $NewName `
-        -Force:$Force `
-        -ProjectRootDirPath $ProjectRootDirPath
-
-}
-
-function Update-DevOpPackage(
+function Update-DevOpTaskPackage(
 
 [CmdletBinding(
     DefaultParameterSetName="Update-All")]
@@ -519,7 +526,7 @@ $ProjectRootDirPath='.'){
 
         foreach($packageId in $Id){
 
-            $packageUpdates.Add($packageId,(PackageManagement\Get-LatestPackageVersion -Source $Source -Id $packageId))
+            $packageUpdates.Add($packageId,(PackageManagement\Get-LatestDevOpTaskPackageVersion -Source $Source -Id $packageId))
 
         }
     }
@@ -535,7 +542,7 @@ $ProjectRootDirPath='.'){
         
         foreach($task in $taskGroup.Tasks.Values){
 
-            $packageUpdates.Add($task.PackageId,(PackageManagement\Get-LatestPackageVersion -Source $Source -Id $task.PackageId))
+            $packageUpdates.Add($task.PackageId,(PackageManagement\Get-LatestDevOpTaskPackageVersion -Source $Source -Id $task.PackageId))
         
         }
     }
@@ -546,7 +553,7 @@ $ProjectRootDirPath='.'){
 
         if($null -ne $updatedPackageVersion){
 
-            PackageManagement\Uninstall-PoshDevOpsPackageIfExists -Id $task.PackageId -Version $task.PackageVersion -ProjectRootDirPath $ProjectRootDirPath
+            PackageManagement\Uninstall-DevOpTaskPackage -Id $task.PackageId -Version $task.PackageVersion -ProjectRootDirPath $ProjectRootDirPath
 
 Write-Debug `
 @"
@@ -554,7 +561,7 @@ Updating task "$($task.Name)" package "$($task.PackageId)"
 from version "$($task.PackageVersion)"
 to version "$($updatedPackageVersion)"
 "@
-            DevOpStorage\Update-TaskPackageVersion `
+            DevOpStorage\Update-DevOpTaskPackageVersion `
                 -DevOpName $DevOpName `
                 -TaskName $task.Name `
                 -PackageVersion $updatedPackageVersion `
@@ -563,18 +570,20 @@ to version "$($updatedPackageVersion)"
     }
 }
 
-#Goal API
-Export-ModuleMember -Function Invoke-DevOp
-Export-ModuleMember -Function New-DevOp
-Export-ModuleMember -Function Remove-DevOp
-Export-ModuleMember -Function Rename-DevOp
-Export-ModuleMember -Function Get-DevOp
+Export-ModuleMember -Function @(
+                                # DevOp API
+                                'Invoke-DevOp',
+                                'New-DevOp',
+                                'Remove-DevOp',
+                                'Rename-DevOp',
+                                'Get-DevOp',
+                    
+                                # DevOp Task API
+                                'Add-DevOpTask',
+                                'Remove-DevOpTask',
+                                'Rename-DevOpTask',
+                                'Set-DevOpTaskParameter',
 
-#Operation API
-Export-ModuleMember -Function New-DevOpTask
-Export-ModuleMember -Function Set-DevOpParameter
-Export-ModuleMember -Function Remove-DevOpTask
-Export-ModuleMember -Function Rename-DevOpTask
-
-#Package API
-Export-ModuleMember -Function Update-DevOpPackage
+                                # DevOp Task Package API
+                                'Update-DevOpTaskPackage',
+                                'New-DevOpTaskPackageSpec')
