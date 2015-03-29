@@ -58,6 +58,9 @@ $Strict) {
 
             $String.Dispose()
 
+        }ElseIf ($InputObject -is [ScriptBlock]) {
+            "{$($InputObject.ToString())}"
+        
         } ElseIf ($InputObject -is [DateTime]) {
 
             "$Quote$($InputObject.ToString('s'))$Quote"
