@@ -91,7 +91,7 @@ $($taskParameters|Out-String)
     }
     else{
 
-throw "DevOp.psd1 not found at: $taskGroupFilePath"
+throw "$Name.psd1 not found for project at $ProjectRootDirPath"
 
     }
 }
@@ -540,14 +540,14 @@ $ProjectRootDirPath='.'){
     }
     Else{        
         
-        foreach($task in $taskGroup.Tasks.Values){
+        foreach($task in $DevOp.Tasks.Values){
 
             $packageUpdates.Add($task.PackageId,(PackageManagement\Get-LatestDevOpTaskPackageVersion -Source $Source -Id $task.PackageId))
         
         }
     }
 
-    foreach($task in $taskGroup.Tasks.Values){
+    foreach($task in $DevOp.Tasks.Values){
 
         $updatedPackageVersion = $packageUpdates.($task.PackageId)
 
