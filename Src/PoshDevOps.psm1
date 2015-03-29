@@ -152,6 +152,7 @@ $ProjectRootDirPath = '.'){
 }
 
 function Rename-DevOp(
+
 [string]
 [ValidateNotNullOrEmpty()]
 [Parameter(
@@ -471,7 +472,6 @@ $ProjectRootDirPath = '.'){
 }
 
 function Update-DevOpTaskPackage(
-
 [CmdletBinding(
     DefaultParameterSetName="Update-All")]
 

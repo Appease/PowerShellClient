@@ -3,6 +3,7 @@ Import-Module "$PSScriptRoot\..\Pson"
 
 $DefaultPackageSources = @('https://www.myget.org/F/poshdevops')
 $NugetExecutable = "$PSScriptRoot\nuget.exe"
+$ChocolateyExecutable = "chocolatey"
 
 function Get-LatestDevOpTaskPackageVersion(
 
@@ -131,6 +132,7 @@ $PackageSpecFilePath
 }
 
 function Get-DevOpTaskPackageInstallDirPath(
+
 [string]
 [ValidateNotNullOrEmpty()]
 [Parameter(
@@ -188,6 +190,7 @@ $ProjectRootDirPath = '.'){
 }
 
 function Install-DevOpTaskPackage(
+
 [string]
 [ValidateNotNullOrEmpty()]
 [Parameter(
@@ -218,8 +221,7 @@ $ProjectRootDirPath='.'){
         Installs a task package to an environment if it's not already installed
     #>
 
-    $taskGroupDirPath = Resolve-Path "$ProjectRootDirPath\.PoshDevOps"
-    $packagesDirPath = "$taskGroupDirPath\packages"
+    $PackagesDirPath = "$ProjectRootDirPath\.PoshDevOps\packages"
 
     if([string]::IsNullOrWhiteSpace($Version)){
 
@@ -234,14 +236,14 @@ Write-Debug "using greatest available package version : $Version"
     try{
 
         $OFS = ';'        
-        $nugetParameters = @('install',$Id,'-Source',($Source|Out-String),'-OutputDirectory',$packagesDirPath,'-Version',$Version,'-NonInteractive')
+        $NugetParameters = @('install',$Id,'-Source',($Source|Out-String),'-OutputDirectory',$PackagesDirPath,'-Version',$Version,'-NonInteractive')
 
 Write-Debug `
 @"
 Invoking nuget:
-& $nugetExecutable $($nugetParameters|Out-String)
+& $NugetExecutable $($NugetParameters|Out-String)
 "@
-        & $nugetExecutable $nugetParameters
+        & $NugetExecutable $NugetParameters
 
         # handle errors
         if ($LastExitCode -ne 0) {
@@ -253,11 +255,54 @@ Invoking nuget:
         $OFS = $initialOFS
     }
 
-    #TODO: INSTALL DEPENDENCIES
+    # install chocolatey dependencies
+    $ChocolateyDependencies = (Get-DevOpTaskPackageSpec -Name $Id -Version $Version -ProjectRootDirPath $ProjectRootDirPath).Dependencies.Chocolatey
+    foreach($ChocolateyDependency in $ChocolateyDependencies){
+        $ChocolateyParameters = @('install',$ChocolateyDependency.Id,'--confirm')
+        
+        if($ChocolateyDependency.Source){
+            $ChocolateyParameters += @('--source',$ChocolateyDependency.Source)
+        }
+
+        if($ChocolateyDependency.Version){
+            $ChocolateyParameters += @('--version',$ChocolateyDependency.Version)
+        }
+
+        if($ChocolateyDependency.InstallArguments){
+            $ChocolateyParameters += @('--install-arguments',$ChocolateyDependency.InstallArguments)
+        }
+        
+        if($ChocolateyDependency.OverrideArguments){
+            $ChocolateyParameters += @('--override-arguments')
+        }
+
+        if($ChocolateyDependency.PackageParameters){
+            $ChocolateyParameters += @('--package-parameters',$ChocolateyDependency.PackageParameters)
+        }
+
+        if($ChocolateyDependency.AllowMultipleVersions){
+            $ChocolateyParameters += @('--allow-multiple-versions')
+        }
+
+Write-Debug `
+@"
+Invoking chocolatey:
+& $ChocolateyExecutable $($ChocolateyParameters|Out-String)
+"@
+
+        & $ChocolateyExecutable $ChocolateyParameters
+
+        # handle errors
+        if ($LastExitCode -ne 0) {
+            throw $Error
+        }
+
+    }
 
 }
 
 function Uninstall-DevOpTaskPackage(
+
 [string]
 [ValidateNotNullOrEmpty()]
 [Parameter(
@@ -305,13 +350,13 @@ $packageInstallationDir
 "@
     }
 
-    #TODO: UNINSTALL DEPENDENCIES
+    #TODO: UNINSTALL DEPENDENCIES ?
 
 }
 
 Export-ModuleMember -Variable 'DefaultPackageSources'
 Export-ModuleMember -Function @(
-                                'Install-DevOpTaskPackage',
-                                'Uninstall-DevOpTaskPackage'
                                 'Get-LatestDevOpTaskPackageVersion'
-                                'New-DevOpTaskPackageSpec')
+                                'New-DevOpTaskPackageSpec',                                
+                                'Install-DevOpTaskPackage',
+                                'Uninstall-DevOpTaskPackage')
