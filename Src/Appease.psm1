@@ -1,4 +1,4 @@
-Import-Module "$PSScriptRoot\Dpm"
+Import-Module "$PSScriptRoot\TemplateManagement"
 Import-Module "$PSScriptRoot\DevOpStorage"
 Import-Module "$PSScriptRoot\HashtableExtensions"
 Import-Module "$PSScriptRoot\OrderedDictionaryExtensions"
@@ -21,7 +21,7 @@ function Invoke-DevOp(
     [ValidateCount( 1, [Int]::MaxValue)]
     [Parameter(
         ValueFromPipelineByPropertyName=$true)]
-    $PackageSource = $DefaultPackageSources,
+    $TemplateSource = $DefaultTemplateSources,
 
     [String]
     [ValidateScript({Test-Path $_ -PathType Container})]
@@ -70,10 +70,10 @@ Write-Debug "Adding automatic parameters to pipeline"
             $taskParameters.AppeaseProjectRootDirPath = (Resolve-Path $ProjectRootDirPath)
             $taskParameters.AppeaseTaskName = $task.Name
 
-Write-Debug "Ensuring task module package installed"
-            Dpm\Install-DpmPackage -Id $task.PackageId -Version $task.PackageVersion -Source $PackageSource
+Write-Debug "Ensuring task module template installed"
+            TemplateManagement\Install-DevOpTaskTemplate -Id $task.TemplateId -Version $task.TemplateVersion -Source $TemplateSource
 
-            $moduleDirPath = "$ProjectRootDirPath\.Appease\packages\$($task.PackageId).$($task.PackageVersion)\$($task.PackageId)"
+            $moduleDirPath = "$ProjectRootDirPath\.Appease\templates\$($task.TemplateId).$($task.TemplateVersion)\$($task.TemplateId)"
 Write-Debug "Importing module located at: $moduleDirPath"
             Import-Module $moduleDirPath -Force
 
@@ -83,9 +83,9 @@ Invoking task $($task.Name) with parameters:
 $($taskParameters|Out-String)
 "@
             # Parameters must be PSCustomObject so [Parameter(ValueFromPipelineByPropertyName = $true)] works
-            [PSCustomObject]$taskParameters.Clone() | & "$($task.PackageId)\Invoke"
+            [PSCustomObject]$taskParameters.Clone() | & "$($task.TemplateId)\Invoke"
 
-            Remove-Module $task.PackageId
+            Remove-Module $task.TemplateId
 
         }
     }
@@ -220,10 +220,10 @@ $Name,
 [string]
 [Parameter(
     Mandatory=$true)]
-$PackageId,
+$TemplateId,
 
 [string]
-$PackageVersion,
+$TemplateVersion,
 
 [switch]
 [Parameter(
@@ -253,7 +253,7 @@ $Force,
 
 [string[]]
 [ValidateNotNullOrEmpty()]
-$PackageSource= $DefaultPackageSources,
+$TemplateSource= $DefaultTemplateSources,
 
 [string]
 [ValidateScript({Test-Path $_ -PathType Container})]
@@ -267,28 +267,28 @@ $ProjectRootDirPath = '.'){
         Adds a new task to a DevOp
         
         .EXAMPLE
-        Add-DevOpTask -DevOp "Deploy To Azure" -Name "LastTask" -PackageId "DeployNupkgToAzureWebsites" -PackageVersion "0.0.3"
+        Add-DevOpTask -DevOp "Deploy To Azure" -Name "LastTask" -TemplateId "DeployNupkgToAzureWebsites" -TemplateVersion "0.0.3"
         
         Description:
 
         This command adds task "LastTask" after all existing tasks in DevOp "Deploy To Azure"
 
         .EXAMPLE
-        Add-DevOpTask -DevOp "Deploy To Azure" -Name "FirstTask" -PackageId "DeployNupkgToAzureWebsites" -First
+        Add-DevOpTask -DevOp "Deploy To Azure" -Name "FirstTask" -TemplateId "DeployNupkgToAzureWebsites" -First
 
         Description:
 
         This command adds task "FirstTask" before all existing tasks in DevOp "Deploy To Azure"
 
         .EXAMPLE
-        Add-DevOpTask -DevOp "Deploy To Azure" -Name "AfterSecondTask" -PackageId "DeployNupkgToAzureWebsites" -After "SecondTask"
+        Add-DevOpTask -DevOp "Deploy To Azure" -Name "AfterSecondTask" -TemplateId "DeployNupkgToAzureWebsites" -After "SecondTask"
 
         Description:
 
         This command adds task "AfterSecondTask" after the existing task "SecondTask" in DevOp "Deploy To Azure"
 
         .EXAMPLE
-        Add-DevOpTask -DevOp "Deploy To Azure" -Name "BeforeSecondTask" -PackageId "DeployNupkgToAzureWebsites" -Before "SecondTask"
+        Add-DevOpTask -DevOp "Deploy To Azure" -Name "BeforeSecondTask" -TemplateId "DeployNupkgToAzureWebsites" -Before "SecondTask"
 
         Description:
 
@@ -297,9 +297,9 @@ $ProjectRootDirPath = '.'){
     #>
 
         
-        if([string]::IsNullOrWhiteSpace($PackageVersion)){
-            $PackageVersion = Dpm\Get-DpmLatestPackageVersion -Source $PackageSource -Id $PackageId
-Write-Debug "using greatest available package version : $PackageVersion"
+        if([string]::IsNullOrWhiteSpace($TemplateVersion)){
+            $TemplateVersion = TemplateManagement\Get-DevOpTaskTemplateLatestVersion -Source $TemplateSource -Id $TemplateId
+Write-Debug "using greatest available template version : $TemplateVersion"
         }
                 
         if($First.IsPresent){
@@ -338,8 +338,8 @@ Write-Debug "using greatest available package version : $PackageVersion"
         DevOpStorage\Add-DevOpTask `
             -DevOpName $DevOpName `
             -Name $Name `
-            -PackageId $PackageId `
-            -PackageVersion $PackageVersion `
+            -TemplateId $TemplateId `
+            -TemplateVersion $TemplateVersion `
             -Index $TaskIndex `
             -Force:$Force `
             -ProjectRootDirPath $ProjectRootDirPath
@@ -471,7 +471,7 @@ $ProjectRootDirPath = '.'){
         -Force:$Force
 }
 
-function Update-DpmPackage(
+function Update-DevOpTaskTemplate(
 [CmdletBinding(
     DefaultParameterSetName="Update-All")]
 
@@ -510,7 +510,7 @@ $All,
 [ValidateNotNullOrEmpty()]
 [Parameter(
     ValueFromPipelineByPropertyName=$true)]
-$Source = $DefaultPackageSources,
+$Source = $DefaultTemplateSources,
 
 [String]
 [ValidateScript({Test-Path $_ -PathType Container})]
@@ -520,51 +520,51 @@ $ProjectRootDirPath='.'){
 
     $DevOp = DevOpStorage\Get-DevOp -Name $DevOpName -ProjectRootDirPath $ProjectRootDirPath
 
-    # build up list of package updates
-    $packageUpdates = @{}
+    # build up list of template updates
+    $templateUpdates = @{}
     If('Update-Multiple' -eq $PSCmdlet.ParameterSetName){
 
-        foreach($packageId in $Id){
+        foreach($templateId in $Id){
 
-            $packageUpdates.Add($packageId,(Dpm\Get-DpmLatestPackageVersion -Source $Source -Id $packageId))
+            $templateUpdates.Add($templateId,(TemplateManagement\Get-DevOpTaskTemplateLatestVersion -Source $Source -Id $templateId))
 
         }
     }
     ElseIf('Update-Single' -eq $PSCmdlet.ParameterSetName){
         
         if($Id.Length -ne 1){
-            throw "Updating to an explicit package version is only allowed when updating a single package"
+            throw "Updating to an explicit template version is only allowed when updating a single template"
         }
 
-        $packageUpdates.Add($Id,$Version)
+        $templateUpdates.Add($Id,$Version)
     }
     Else{        
         
         foreach($task in $DevOp.Tasks.Values){
 
-            $packageUpdates.Add($task.PackageId,(Dpm\Get-DpmLatestPackageVersion -Source $Source -Id $task.PackageId))
+            $templateUpdates.Add($task.TemplateId,(TemplateManagement\Get-DevOpTaskTemplateLatestVersion -Source $Source -Id $task.TemplateId))
         
         }
     }
 
     foreach($task in $DevOp.Tasks.Values){
 
-        $updatedPackageVersion = $packageUpdates.($task.PackageId)
+        $updatedTemplateVersion = $templateUpdates.($task.TemplateId)
 
-        if($null -ne $updatedPackageVersion){
+        if($null -ne $updatedTemplateVersion){
 
-            Dpm\Uninstall-DpmPackage -Id $task.PackageId -Version $task.PackageVersion -ProjectRootDirPath $ProjectRootDirPath
+            TemplateManagement\Uninstall-DevOpTaskTemplate -Id $task.TemplateId -Version $task.TemplateVersion -ProjectRootDirPath $ProjectRootDirPath
 
 Write-Debug `
 @"
-Updating task "$($task.Name)" package "$($task.PackageId)"
-from version "$($task.PackageVersion)"
-to version "$($updatedPackageVersion)"
+Updating task "$($task.Name)" template "$($task.TemplateId)"
+from version "$($task.TemplateVersion)"
+to version "$($updatedTemplateVersion)"
 "@
-            DevOpStorage\Update-DevOpTaskPackageVersion `
+            DevOpStorage\Set-DevOpTaskTemplateVersion `
                 -DevOpName $DevOpName `
                 -TaskName $task.Name `
-                -PackageVersion $updatedPackageVersion `
+                -TemplateVersion $updatedTemplateVersion `
                 -ProjectRootDirPath $ProjectRootDirPath
         }
     }
@@ -584,7 +584,6 @@ Export-ModuleMember -Function @(
                                 'Rename-DevOpTask',
                                 'Set-DevOpTaskParameter',
 
-                                # DPM API
-                                'Update-DpmPackage',
-                                'New-DpmPackageSpec',
-                                'Get-DpmPackageSpec')
+                                # DevOp Task Template API
+                                'Update-DevOpTaskTemplate',
+                                'New-DevOpTaskTemplateSpec')

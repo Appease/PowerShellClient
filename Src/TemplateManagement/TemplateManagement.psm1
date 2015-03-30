@@ -5,7 +5,7 @@ $DefaultPackageSources = @('https://www.myget.org/F/appease')
 $NugetExecutable = "$PSScriptRoot\nuget.exe"
 $ChocolateyExecutable = "chocolatey"
 
-function Get-DpmLatestPackageVersion(
+function Get-DevOpTaskTemplateLatestVersion(
 
 [string[]]
 [Parameter(
@@ -33,7 +33,7 @@ throw "no versions of $Id could be located.` searched: $Source"
 Write-Output ([Array](Get-SortedSemanticVersions -InputArray $versions -Descending))[0]
 }
 
-function New-DpmSpec(
+function New-DevOpTaskTemplateSpec(
     
     [string]
     [ValidateScript({Test-Path $_ -PathType Container})]
@@ -157,7 +157,7 @@ $ProjectRootDirPath = '.'){
     
 }
 
-function Get-DpmPackageSpec(
+function Get-DevOpTaskTemplateSpec(
 
 [string]
 [ValidateNotNullOrEmpty()]
@@ -189,7 +189,7 @@ $ProjectRootDirPath = '.'){
 
 }
 
-function Install-DpmPackage(
+function Install-DevOpTaskTemplate(
 
 [string]
 [ValidateNotNullOrEmpty()]
@@ -256,7 +256,7 @@ Invoking nuget:
     }
 
     # install chocolatey dependencies
-    $ChocolateyDependencies = (Get-DpmPackageSpec -Name $Id -Version $Version -ProjectRootDirPath $ProjectRootDirPath).Dependencies.Chocolatey
+    $ChocolateyDependencies = (Get-DevOpTaskTemplateSpec -Name $Id -Version $Version -ProjectRootDirPath $ProjectRootDirPath).Dependencies.Chocolatey
     foreach($ChocolateyDependency in $ChocolateyDependencies){
         $ChocolateyParameters = @('install',$ChocolateyDependency.Id,'--confirm')
         
@@ -301,7 +301,7 @@ Invoking chocolatey:
 
 }
 
-function Uninstall-DpmPackage(
+function Uninstall-DevOpTaskTemplate(
 
 [string]
 [ValidateNotNullOrEmpty()]
@@ -356,8 +356,8 @@ $packageInstallationDir
 
 Export-ModuleMember -Variable 'DefaultPackageSources'
 Export-ModuleMember -Function @(
-                                'Get-DpmLatestPackageVersion'
-                                'New-DpmSpec',
-                                'Get-DpmPackageSpec',                                
-                                'Install-DpmPackage',
-                                'Uninstall-DpmPackage')
+                                'Get-DevOpTaskTemplateLatestVersion'
+                                'New-DevOpTaskTemplateSpec',
+                                'Get-DevOpTaskTemplateSpec',                                
+                                'Install-DevOpTaskTemplate',
+                                'Uninstall-DevOpTaskTemplate')

@@ -402,7 +402,7 @@ If you want to overwrite the existing parameter value use the -Force parameter
     sc $DevOpFilePath -Value (ConvertTo-Pson -InputObject $DevOp -Depth 12 -Layers 12 -Strict) -Force
 }
 
-function Update-DevOpTaskPackageVersion(
+function Set-DevOpTaskTemplateVersion(
 [string]
 [ValidateNotNullOrEmpty()]
 [Parameter(
@@ -465,4 +465,4 @@ Export-ModuleMember -Function @(
                     'Remove-DevOpTask',
                     'Rename-DevOpTask',
                     'Set-DevOpTaskParameter',
-                    'Update-DevOpTaskPackageVersion')
+                    'Set-DevOpTaskTemplateVersion')
