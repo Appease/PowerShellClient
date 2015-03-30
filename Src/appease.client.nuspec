@@ -9,7 +9,7 @@
 			The Appease client for Windows PowerShell
 			
 			Installation notes: 
-			-	installs to:  C:\ProgramFiles\Appease\PowerShell\Client
+			-	installs to:  C:\ProgramFiles\Appease\PowerShell\Appease.Client
 			-	appends C:\ProgramFiles\Appease\PowerShell to PSModulePath environment variable
 		</description>
 		<tags>Powershell Appease TaskRunner CI ContinuousIntegration Build Deployment admin</tags>
@@ -20,7 +20,7 @@
         </dependencies>
 	</metadata>	
 	<files>
-		<file src="**" target="tools/Client" exclude="*.nuspec;chocolateyInstall.ps1;chocolateyUninstall.ps1" />
+		<file src="**" target="tools/Appease.Client" exclude="*.nuspec;chocolateyInstall.ps1;chocolateyUninstall.ps1" />
         <file src="chocolateyInstall.ps1;chocolateyUninstall.ps1" target="tools" />        
 	</files>
 </package>
