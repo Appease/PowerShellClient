@@ -1,28 +1,28 @@
 Import-Module "$PSScriptRoot\Versioning"
 Import-Module "$PSScriptRoot\..\Pson"
 
-$DefaultPackageSources = @('https://www.myget.org/F/appease')
+$DefaultTemplateSources = @('https://www.myget.org/F/appease')
 $NugetExecutable = "$PSScriptRoot\nuget.exe"
 $ChocolateyExecutable = "chocolatey"
 
 function Get-DevOpTaskTemplateLatestVersion(
 
-[string[]]
-[Parameter(
-    Mandatory=$true)]
-$Source = $DefaultPackageSources,
+    [string[]]
+    [Parameter(
+        Mandatory=$true)]
+    $Source = $DefaultTemplateSources,
 
-[string]
-[ValidateNotNullOrEmpty()]
-[Parameter(
-    Mandatory=$true)]
-$Id){
+    [string]
+    [ValidateNotNullOrEmpty()]
+    [Parameter(
+        Mandatory=$true)]
+    $Id){
     
     $versions = @()
 
-    foreach($packageSource in $Source){
-        $uri = "$packageSource/api/v2/package-versions/$Id"
-Write-Debug "Attempting to fetch package versions:` uri: $uri "
+    foreach($templateSource in $Source){
+        $uri = "$templateSource/api/v2/package-versions/$Id"
+Write-Debug "Attempting to fetch template versions:` uri: $uri "
         $versions = $versions + (Invoke-RestMethod -Uri $uri)
 Write-Debug "response from $uri was: ` $versions"
     }
@@ -51,183 +51,184 @@ function New-DevOpTaskTemplateSpec(
     [Parameter(
         ValueFromPipelineByPropertyName=$true,
         Mandatory=$true)]
-    $PackageName,
+    $TemplateName,
 
     [string]
     [ValidateScript({ if(!$_){$true}else{$_ | Test-SemanticVersion} })]
     [Parameter(
         ValueFromPipelineByPropertyName=$true)]
-    $PackageVersion,
+    $TemplateVersion,
     
     [string]
     [ValidateNotNullOrEmpty()]
     [Parameter(
         ValueFromPipelineByPropertyName=$true)]
-    $PackageDescription,
+    $TemplateDescription,
     
     [Hashtable[]]
     [Parameter(
         ValueFromPipelineByPropertyName=$true)]
-    $PackageContributor,
+    $TemplateContributor,
     
     [System.Uri]
     [Parameter(
         ValueFromPipelineByPropertyName=$true)]
-    $PackageProjectUrl,
+    $TemplateProjectUrl,
     
     [string[]]
     [Parameter(
         ValueFromPipelineByPropertyName=$true)]
-    $PackageTag,
+    $TemplateTag,
     
     [Hashtable]
     [Parameter(
         ValueFromPipelineByPropertyName=$true)]
-    $PackageLicense,
+    $TemplateLicense,
     
     [Hashtable]
     [Parameter(
         ValueFromPipelineByPropertyName=$true)]
-    $PackageDependency,
+    $TemplateDependency,
     
     [Hashtable[]]
     [ValidateNotNullOrEmpty()]
     [Parameter(
         ValueFromPipelineByPropertyName=$true,
         Mandatory=$true)]
-    $PackageFile){
+    $TemplateFile){
 
-    $PackageSpecFilePath = "$OutputDirPath\PackageSpec.psd1"
+    $TemplateSpecFilePath = "$OutputDirPath\TemplateSpec.psd1"
            
-    # guard against unintentionally overwriting existing package spec
-    if(!$Force.IsPresent -and (Test-Path $PackageSpecFilePath)){
+    # guard against unintentionally overwriting existing devop task template spec
+    if(!$Force.IsPresent -and (Test-Path $TemplateSpecFilePath)){
 throw `
 @"
-Package spec already exists at: $(Resolve-Path $PackageSpecFilePath)
-to overwrite the existing package spec use the -Force parameter
+Template spec already exists at: $(Resolve-Path $TemplateSpecFilePath)
+to overwrite the existing template spec use the -Force parameter
 "@
     }
 
 Write-Debug `
 @"
-Creating package spec file at:
-$PackageSpecFilePath
+Creating template spec file at:
+$TemplateSpecFilePath
 "@
 
-    New-Item -Path $PackageSpecFilePath -ItemType File -Force:$Force      
+    New-Item -Path $TemplateSpecFilePath -ItemType File -Force:$Force      
 
-    $PackageSpec = @{
-        Name = $PackageName;
-        Version = $PackageVersion;
-        Description = $PackageDescription;
-        Contributors = $PackageContributor;
-        ProjectUrl = $PackageProjectUrl;
-        Tags = $PackageTag;
-        License = $PackageLicense;
-        Dependencies = $PackageDependency;
-        Files = $PackageFile}
+    $TemplateSpec = @{
+        Name = $TemplateName;
+        Version = $TemplateVersion;
+        Description = $TemplateDescription;
+        Contributors = $TemplateContributor;
+        ProjectUrl = $TemplateProjectUrl;
+        Tags = $TemplateTag;
+        License = $TemplateLicense;
+        Dependencies = $TemplateDependency;
+        Files = $TemplateFile}
 
-    Set-Content $PackageSpecFilePath -Value (ConvertTo-Pson -InputObject $PackageSpec -Depth 12 -Layers 12 -Strict) -Force
+    Set-Content $TemplateSpecFilePath -Value (ConvertTo-Pson -InputObject $TemplateSpec -Depth 12 -Layers 12 -Strict) -Force
     
 }
 
-function Get-DpmPackageInstallDirPath(
+function Get-DevOpTaskTemplateInstallDirPath(
 
-[string]
-[ValidateNotNullOrEmpty()]
-[Parameter(
-    Mandatory=$true,
-    ValueFromPipelineByPropertyName=$true)]
-$Name,
+    [string]
+    [ValidateNotNullOrEmpty()]
+    [Parameter(
+        Mandatory=$true,
+        ValueFromPipelineByPropertyName=$true)]
+    $Name,
 
-[string]
-[ValidateNotNullOrEmpty()]
-[Parameter(
-    Mandatory=$true,
-    ValueFromPipelineByPropertyName=$true)]
-$Version,
+    [string]
+    [ValidateNotNullOrEmpty()]
+    [Parameter(
+        Mandatory=$true,
+        ValueFromPipelineByPropertyName=$true)]
+    $Version,
 
-[string]
-[ValidateScript({Test-Path $_ -PathType Container})]
-[Parameter(
-    ValueFromPipelineByPropertyName=$true)]
-$ProjectRootDirPath = '.'){
+    [string]
+    [ValidateScript({Test-Path $_ -PathType Container})]
+    [Parameter(
+        ValueFromPipelineByPropertyName=$true)]
+    $ProjectRootDirPath = '.'){
 
-    Resolve-Path "$ProjectRootDirPath\.Appease\packages\$Name.$Version\PackageSpec.psd1" | Write-Output
+    Resolve-Path "$ProjectRootDirPath\.Appease\templates\$Name.$Version" | Write-Output
     
 }
 
 function Get-DevOpTaskTemplateSpec(
 
-[string]
-[ValidateNotNullOrEmpty()]
-[Parameter(
-    Mandatory=$true,
-    ValueFromPipelineByPropertyName=$true)]
-$Name,
+    [string]
+    [ValidateNotNullOrEmpty()]
+    [Parameter(
+        Mandatory=$true,
+        ValueFromPipelineByPropertyName=$true)]
+    $Name,
 
-[string]
-[ValidateNotNullOrEmpty()]
-[Parameter(
-    Mandatory=$true,
-    ValueFromPipelineByPropertyName=$true)]
-$Version,
+    [string]
+    [ValidateNotNullOrEmpty()]
+    [Parameter(
+        Mandatory=$true,
+        ValueFromPipelineByPropertyName=$true)]
+    $Version,
 
-[string]
-[ValidateScript({Test-Path $_ -PathType Container})]
-[Parameter(
-    ValueFromPipelineByPropertyName=$true)]
-$ProjectRootDirPath = '.'){
+    [string]
+    [ValidateScript({Test-Path $_ -PathType Container})]
+    [Parameter(
+        ValueFromPipelineByPropertyName=$true)]
+    $ProjectRootDirPath = '.'){
 
     <#
         .SYNOPSIS
-        Parses a DevOp task package spec file
+        Parses a devop task template spec file
     #>
 
-    $PackageSpecFilePath = Get-DpmPackageInstallDirPath -Name $Name -Version $Version -ProjectRootDirPath $ProjectRootDirPath
-    Get-Content $PackageSpecFilePath | Out-String | ConvertFrom-Pson | Write-Output
+    $TemplateInstallDirPath = Get-DevOpTaskTemplateInstallDirPath -Name $Name -Version $Version -ProjectRootDirPath $ProjectRootDirPath
+    $TemplateSpecFilePath = Join-Path -Path $TemplateInstallDirPath -ChildPath "\TemplateSpec.psd1"
+    Get-Content $TemplateSpecFilePath | Out-String | ConvertFrom-Pson | Write-Output
 
 }
 
 function Install-DevOpTaskTemplate(
 
-[string]
-[ValidateNotNullOrEmpty()]
-[Parameter(
-    Mandatory=$true,
-    ValueFromPipelineByPropertyName=$true)]
-$Id,
+    [string]
+    [ValidateNotNullOrEmpty()]
+    [Parameter(
+        Mandatory=$true,
+        ValueFromPipelineByPropertyName=$true)]
+    $Id,
 
-[string]
-[Parameter(
-    ValueFromPipelineByPropertyName=$true)]
-$Version,
+    [string]
+    [Parameter(
+        ValueFromPipelineByPropertyName=$true)]
+    $Version,
 
-[string[]]
-[ValidateCount( 1, [Int]::MaxValue)]
-[ValidateNotNullOrEmpty()]
-[Parameter(
-    ValueFromPipelineByPropertyName=$true)]
-$Source,
+    [string[]]
+    [ValidateCount( 1, [Int]::MaxValue)]
+    [ValidateNotNullOrEmpty()]
+    [Parameter(
+        ValueFromPipelineByPropertyName=$true)]
+    $Source,
 
-[string]
-[ValidateScript({Test-Path $_ -PathType Container})]
-[Parameter(
-    ValueFromPipelineByPropertyName=$true)]
-$ProjectRootDirPath='.'){
+    [string]
+    [ValidateScript({Test-Path $_ -PathType Container})]
+    [Parameter(
+        ValueFromPipelineByPropertyName=$true)]
+    $ProjectRootDirPath='.'){
 
     <#
         .SYNOPSIS
-        Installs a task package to an environment if it's not already installed
+        Installs a devop task template to an environment if it's not already installed
     #>
 
-    $PackagesDirPath = "$ProjectRootDirPath\.Appease\packages"
+    $TemplatesDirPath = "$ProjectRootDirPath\.Appease\templates"
 
     if([string]::IsNullOrWhiteSpace($Version)){
 
-        $Version = Get-LatestPackageVersion -Source $Source -Id $Id
+        $Version = Get-LatestTemplateVersion -Source $Source -Id $Id
 
-Write-Debug "using greatest available package version : $Version"
+Write-Debug "using greatest available template version : $Version"
     
     }
 
@@ -236,7 +237,7 @@ Write-Debug "using greatest available package version : $Version"
     try{
 
         $OFS = ';'        
-        $NugetParameters = @('install',$Id,'-Source',($Source|Out-String),'-OutputDirectory',$PackagesDirPath,'-Version',$Version,'-NonInteractive')
+        $NugetParameters = @('install',$Id,'-Source',($Source|Out-String),'-OutputDirectory',$TemplatesDirPath,'-Version',$Version,'-NonInteractive')
 
 Write-Debug `
 @"
@@ -303,50 +304,50 @@ Invoking chocolatey:
 
 function Uninstall-DevOpTaskTemplate(
 
-[string]
-[ValidateNotNullOrEmpty()]
-[Parameter(
-    Mandatory=$true,
-    ValueFromPipelineByPropertyName=$true)]
-$Id,
+    [string]
+    [ValidateNotNullOrEmpty()]
+    [Parameter(
+        Mandatory=$true,
+        ValueFromPipelineByPropertyName=$true)]
+    $Id,
 
-[string]
-[ValidateNotNullOrEmpty()]
-[Parameter(
-    Mandatory=$true,
-    ValueFromPipelineByPropertyName=$true)]
-$Version,
+    [string]
+    [ValidateNotNullOrEmpty()]
+    [Parameter(
+        Mandatory=$true,
+        ValueFromPipelineByPropertyName=$true)]
+    $Version,
 
-[string]
-[ValidateScript({Test-Path $_ -PathType Container})]
-[Parameter(
-    ValueFromPipelineByPropertyName=$true)]
-$ProjectRootDirPath='.'){
+    [string]
+    [ValidateScript({Test-Path $_ -PathType Container})]
+    [Parameter(
+        ValueFromPipelineByPropertyName=$true)]
+    $ProjectRootDirPath='.'){
 
     <#
         .SYNOPSIS
-        Uninstalls a task package from an environment if it's installed
+        Uninstalls a devop task template from an environment if it's installed
     #>
 
     $taskGroupDirPath = Resolve-Path "$ProjectRootDirPath\.Appease"
-    $packagesDirPath = "$taskGroupDirPath\packages"
+    $templatesDirPath = "$taskGroupDirPath\templates"
 
-    $packageInstallationDir = "$packagesDirPath\$($Id).$($Version)"
+    $templateInstallationDir = "$templatesDirPath\$($Id).$($Version)"
 
 
-    If(Test-Path $packageInstallationDir){
+    If(Test-Path $templateInstallationDir){
 Write-Debug `
 @"
-Removing package at:
-$packageInstallationDir
+Removing template at:
+$templateInstallationDir
 "@
-        Remove-Item $packageInstallationDir -Recurse -Force
+        Remove-Item $templateInstallationDir -Recurse -Force
     }
     Else{
 Write-Debug `
 @"
-No package to remove at:
-$packageInstallationDir
+No template to remove at:
+$templateInstallationDir
 "@
     }
 
@@ -354,10 +355,9 @@ $packageInstallationDir
 
 }
 
-Export-ModuleMember -Variable 'DefaultPackageSources'
+Export-ModuleMember -Variable 'DefaultTemplateSources'
 Export-ModuleMember -Function @(
                                 'Get-DevOpTaskTemplateLatestVersion'
-                                'New-DevOpTaskTemplateSpec',
-                                'Get-DevOpTaskTemplateSpec',                                
+                                'New-DevOpTaskTemplateSpec',                                
                                 'Install-DevOpTaskTemplate',
                                 'Uninstall-DevOpTaskTemplate')

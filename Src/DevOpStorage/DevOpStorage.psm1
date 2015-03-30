@@ -163,14 +163,14 @@ $Name,
 [Parameter(
     Mandatory=$true,
     ValueFromPipelineByPropertyName=$true)]
-$PackageId,
+$TemplateId,
 
 [string]
 [ValidateNotNullOrEmpty()]
 [Parameter(
     Mandatory=$true,
     ValueFromPipelineByPropertyName=$true)]
-$PackageVersion,
+$TemplateVersion,
 
 [int]
 [ValidateScript({$_ -gt -1})]
@@ -210,7 +210,7 @@ If you want to overwrite the existing task use the -Force parameter
     }
 
     # construct task object
-    $Task = @{Name=$Name;PackageId=$PackageId;PackageVersion=$PackageVersion;}
+    $Task = @{Name=$Name;TemplateId=$TemplateId;TemplateVersion=$TemplateVersion;}
 
     # add task to taskgroup
     $DevOp.Tasks.Insert($Index,$Name,$Task)
@@ -422,7 +422,7 @@ $TaskName,
 [Parameter(
     Mandatory=$true,
     ValueFromPipelineByPropertyName=$true)]
-$PackageVersion,
+$TemplateVersion,
 
 [string]
 [ValidateScript({Test-Path $_ -PathType Container})]
@@ -448,7 +448,7 @@ for project "$(Resolve-Path $ProjectRootDirPath)".
     }
 
     # update task version
-    $Task.PackageVersion = $PackageVersion
+    $Task.TemplateVersion = $TemplateVersion
     
     # save
     sc $DevOpFilePath -Value (ConvertTo-Pson -InputObject $DevOp -Depth 12 -Layers 12 -Strict) -Force
