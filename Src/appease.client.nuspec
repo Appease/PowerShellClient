@@ -9,17 +9,18 @@
 			The Appease client for Windows PowerShell
 			
 			Installation notes: 
-			-	installs to:  C:\ProgramFiles\Appease\PowerShell
+			-	installs to:  C:\ProgramFiles\Appease\PowerShell\Client
 			-	appends C:\ProgramFiles\Appease\PowerShell to PSModulePath environment variable
 		</description>
 		<tags>Powershell Appease TaskRunner CI ContinuousIntegration Build Deployment admin</tags>
 		<projectUrl>https://github.com/Appease/PowerShellClient</projectUrl>
+        <iconUrl>http://res.cloudinary.com/hibczhd9m/image/upload/c_crop,w_350/v1423785217/NuGet.org/5711875.png</iconUrl>
         <dependencies>
             <dependency id="nuget.commandline" version="2.8.0" />
         </dependencies>
 	</metadata>	
 	<files>
-		<file src="**" target="tools/Appease" exclude="*.nuspec;chocolateyInstall.ps1;chocolateyUninstall.ps1" />
+		<file src="**" target="tools/Client" exclude="*.nuspec;chocolateyInstall.ps1;chocolateyUninstall.ps1" />
         <file src="chocolateyInstall.ps1;chocolateyUninstall.ps1" target="tools" />        
 	</files>
 </package>
