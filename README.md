@@ -46,7 +46,3 @@ pro-tip: exclude the `.PoshDevops\packages` folder from version control. Appease
 
 ###What's the build status
 ![](https://ci.appveyor.com/api/projects/status/t95vdsnjbmg9hnli?svg=true)
-
-###Interesting reading
-[Distributed Continuous Integration - Keep the Mainline Clean](http://blog.assembla.com/AssemblaBlog/tabid/12618/bid/96937/Distributed-Continuous-Integration-Keep-the-Mainline-Clean.aspx)
-
