@@ -14,6 +14,9 @@
 		</description>
 		<tags>Powershell Appease TaskRunner CI ContinuousIntegration Build Deployment admin</tags>
 		<projectUrl>https://github.com/Appease/PowerShellClient</projectUrl>
+        <dependencies>
+            <dependency id="nuget.commandline" version="2.8.0" />
+        </dependencies>
 	</metadata>	
 	<files>
 		<file src="**" target="tools/Appease" exclude="*.nuspec;chocolateyInstall.ps1;chocolateyUninstall.ps1" />
