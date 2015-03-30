@@ -1,4 +1,4 @@
-Import-Module "$PSScriptRoot\PackageManagement"
+Import-Module "$PSScriptRoot\Dpm"
 Import-Module "$PSScriptRoot\DevOpStorage"
 Import-Module "$PSScriptRoot\HashtableExtensions"
 Import-Module "$PSScriptRoot\OrderedDictionaryExtensions"
@@ -67,13 +67,13 @@ Write-Debug "Adding archived parameters to pipeline"
 
 Write-Debug "Adding automatic parameters to pipeline"
             
-            $taskParameters.PoshDevOpsProjectRootDirPath = (Resolve-Path $ProjectRootDirPath)
-            $taskParameters.PoshDevOpsTaskName = $task.Name
+            $taskParameters.AppeaseProjectRootDirPath = (Resolve-Path $ProjectRootDirPath)
+            $taskParameters.AppeaseTaskName = $task.Name
 
 Write-Debug "Ensuring task module package installed"
-            PackageManagement\Install-DevOpTaskPackage -Id $task.PackageId -Version $task.PackageVersion -Source $PackageSource
+            Dpm\Install-DpmPackage -Id $task.PackageId -Version $task.PackageVersion -Source $PackageSource
 
-            $moduleDirPath = "$ProjectRootDirPath\.PoshDevOps\packages\$($task.PackageId).$($task.PackageVersion)\$($task.PackageId)"
+            $moduleDirPath = "$ProjectRootDirPath\.Appease\packages\$($task.PackageId).$($task.PackageVersion)\$($task.PackageId)"
 Write-Debug "Importing module located at: $moduleDirPath"
             Import-Module $moduleDirPath -Force
 
@@ -298,7 +298,7 @@ $ProjectRootDirPath = '.'){
 
         
         if([string]::IsNullOrWhiteSpace($PackageVersion)){
-            $PackageVersion = PackageManagement\Get-LatestDevOpTaskPackageVersion -Source $PackageSource -Id $PackageId
+            $PackageVersion = Dpm\Get-DpmLatestPackageVersion -Source $PackageSource -Id $PackageId
 Write-Debug "using greatest available package version : $PackageVersion"
         }
                 
@@ -471,7 +471,7 @@ $ProjectRootDirPath = '.'){
         -Force:$Force
 }
 
-function Update-DevOpTaskPackage(
+function Update-DpmPackage(
 [CmdletBinding(
     DefaultParameterSetName="Update-All")]
 
@@ -526,7 +526,7 @@ $ProjectRootDirPath='.'){
 
         foreach($packageId in $Id){
 
-            $packageUpdates.Add($packageId,(PackageManagement\Get-LatestDevOpTaskPackageVersion -Source $Source -Id $packageId))
+            $packageUpdates.Add($packageId,(Dpm\Get-DpmLatestPackageVersion -Source $Source -Id $packageId))
 
         }
     }
@@ -542,7 +542,7 @@ $ProjectRootDirPath='.'){
         
         foreach($task in $DevOp.Tasks.Values){
 
-            $packageUpdates.Add($task.PackageId,(PackageManagement\Get-LatestDevOpTaskPackageVersion -Source $Source -Id $task.PackageId))
+            $packageUpdates.Add($task.PackageId,(Dpm\Get-DpmLatestPackageVersion -Source $Source -Id $task.PackageId))
         
         }
     }
@@ -553,7 +553,7 @@ $ProjectRootDirPath='.'){
 
         if($null -ne $updatedPackageVersion){
 
-            PackageManagement\Uninstall-DevOpTaskPackage -Id $task.PackageId -Version $task.PackageVersion -ProjectRootDirPath $ProjectRootDirPath
+            Dpm\Uninstall-DpmPackage -Id $task.PackageId -Version $task.PackageVersion -ProjectRootDirPath $ProjectRootDirPath
 
 Write-Debug `
 @"
@@ -584,6 +584,7 @@ Export-ModuleMember -Function @(
                                 'Rename-DevOpTask',
                                 'Set-DevOpTaskParameter',
 
-                                # DevOp Task Package API
-                                'Update-DevOpTaskPackage',
-                                'New-DevOpTaskPackageSpec')
+                                # DPM API
+                                'Update-DpmPackage',
+                                'New-DpmPackageSpec',
+                                'Get-DpmPackageSpec')

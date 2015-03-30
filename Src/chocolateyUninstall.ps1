@@ -1,10 +1,10 @@
 try {
 
-    . "$PSScriptRoot\PoshDevOps\Uninstall.ps1"
+    . "$PSScriptRoot\Appease\Uninstall.ps1"
 
 } catch {
 
-    Write-ChocolateyFailure 'PoshDevOps' $_.Exception.Message
+    Write-ChocolateyFailure 'Appease' $_.Exception.Message
 
     throw 
 }

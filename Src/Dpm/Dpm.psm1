@@ -1,11 +1,11 @@
-﻿Import-Module "$PSScriptRoot\Versioning"
+Import-Module "$PSScriptRoot\Versioning"
 Import-Module "$PSScriptRoot\..\Pson"
 
-$DefaultPackageSources = @('https://www.myget.org/F/poshdevops')
+$DefaultPackageSources = @('https://www.myget.org/F/appease')
 $NugetExecutable = "$PSScriptRoot\nuget.exe"
 $ChocolateyExecutable = "chocolatey"
 
-function Get-LatestDevOpTaskPackageVersion(
+function Get-DpmLatestPackageVersion(
 
 [string[]]
 [Parameter(
@@ -33,7 +33,7 @@ throw "no versions of $Id could be located.` searched: $Source"
 Write-Output ([Array](Get-SortedSemanticVersions -InputArray $versions -Descending))[0]
 }
 
-function New-DevOpTaskPackageSpec(
+function New-DpmSpec(
     
     [string]
     [ValidateScript({Test-Path $_ -PathType Container})]
@@ -131,7 +131,7 @@ $PackageSpecFilePath
     
 }
 
-function Get-DevOpTaskPackageInstallDirPath(
+function Get-DpmPackageInstallDirPath(
 
 [string]
 [ValidateNotNullOrEmpty()]
@@ -153,11 +153,11 @@ $Version,
     ValueFromPipelineByPropertyName=$true)]
 $ProjectRootDirPath = '.'){
 
-    Resolve-Path "$ProjectRootDirPath\.PoshDevOps\packages\$Name.$Version\PackageSpec.psd1" | Write-Output
+    Resolve-Path "$ProjectRootDirPath\.Appease\packages\$Name.$Version\PackageSpec.psd1" | Write-Output
     
 }
 
-function Get-DevOpTaskPackageSpec(
+function Get-DpmPackageSpec(
 
 [string]
 [ValidateNotNullOrEmpty()]
@@ -181,15 +181,15 @@ $ProjectRootDirPath = '.'){
 
     <#
         .SYNOPSIS
-        an internal utility function that retrieves a package spec from storage
+        Parses a DevOp task package spec file
     #>
 
-    $PackageSpecFilePath = Get-DevOpTaskPackageInstallDirPath -Name $Name -Version $Version -ProjectRootDirPath $ProjectRootDirPath
+    $PackageSpecFilePath = Get-DpmPackageInstallDirPath -Name $Name -Version $Version -ProjectRootDirPath $ProjectRootDirPath
     Get-Content $PackageSpecFilePath | Out-String | ConvertFrom-Pson | Write-Output
 
 }
 
-function Install-DevOpTaskPackage(
+function Install-DpmPackage(
 
 [string]
 [ValidateNotNullOrEmpty()]
@@ -221,7 +221,7 @@ $ProjectRootDirPath='.'){
         Installs a task package to an environment if it's not already installed
     #>
 
-    $PackagesDirPath = "$ProjectRootDirPath\.PoshDevOps\packages"
+    $PackagesDirPath = "$ProjectRootDirPath\.Appease\packages"
 
     if([string]::IsNullOrWhiteSpace($Version)){
 
@@ -256,7 +256,7 @@ Invoking nuget:
     }
 
     # install chocolatey dependencies
-    $ChocolateyDependencies = (Get-DevOpTaskPackageSpec -Name $Id -Version $Version -ProjectRootDirPath $ProjectRootDirPath).Dependencies.Chocolatey
+    $ChocolateyDependencies = (Get-DpmPackageSpec -Name $Id -Version $Version -ProjectRootDirPath $ProjectRootDirPath).Dependencies.Chocolatey
     foreach($ChocolateyDependency in $ChocolateyDependencies){
         $ChocolateyParameters = @('install',$ChocolateyDependency.Id,'--confirm')
         
@@ -301,7 +301,7 @@ Invoking chocolatey:
 
 }
 
-function Uninstall-DevOpTaskPackage(
+function Uninstall-DpmPackage(
 
 [string]
 [ValidateNotNullOrEmpty()]
@@ -328,7 +328,7 @@ $ProjectRootDirPath='.'){
         Uninstalls a task package from an environment if it's installed
     #>
 
-    $taskGroupDirPath = Resolve-Path "$ProjectRootDirPath\.PoshDevOps"
+    $taskGroupDirPath = Resolve-Path "$ProjectRootDirPath\.Appease"
     $packagesDirPath = "$taskGroupDirPath\packages"
 
     $packageInstallationDir = "$packagesDirPath\$($Id).$($Version)"
@@ -356,7 +356,8 @@ $packageInstallationDir
 
 Export-ModuleMember -Variable 'DefaultPackageSources'
 Export-ModuleMember -Function @(
-                                'Get-LatestDevOpTaskPackageVersion'
-                                'New-DevOpTaskPackageSpec',                                
-                                'Install-DevOpTaskPackage',
-                                'Uninstall-DevOpTaskPackage')
+                                'Get-DpmLatestPackageVersion'
+                                'New-DpmSpec',
+                                'Get-DpmPackageSpec',                                
+                                'Install-DpmPackage',
+                                'Uninstall-DpmPackage')

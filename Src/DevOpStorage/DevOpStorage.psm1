@@ -20,7 +20,7 @@ $ProjectRootDirPath = '.'){
         an internal utility function that retrieves a DevOp from storage
     #>
 
-    $DevOpFilePath = Resolve-Path "$ProjectRootDirPath\.PoshDevOps\$Name.psd1"   
+    $DevOpFilePath = Resolve-Path "$ProjectRootDirPath\.Appease\$Name.psd1"   
     Write-Output (Get-Content $DevOpFilePath | Out-String | ConvertFrom-Pson)
 
 }
@@ -42,7 +42,7 @@ $ProjectRootDirPath = '.'){
         an internal utility function that saves a DevOp to storage
     #>
 
-    $DevOpFilePath = "$ProjectRootDirPath\.PoshDevOps\$($Value.Name).psd1"
+    $DevOpFilePath = "$ProjectRootDirPath\.Appease\$($Value.Name).psd1"
 
     # guard against unintentionally overwriting existing DevOp
     if(!$Force.IsPresent -and (Test-Path $DevOpFilePath)){
@@ -92,8 +92,8 @@ $ProjectRootDirPath = '.'){
         an internal utility function that updates the name of a DevOp in storage
     #>
     
-    $OldDevOpFilePath = "$ProjectRootDirPath\.PoshDevOps\$OldName.psd1"
-    $NewDevOpFilePath = "$ProjectRootDirPath\.PoshDevOps\$NewName.psd1"
+    $OldDevOpFilePath = "$ProjectRootDirPath\.Appease\$OldName.psd1"
+    $NewDevOpFilePath = "$ProjectRootDirPath\.Appease\$NewName.psd1"
 
     # guard against unintentionally overwriting existing DevOp
     if(!$Force.IsPresent -and (Test-Path $NewDevOpFilePath)){
@@ -138,7 +138,7 @@ $ProjectRootDirPath = '.'){
         an internal utility function that removes a DevOp from storage
     #>
     
-    $DevOpFilePath = Resolve-Path "$ProjectRootDirPath\.PoshDevOps\$Name.psd1"
+    $DevOpFilePath = Resolve-Path "$ProjectRootDirPath\.Appease\$Name.psd1"
     
     Remove-Item -Path $DevOpFilePath -Force
 }
@@ -192,7 +192,7 @@ $ProjectRootDirPath = '.'){
         an internal utility function that adds a task to a DevOp in storage
     #>    
     
-    $DevOpFilePath = "$ProjectRootDirPath\.PoshDevOps\$DevOpName.psd1"
+    $DevOpFilePath = "$ProjectRootDirPath\.Appease\$DevOpName.psd1"
 
     # fetch DevOp
     $DevOp = Get-DevOp -Name $DevOpName -ProjectRootDirPath $ProjectRootDirPath
@@ -240,7 +240,7 @@ $Name,
     ValueFromPipelineByPropertyName=$true)]
 $ProjectRootDirPath = '.'){
     
-    $DevOpFilePath = "$ProjectRootDirPath\.PoshDevOps\$DevOpName.psd1"
+    $DevOpFilePath = "$ProjectRootDirPath\.Appease\$DevOpName.psd1"
     
     # fetch DevOp
     $DevOp = Get-DevOp -Name $DevOpName -ProjectRootDirPath $ProjectRootDirPath
@@ -283,7 +283,7 @@ $Force,
     ValueFromPipelineByPropertyName=$true)]
 $ProjectRootDirPath = '.'){
     
-    $DevOpFilePath = "$ProjectRootDirPath\.PoshDevOps\$DevOpName.psd1"
+    $DevOpFilePath = "$ProjectRootDirPath\.Appease\$DevOpName.psd1"
     
     # fetch DevOp
     $DevOp = Get-DevOp -Name $DevOpName -ProjectRootDirPath $ProjectRootDirPath
@@ -363,7 +363,7 @@ $Force,
     ValueFromPipelineByPropertyName=$true)]
 $ProjectRootDirPath = '.'){
     
-    $DevOpFilePath = "$ProjectRootDirPath\.PoshDevOps\$DevOpName.psd1"
+    $DevOpFilePath = "$ProjectRootDirPath\.Appease\$DevOpName.psd1"
     
     # fetch DevOp
     $DevOp = Get-DevOp -Name $DevOpName -ProjectRootDirPath $ProjectRootDirPath
@@ -430,7 +430,7 @@ $PackageVersion,
     ValueFromPipelineByPropertyName=$true)]
 $ProjectRootDirPath = '.'){
     
-    $DevOpFilePath = "$ProjectRootDirPath\.PoshDevOps\$DevOpName.psd1"
+    $DevOpFilePath = "$ProjectRootDirPath\.Appease\$DevOpName.psd1"
     
     # fetch DevOp
     $DevOp = Get-DevOp -Name $DevOpName -ProjectRootDirPath $ProjectRootDirPath

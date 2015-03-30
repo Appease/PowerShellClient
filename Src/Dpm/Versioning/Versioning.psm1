@@ -1,4 +1,4 @@
-﻿$SemanticVersionRegex = "(?<Major>\d+)\.(?<Minor>\d+)\.(?<Patch>\d+)(?:-(?<PreRelease>[0-9A-Za-z-.]*))?(?:\+(?<Build>[0-9A-Za-z-.]*))?"
+$SemanticVersionRegex = "(?<Major>\d+)\.(?<Minor>\d+)\.(?<Patch>\d+)(?:-(?<PreRelease>[0-9A-Za-z-.]*))?(?:\+(?<Build>[0-9A-Za-z-.]*))?"
 
 function Test-SemanticVersion(
     [string]

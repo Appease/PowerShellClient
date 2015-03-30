@@ -1,18 +1,20 @@
 # installer based on guidelines provided by Microsoft 
 # for installing shared/3rd party powershell modules
 # (see: https://msdn.microsoft.com/en-us/library/dd878350%28v=vs.85%29.aspx )
+
+$ModuleName = (gi $PSScriptRoot).Name
 if($PSVersionTable.PSVersion.Major -lt 3) {
-    Write-Warning "PoshDevOps requires PowerShell 3.0 or better; you have version $($Host.Version)."
+    Write-Warning "$ModuleName requires PowerShell 3.0 or better; you have version $($Host.Version)."
     return
 }
 
 # prepare install dir
-$installRootDirPath = "$env:ProgramFiles\PoshDevOps"
-$installDirPath = "$installRootDirPath\Modules"
+$installRootDirPath = "$env:ProgramFiles\Appease"
+$installDirPath = "$installRootDirPath\PowerShell"
 
 # handle upgrade scenario
-if(Test-Path "$installRootDirPath"){
-    Write-Debug 'removing previous PoshDevOps installation'
+if(Test-Path "$installDirPath"){
+    Write-Debug "removing previous $ModuleName installation"
     . "$PSScriptRoot\Uninstall.ps1"
 }
 New-Item $installDirPath -ItemType Directory | Out-Null
@@ -28,7 +30,7 @@ if(!($psModulePath.Split(';').Contains($installDirPath))){
     # trim trailing semicolon if exists
     $psModulePath = $psModulePath.TrimEnd(';');
 
-    # append path to PoshDevOps installation
+    # append path to Appease installation
     $psModulePath = $psModulePath + ";$installDirPath"
     
     # save

@@ -1,10 +1,10 @@
 try {    
     
-    . "$PSScriptRoot\PoshDevOps\Install.ps1"
+    . "$PSScriptRoot\Appease\Install.ps1"
 
 } catch {
 
-    Write-ChocolateyFailure 'PoshDevOps' $_.Exception.Message
+    Write-ChocolateyFailure 'Appease' $_.Exception.Message
 
     throw 
 }

@@ -1,4 +1,4 @@
-###What problems does PoshDevOps attempt to solve?
+###What problems does Appease attempt to solve?
 
 Build/Deployment services today are extremely powerfull and easy to use. However, if you throw your DevOps together in most of these services you are left with: 
 ######-1 lack of versioning side by side source code 
@@ -7,7 +7,7 @@ Build/Deployment services today are extremely powerfull and easy to use. However
 ######-4 expenses (subscriptions, licenses, hardware,  etc...)
 ######-5 one off scripts lacking modularity/reusability
 
-###How does PoshDevOps attempt to solve them?
+###How does Appease attempt to solve them?
 ######+1 versioning side by side source code
 ######+2 implemented as plain old PowerShell modules
 ######+3 ability to run anything capable of running PowerShell
@@ -17,8 +17,8 @@ Build/Deployment services today are extremely powerfull and easy to use. However
 ###How do I install it?
 Make sure you have [Chocolatey](https://chocolatey.org) installed, then from PowerShell run
 ```POWERSHELL
-choco install poshdevops -version 0.0.69; # 0.0.69 was latest at time of writing
-Import-Module "C:\Program Files\PoshDevOps\Modules\PoshDevOps" -Force
+choco install appease -version 0.0.69; # 0.0.69 was latest at time of writing
+Import-Module "C:\Program Files\Appease\Modules\Appease" -Force
 ```
 ###In a nutshell, hows it work?
 ***Conceptually:***
@@ -29,7 +29,7 @@ Import-Module "C:\Program Files\PoshDevOps\Modules\PoshDevOps" -Force
 
 ***Operationally:***
 - everything takes place within PowerShell
-- as you create/edit your `DevOps` a snapshot of each is maintained in a `YOUR-DEVOP-NAME.psd1` file (under the .PoshDevOps directory).
+- as you create/edit your `DevOps` a snapshot of each is maintained in a `YOUR-DEVOP-NAME.psd1` file (under the .Appease directory).
 
 ###How do I get started?
 navigate to the root directory of your project:
@@ -53,9 +53,9 @@ invoke your DevOp:
 ```
 
 ###How do I distribute my DevOps?
-When you invoke `New-DevOp` for the first time it creates a folder named `.PoshDevOps` at the root of your project. Make sure you add this directory to version control and you're done. 
+When you invoke `New-DevOp` for the first time it creates a folder named `.Appease` at the root of your project. Make sure you add this directory to version control and you're done. 
 
-pro-tip: exclude the `.PoshDevops\packages` folder from version control. PoshDevOps is smart enough to handle re-downloading any DevOp packages when it needs them and this way you don't bloat your version control. 
+pro-tip: exclude the `.PoshDevops\packages` folder from version control. Appease is smart enough to handle re-downloading any DevOp packages when it needs them and this way you don't bloat your version control. 
 
 ###Where's the documentation?
 [Here](Docs)
