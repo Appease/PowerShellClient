@@ -1,7 +1,7 @@
 Import-Module "$PSScriptRoot\..\OrderedDictionaryExtensions"
 Import-Module "$PSScriptRoot\..\Pson"
 
-function Get-DevOp(
+function Get-AppeaseDevOp(
 
 [string]
 [ValidateNotNullOrEmpty()]
@@ -25,7 +25,7 @@ $ProjectRootDirPath = '.'){
 
 }
 
-function Add-DevOp(
+function Add-AppeaseDevOp(
 [PsCustomObject]
 $Value,
 
@@ -70,7 +70,7 @@ Creating...
 
 
 
-function Rename-DevOp(
+function Rename-AppeaseDevOp(
 [string]
 [ValidateNotNullOrEmpty()]
 $OldName,
@@ -108,7 +108,7 @@ If you want to overwrite the existing DevOp use the -Force parameter
     }
 
     # fetch DevOp
-    $DevOp = Get-DevOp -Name $OldName -ProjectRootDirPath $ProjectRootDirPath
+    $DevOp = Get-AppeaseDevOp -Name $OldName -ProjectRootDirPath $ProjectRootDirPath
 
     # update name
     $DevOp.Name = $NewName
@@ -119,7 +119,7 @@ If you want to overwrite the existing DevOp use the -Force parameter
     sc $NewDevOpFilePath -Value (ConvertTo-Pson -InputObject $DevOp -Depth 12 -Layers 12 -Strict) -Force
 }
 
-function Remove-DevOp(
+function Remove-AppeaseDevOp(
 
 [string]
 [ValidateNotNullOrEmpty()]
@@ -143,7 +143,7 @@ $ProjectRootDirPath = '.'){
     Remove-Item -Path $DevOpFilePath -Force
 }
 
-function Add-DevOpTask(
+function Add-AppeaseTask(
 [string]
 [ValidateNotNullOrEmpty()]
 [Parameter(
@@ -195,7 +195,7 @@ $ProjectRootDirPath = '.'){
     $DevOpFilePath = "$ProjectRootDirPath\.Appease\$DevOpName.psd1"
 
     # fetch DevOp
-    $DevOp = Get-DevOp -Name $DevOpName -ProjectRootDirPath $ProjectRootDirPath
+    $DevOp = Get-AppeaseDevOp -Name $DevOpName -ProjectRootDirPath $ProjectRootDirPath
 
     # guard against unintentionally overwriting existing tasks
     if(!$Force.IsPresent -and ($DevOp.Tasks.$Name)){
@@ -219,7 +219,7 @@ If you want to overwrite the existing task use the -Force parameter
     sc $DevOpFilePath -Value (ConvertTo-Pson -InputObject $DevOp -Depth 12 -Layers 12 -Strict) -Force
 }
 
-function Remove-DevOpTask(
+function Remove-AppeaseTask(
 [string]
 [ValidateNotNullOrEmpty()]
 [Parameter(
@@ -243,7 +243,7 @@ $ProjectRootDirPath = '.'){
     $DevOpFilePath = "$ProjectRootDirPath\.Appease\$DevOpName.psd1"
     
     # fetch DevOp
-    $DevOp = Get-DevOp -Name $DevOpName -ProjectRootDirPath $ProjectRootDirPath
+    $DevOp = Get-AppeaseDevOp -Name $DevOpName -ProjectRootDirPath $ProjectRootDirPath
 
     # remove task
     $DevOp.Tasks.Remove($Name)
@@ -252,7 +252,7 @@ $ProjectRootDirPath = '.'){
     sc $DevOpFilePath -Value (ConvertTo-Pson -InputObject $DevOp -Depth 12 -Layers 12 -Strict) -Force
 }
 
-function Rename-DevOpTask(
+function Rename-AppeaseTask(
 [string]
 [ValidateNotNullOrEmpty()]
 [Parameter(
@@ -286,7 +286,7 @@ $ProjectRootDirPath = '.'){
     $DevOpFilePath = "$ProjectRootDirPath\.Appease\$DevOpName.psd1"
     
     # fetch DevOp
-    $DevOp = Get-DevOp -Name $DevOpName -ProjectRootDirPath $ProjectRootDirPath
+    $DevOp = Get-AppeaseDevOp -Name $DevOpName -ProjectRootDirPath $ProjectRootDirPath
 
     # fetch task
     $Task = $DevOp.Tasks.$OldName
@@ -328,7 +328,7 @@ If you want to overwrite the existing task use the -Force parameter
     sc $DevOpFilePath -Value (ConvertTo-Pson -InputObject $DevOp -Depth 12 -Layers 12 -Strict) -Force
 }
 
-function Set-DevOpTaskParameter(
+function Set-AppeaseTaskParameter(
 [string]
 [ValidateNotNullOrEmpty()]
 [Parameter(
@@ -366,7 +366,7 @@ $ProjectRootDirPath = '.'){
     $DevOpFilePath = "$ProjectRootDirPath\.Appease\$DevOpName.psd1"
     
     # fetch DevOp
-    $DevOp = Get-DevOp -Name $DevOpName -ProjectRootDirPath $ProjectRootDirPath
+    $DevOp = Get-AppeaseDevOp -Name $DevOpName -ProjectRootDirPath $ProjectRootDirPath
 
     # fetch task
     $Task = $DevOp.Tasks.$TaskName
@@ -402,7 +402,7 @@ If you want to overwrite the existing parameter value use the -Force parameter
     sc $DevOpFilePath -Value (ConvertTo-Pson -InputObject $DevOp -Depth 12 -Layers 12 -Strict) -Force
 }
 
-function Set-DevOpTaskTemplateVersion(
+function Set-AppeaseTaskTemplateVersion(
 [string]
 [ValidateNotNullOrEmpty()]
 [Parameter(
@@ -433,7 +433,7 @@ $ProjectRootDirPath = '.'){
     $DevOpFilePath = "$ProjectRootDirPath\.Appease\$DevOpName.psd1"
     
     # fetch DevOp
-    $DevOp = Get-DevOp -Name $DevOpName -ProjectRootDirPath $ProjectRootDirPath
+    $DevOp = Get-AppeaseDevOp -Name $DevOpName -ProjectRootDirPath $ProjectRootDirPath
 
     # fetch task
     $Task = $DevOp.Tasks.$TaskName
@@ -455,14 +455,16 @@ for project "$(Resolve-Path $ProjectRootDirPath)".
 }
 
 Export-ModuleMember -Function @(
+
                     # DevOp API
-                    'Get-DevOp',
-                    'Add-DevOp',
-                    'Rename-DevOp',
-                    'Remove-DevOp',
-                    # DevOp Task API
-                    'Add-DevOpTask',
-                    'Remove-DevOpTask',
-                    'Rename-DevOpTask',
-                    'Set-DevOpTaskParameter',
-                    'Set-DevOpTaskTemplateVersion')
+                    'Get-AppeaseDevOp',
+                    'Add-AppeaseDevOp',
+                    'Rename-AppeaseDevOp',
+                    'Remove-AppeaseDevOp',
+
+                    # Task API
+                    'Add-AppeaseTask',
+                    'Remove-AppeaseTask',
+                    'Rename-AppeaseTask',
+                    'Set-AppeaseTaskParameter',
+                    'Set-AppeaseTaskTemplateVersion')

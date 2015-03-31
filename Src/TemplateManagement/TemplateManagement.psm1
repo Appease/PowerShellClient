@@ -5,7 +5,7 @@ $DefaultTemplateSources = @('https://www.myget.org/F/appease')
 $NuGetCommand = "nuget"
 $ChocolateyCommand = "chocolatey"
 
-function Get-DevOpTaskTemplateLatestVersion(
+function Get-AppeaseTaskTemplateLatestVersion(
 
     [string[]]
     [Parameter(
@@ -208,7 +208,7 @@ $nuspecXmlString =
 
 }
 
-function Get-DevOpTaskTemplateInstallDirPath(
+function Get-AppeaseTaskTemplateInstallDirPath(
 
     [string]
     [ValidateNotNullOrEmpty()]
@@ -230,11 +230,11 @@ function Get-DevOpTaskTemplateInstallDirPath(
         ValueFromPipelineByPropertyName=$true)]
     $ProjectRootDirPath = '.'){
 
-    Resolve-Path "$ProjectRootDirPath\.Appease\templates\$Id.$Version" | Write-Output
+    Resolve-Path "$ProjectRootDirPath\.Appease\Templates\$Id.$Version" | Write-Output
     
 }
 
-function Get-DevOpTaskTaskTemplateSpec(
+function Get-AppeaseTaskTemplateDependencies(
 
     [string]
     [ValidateNotNullOrEmpty()]
@@ -258,16 +258,16 @@ function Get-DevOpTaskTaskTemplateSpec(
 
     <#
         .SYNOPSIS
-        Parses a task template spec file
+        Parses a dependencies.json file
     #>
 
-    $TemplateInstallDirPath = Get-DevOpTaskTemplateInstallDirPath -Name $Name -Version $Version -ProjectRootDirPath $ProjectRootDirPath
-    $TaskTemplateSpecFilePath = Join-Path -Path $TemplateInstallDirPath -ChildPath "\TaskTemplateSpec.psd1"
-    Get-Content $TaskTemplateSpecFilePath | Out-String | ConvertFrom-Pson | Write-Output
+    $TemplateInstallDirPath = Get-AppeaseTaskTemplateInstallDirPath -Name $Name -Version $Version -ProjectRootDirPath $ProjectRootDirPath
+    $TemplateDependenciesFilePath = Join-Path -Path $TemplateInstallDirPath -ChildPath "\dependencies.json"
+    Get-Content $TemplateDependenciesFilePath | Out-String | ConvertFrom-Json | Write-Output
 
 }
 
-function Install-DevOpTaskTemplate(
+function Install-AppeaseTaskTemplate(
 
     [string]
     [ValidateNotNullOrEmpty()]
@@ -299,7 +299,7 @@ function Install-DevOpTaskTemplate(
         Installs a task template to an environment if it's not already installed
     #>
 
-    $TemplatesDirPath = "$ProjectRootDirPath\.Appease\templates"
+    $TemplatesDirPath = "$ProjectRootDirPath\.Appease\Templates"
 
     if([string]::IsNullOrWhiteSpace($Version)){
 
@@ -334,7 +334,7 @@ Invoking nuget:
     }
 
     # install chocolatey dependencies
-    $ChocolateyDependencies = (Get-DevOpTaskTaskTemplateSpec -Name $Id -Version $Version -ProjectRootDirPath $ProjectRootDirPath).Dependencies.Chocolatey
+    $ChocolateyDependencies = (Get-AppeaseTaskTemplateDependencies -Name $Id -Version $Version -ProjectRootDirPath $ProjectRootDirPath).Chocolatey
     foreach($ChocolateyDependency in $ChocolateyDependencies){
         $ChocolateyParameters = @('install',$ChocolateyDependency.Id,'--confirm')
         
@@ -379,7 +379,7 @@ Invoking chocolatey:
 
 }
 
-function Uninstall-DevOpTaskTemplate(
+function Uninstall-AppeaseTaskTemplate(
 
     [string]
     [ValidateNotNullOrEmpty()]
@@ -406,25 +406,22 @@ function Uninstall-DevOpTaskTemplate(
         Uninstalls a task template from an environment if it's installed
     #>
 
-    $devOpDirPath = Resolve-Path "$ProjectRootDirPath\.Appease"
-    $templatesDirPath = "$devOpDirPath\templates"
-
-    $taskTemplateInstallationDir = Get-DevOpTaskTemplateInstallDirPath -Id $Id -Version $Version -ProjectRootDirPath $ProjectRootDirPath
+    $TaskTemplateInstallationDir = Get-AppeaseTaskTemplateInstallDirPath -Id $Id -Version $Version -ProjectRootDirPath $ProjectRootDirPath
 
 
-    If(Test-Path $taskTemplateInstallationDir){
+    If(Test-Path $TaskTemplateInstallationDir){
 Write-Debug `
 @"
 Removing template at:
-$taskTemplateInstallationDir
+$TaskTemplateInstallationDir
 "@
-        Remove-Item $taskTemplateInstallationDir -Recurse -Force
+        Remove-Item $TaskTemplateInstallationDir -Recurse -Force
     }
     Else{
 Write-Debug `
 @"
 No template to remove at:
-$taskTemplateInstallationDir
+$TaskTemplateInstallationDir
 "@
     }
 
@@ -434,8 +431,8 @@ $taskTemplateInstallationDir
 
 Export-ModuleMember -Variable 'DefaultTemplateSources'
 Export-ModuleMember -Function @(
-                                'Get-DevOpTaskTemplateLatestVersion'
+                                'Get-AppeaseTaskTemplateLatestVersion',
+                                'Get-AppeaseTaskTemplateInstallDirPath'
                                 'Publish-AppeaseTaskTemplate',
-                                'New-DevOpTaskTaskTemplateSpec',                                
-                                'Install-DevOpTaskTemplate',
-                                'Uninstall-DevOpTaskTemplate')
+                                'Install-AppeaseTaskTemplate',
+                                'Uninstall-AppeaseTaskTemplate')
