@@ -1,5 +1,4 @@
 Import-Module "$PSScriptRoot\Versioning"
-Import-Module "$PSScriptRoot\..\Pson"
 
 $DefaultTemplateSources = @('https://www.myget.org/F/appease')
 $NuGetCommand = "nuget"

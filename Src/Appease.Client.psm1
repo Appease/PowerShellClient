@@ -299,7 +299,7 @@ Write-Debug "using greatest available template version : $TemplateVersion"
         elseif('Add-AppeaseTaskAfter' -eq $PSCmdlet.ParameterSetName){
             
             $DevOp = DevOpStorage\Get-AppeaseDevOp -Name $DevOpName -ProjectRootDirPath $ProjectRootDirPath
-            $indexOfAfter = $DevOp.Tasks.IndexOf(($DevOp.Tasks|?{$_.Name -eq $After}|Select -First))
+            $indexOfAfter = $DevOp.Tasks.IndexOf(($DevOp.Tasks|?{$_.Name -eq $After}|Select -First 1))
             # ensure Task with key $After exists
             if($indexOfAfter -lt 0){
                 throw "A task with name $After could not be found."
@@ -310,7 +310,7 @@ Write-Debug "using greatest available template version : $TemplateVersion"
         elseif('Add-AppeaseTaskBefore' -eq $PSCmdlet.ParameterSetName){        
         
             $DevOp = DevOpStorage\Get-AppeaseDevOp -Name $DevOpName -ProjectRootDirPath $ProjectRootDirPath
-            $indexOfBefore = $DevOp.Tasks.IndexOf(($DevOp.Tasks|?{$_.Name -eq $Before}|Select -First))
+            $indexOfBefore = $DevOp.Tasks.IndexOf(($DevOp.Tasks|?{$_.Name -eq $Before}|Select -First 1))
             # ensure Task with key $Before exists
             if($indexOfBefore -lt 0){
                 throw "A Task with name $Before could not be found."

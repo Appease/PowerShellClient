@@ -24,6 +24,10 @@ If you want to overwrite the existing dev op use the -Force parameter
 "@
     }
 
+    if(!(Test-Path -Path $DevOpFilePath)){
+        New-Item -ItemType File -Path $DevOpFilePath -Force
+    }
+
     Set-Content $DevOpFilePath -Value (ConvertTo-Json -InputObject $Value -Depth 12) -Force
 }
 
@@ -174,7 +178,7 @@ $ProjectRootDirPath = '.'){
     $DevOp = Get-AppeaseDevOpFromFile -Name $DevOpName -ProjectRootDirPath $ProjectRootDirPath
 
     # guard against unintentionally overwriting existing tasks
-    if(!$Force.IsPresent -and ($DevOp.Tasks|?{$_.Name -eq $Name}|Select -First)){
+    if(!$Force.IsPresent -and ($DevOp.Tasks|?{$_.Name -eq $Name}|Select -First 1)){
 throw `
 @"
 Task '$Name' already exists in DevOp '$DevOpName'
@@ -221,7 +225,7 @@ $ProjectRootDirPath = '.'){
     $DevOp = Get-AppeaseDevOpFromFile -Name $DevOpName -ProjectRootDirPath $ProjectRootDirPath
 
     # remove task
-    $DevOp.Tasks.Remove(($DevOp.Tasks|?{$_.Name -eq $Name}|Select -First))
+    $DevOp.Tasks.Remove(($DevOp.Tasks|?{$_.Name -eq $Name}|Select -First 1))
 
     # save
     Save-AppeaseDevOpToFile -Value $DevOp -Force -ProjectRootDirPath $ProjectRootDirPath
@@ -263,7 +267,7 @@ $ProjectRootDirPath = '.'){
     $DevOp = Get-AppeaseDevOpFromFile -Name $DevOpName -ProjectRootDirPath $ProjectRootDirPath
 
     # fetch task
-    $Task = $DevOp.Tasks|?{$_.Name -eq $OldName}|Select -First
+    $Task = $DevOp.Tasks|?{$_.Name -eq $OldName}|Select -First 1
 
     # handle task not found
     if(!$Task){
@@ -275,7 +279,7 @@ for project '$(Resolve-Path $ProjectRootDirPath)'.
     }
 
     # guard against unintentionally overwriting existing task
-    if(!$Force.IsPresent -and ($DevOp.Tasks|?{$_.Name -eq $NewName}|Select -First)){
+    if(!$Force.IsPresent -and ($DevOp.Tasks|?{$_.Name -eq $NewName}|Select -First 1)){
 throw `
 @"
 Task '$NewName' already exists in dev op '$DevOpName'
@@ -333,7 +337,7 @@ $ProjectRootDirPath = '.'){
     $DevOp = Get-AppeaseDevOpFromFile -Name $DevOpName -ProjectRootDirPath $ProjectRootDirPath
 
     # fetch task
-    $Task = $DevOp.Tasks|?{$_.Name -eq $TaskName}|Select -First
+    $Task = $DevOp.Tasks|?{$_.Name -eq $TaskName}|Select -First 1
 
     # handle task not found
     if(!$Task){
@@ -398,7 +402,7 @@ $ProjectRootDirPath = '.'){
     $DevOp = Get-AppeaseDevOpFromFile -Name $DevOpName -ProjectRootDirPath $ProjectRootDirPath
 
     # fetch task
-    $Task = $DevOp.Tasks|?{$_.Name -eq $TaskName}|Select -First
+    $Task = $DevOp.Tasks|?{$_.Name -eq $TaskName}|Select -First 1
 
     # handle task not found
     if(!$Task){
@@ -425,6 +429,9 @@ Export-ModuleMember -Alias @(
 Export-ModuleMember -Function @(
 
                     # DevOp API
+                    'Save-AppeaseDevOpToFile',
+                    'Get-AppeaseDevOpFromFile',
+                    'Add-AppeaseDevOp',
                     'Rename-AppeaseDevOp',
                     'Remove-AppeaseDevOp',
 

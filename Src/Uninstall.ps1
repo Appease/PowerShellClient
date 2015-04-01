@@ -1,7 +1,7 @@
 $ModuleName = (gi $PSScriptRoot).Name
 $RootInstallationDirPath = "C:\Program Files\Appease"
 $RootPowerShellModuleInstallationDirPath = "$RootInstallationDirPath\PowerShell"
-$ModuleInstallationDirPath = "$RootInstallationDirPath\$ModuleName"
+$ModuleInstallationDirPath = "$RootPowerShellModuleInstallationDirPath\$ModuleName"
 
 # make idempotent
 if(Test-Path $ModuleInstallationDirPath){
