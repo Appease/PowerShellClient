@@ -9,33 +9,37 @@ if($PSVersionTable.PSVersion.Major -lt 3) {
 }
 
 # prepare install dir
-$installRootDirPath = "$env:ProgramFiles\Appease"
-$installDirPath = "$installRootDirPath\PowerShell"
+$RootInstallationDirPath = "$env:ProgramFiles\Appease"
+$RootPowerShellModuleInstallationDirPath = "$RootInstallationDirPath\PowerShell"
+$ModuleInstallationDirPath = "$RootPowerShellModuleInstallationDirPath\$ModuleName"
 
 # handle upgrade scenario
-if(Test-Path "$installDirPath"){
+if(Test-Path $ModuleInstallationDirPath){
     Write-Debug "removing previous $ModuleName installation"
     . "$PSScriptRoot\Uninstall.ps1"
 }
-New-Item $installDirPath -ItemType Directory | Out-Null
 
-Copy-Item -Path "$PSScriptRoot" -Destination $installDirPath -Recurse
+if(!(Test-Path $RootPowerShellModuleInstallationDirPath)){
+    New-Item $RootPowerShellModuleInstallationDirPath -ItemType Directory -Force | Out-Null
+}
 
-$psModulePath = [Environment]::GetEnvironmentVariable('PSModulePath','Machine')
+Copy-Item -Path $PSScriptRoot -Destination $RootPowerShellModuleInstallationDirPath -Recurse
 
-# if installation dir path is not already in path then add it.
-if(!($psModulePath.Split(';').Contains($installDirPath))){
-    Write-Debug "adding $installDirPath to '$env:PSModulePath'"
+$PSModulePath = [Environment]::GetEnvironmentVariable('PSModulePath','Machine')
+
+# if $RootPowerShellModuleInstallationDirPath is not already in path then add it.
+if(!($PSModulePath.Split(';').Contains($RootPowerShellModuleInstallationDirPath))){
+    Write-Debug "adding $RootPowerShellModuleInstallationDirPath to '$env:PSModulePath'"
     
     # trim trailing semicolon if exists
-    $psModulePath = $psModulePath.TrimEnd(';');
+    $PSModulePath = $PSModulePath.TrimEnd(';');
 
     # append path to Appease installation
-    $psModulePath = $psModulePath + ";$installDirPath"
+    $PSModulePath += ";$RootPowerShellModuleInstallationDirPath"
     
     # save
-    [Environment]::SetEnvironmentVariable('PSModulePath',$psModulePath,'Machine')    
+    [Environment]::SetEnvironmentVariable('PSModulePath',$PSModulePath,'Machine')    
     
     # make effective in current session
-    $env:PSModulePath = $env:PSModulePath + ";$installDirPath"
+    $env:PSModulePath = $env:PSModulePath + ";$RootPowerShellModuleInstallationDirPath"
 }

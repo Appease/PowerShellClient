@@ -2,7 +2,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
 	<metadata>
 		<id>appease.client.powershell</id>
-		<version>0.0.1</version>
+		<version>0.0.77</version>
 		<authors>Chris Dostert</authors>
 		<requireLicenseAcceptance>false</requireLicenseAcceptance>
 		<description>
@@ -13,7 +13,7 @@
 			-	appends C:\ProgramFiles\Appease\PowerShell to PSModulePath environment variable
 		</description>
 		<tags>Powershell Appease TaskRunner CI ContinuousIntegration Build Deployment admin</tags>
-		<projectUrl>https://github.com/Appease/PowerShellClient</projectUrl>
+		<projectUrl>https://github.com/appease/PowerShellClient</projectUrl>
         <iconUrl>http://res.cloudinary.com/hibczhd9m/image/upload/c_crop,w_350/v1423785217/NuGet.org/5711875.png</iconUrl>
         <dependencies>
             <dependency id="nuget.commandline" version="2.8.0" />

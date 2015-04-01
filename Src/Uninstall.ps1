@@ -1,33 +1,45 @@
-$installRootDirPath = "C:\Program Files\Appease"
-$installDirPath = "$installRootDirPath\PowerShell"
+$ModuleName = (gi $PSScriptRoot).Name
+$RootInstallationDirPath = "C:\Program Files\Appease"
+$RootPowerShellModuleInstallationDirPath = "$RootInstallationDirPath\PowerShell"
+$ModuleInstallationDirPath = "$RootInstallationDirPath\$ModuleName"
 
 # make idempotent
-if(Test-Path $installDirPath){
-    Remove-Item $installDirPath -Force -Recurse
+if(Test-Path $ModuleInstallationDirPath){
+    Remove-Item -Path $ModuleInstallationDirPath -Recurse -Force
 }
 
-# if this was the last module in $installDirPath remove from $env:PSModulePath
-if(gci $installDirPath -Directory){
-    # remove $PSModulePath modification
-    $psModulePath = [Environment]::GetEnvironmentVariable('PSModulePath','Machine')
+# make idempotent
+if($RootInstallationDirPath -and !(gci $RootPowerShellModuleInstallationDirPath)){
+    
+    # remove $ModuleInstallationDirPath
+    Remove-Item $RootPowerShellModuleInstallationDirPath -Force
 
-    $newPSModulePathParts = @();
-    $isPSModulePathModified = $false
-    foreach($part in $psModulePath.Split(';')){
-        if($part -eq $installDirPath){
-            $isPSModulePathModified = $true
+    # remove $PSModulePath modification
+    $PSModulePath = [Environment]::GetEnvironmentVariable('PSModulePath','Machine')
+
+    $NewPSModulePathParts = @();
+    $IsPSModulePathModified = $false
+    foreach($part in $PSModulePath.Split(';')){
+        if($part -eq $RootPowerShellModuleInstallationDirPath){
+            $IsPSModulePathModified = $true
         }
         else{
-            $newPSModulePathParts += $part;        
+            $NewPSModulePathParts += $part;        
         }
     }
 
-    $psModulePath = $newPSModulePathParts -join ';'
+    $PSModulePath = $NewPSModulePathParts -join ';'
 
-    if($isPSModulePathModified){
-        Write-Debug "updating '$env:PSModulePath' to $psModulePath"
+    if($IsPSModulePathModified){
+        Write-Debug "updating '$env:PSModulePath' to $PSModulePath"
 
         # save
-        [Environment]::SetEnvironmentVariable('PSModulePath',$psModulePath,'Machine')
+        [Environment]::SetEnvironmentVariable('PSModulePath',$PSModulePath,'Machine')
     }
+}
+
+if(!(gci $RootInstallationDirPath)){
+    
+    Remove-Item $RootInstallationDirPath -Force
+        
 }

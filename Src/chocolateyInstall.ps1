@@ -1,10 +1,10 @@
 try {    
     
-    . "$PSScriptRoot\Appease\Install.ps1"
+    . "$PSScriptRoot\Appease.Client\Install.ps1"
 
 } catch {
 
-    Write-ChocolateyFailure 'Appease' $_.Exception.Message
+    Write-ChocolateyFailure 'appease.client.powershell' $_.Exception.Message
 
     throw 
 }

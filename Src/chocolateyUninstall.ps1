@@ -1,10 +1,10 @@
 try {
 
-    . "$PSScriptRoot\Appease\Uninstall.ps1"
+    . "$PSScriptRoot\Appease.Client\Uninstall.ps1"
 
 } catch {
 
-    Write-ChocolateyFailure 'Appease' $_.Exception.Message
+    Write-ChocolateyFailure 'appease.client.powershell' $_.Exception.Message
 
     throw 
 }
