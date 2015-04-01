@@ -169,7 +169,7 @@ $nuspecXmlString =
     <iconUrl>$([string]$IconUrl)</iconUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>$Description</description>
-    <tags>$([string]::Join(" ",$Tags))</tags>
+    <tags>$(if($Tags){[string]::Join(" ",$Tags)})</tags>
   </metadata>
   <files>
     <file src="$DependenciesFileName" target="dependencies.json"/>

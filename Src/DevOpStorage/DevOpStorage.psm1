@@ -350,7 +350,7 @@ for project '$(Resolve-Path $ProjectRootDirPath)'.
 
     # handle the case where this is the first parameter set
     If(!$Task.Parameters){
-        $Task.Parameters = @{$Name=$Value}
+        $Task.Parameters | Add-Member NoteProperty -Name $Name -Value $Value
     }
     # guard against unintentionally overwriting existing parameter value
     ElseIf(!$Force.IsPresent -and ($Task.Parameters.$Name)){
