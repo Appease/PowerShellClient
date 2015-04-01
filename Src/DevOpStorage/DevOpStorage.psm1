@@ -1,7 +1,35 @@
-Import-Module "$PSScriptRoot\..\OrderedDictionaryExtensions"
-Import-Module "$PSScriptRoot\..\Pson"
+function Save-AppeaseDevOpToFile(
+[object]
+$Value,
 
-function Get-AppeaseDevOp(
+[switch]
+$Force,
+
+[string]
+[ValidateScript({Test-Path $_ -PathType Container})]
+[Parameter(
+    ValueFromPipelineByPropertyName=$true)]
+$ProjectRootDirPath = '.'){
+
+    $DevOpFilePath = "$ProjectRootDirPath\.Appease\$($Value.Name).json"
+
+    if(!$Force.IsPresent -and (Test-Path $DevOpFilePath)){
+throw `
+@"
+dev op "$($Value.Name)" already exists
+for project "$(Resolve-Path $ProjectRootDirPath)".
+
+dev op names must be unique.
+If you want to overwrite the existing dev op use the -Force parameter
+"@
+    }
+
+    Set-Content $DevOpFilePath -Value (ConvertTo-Json -InputObject $Value -Depth 12) -Force
+}
+
+Set-Alias -Name 'Add-AppeaseDevOp' -Value 'Save-AppeaseDevOpToFile'
+
+function Get-AppeaseDevOpFromFile(
 
 [string]
 [ValidateNotNullOrEmpty()]
@@ -20,54 +48,17 @@ $ProjectRootDirPath = '.'){
         an internal utility function that retrieves a DevOp from storage
     #>
 
-    $DevOpFilePath = Resolve-Path "$ProjectRootDirPath\.Appease\$Name.psd1"   
-    Write-Output (Get-Content $DevOpFilePath | Out-String | ConvertFrom-Pson)
-
-}
-
-function Add-AppeaseDevOp(
-[PsCustomObject]
-$Value,
-
-[switch]
-$Force,
-
-[string]
-[ValidateScript({Test-Path $_ -PathType Container})]
-[Parameter(
-    ValueFromPipelineByPropertyName=$true)]
-$ProjectRootDirPath = '.'){
-    <#
-        .SYNOPSIS
-        an internal utility function that saves a DevOp to storage
-    #>
-
-    $DevOpFilePath = "$ProjectRootDirPath\.Appease\$($Value.Name).psd1"
-
-    # guard against unintentionally overwriting existing DevOp
-    if(!$Force.IsPresent -and (Test-Path $DevOpFilePath)){
-throw `
-@"
-Task group "$($Value.Name)" already exists
-for project "$(Resolve-Path $ProjectRootDirPath)".
-
-Task group names must be unique.
-If you want to overwrite the existing DevOp use the -Force parameter
-"@
-    }
-
-Write-Debug `
-@"
-Creating DevOp file at:
-$DevOpFilePath
-Creating...
-"@
-
-    New-Item -Path $DevOpFilePath -ItemType File -Force        
-    Set-Content $DevOpFilePath -Value (ConvertTo-Pson -InputObject $Value -Depth 12 -Layers 12 -Strict) -Force
+    $DevOpFilePath = Resolve-Path "$ProjectRootDirPath\.Appease\$Name.json"
     
+    $DevOp = Get-Content $DevOpFilePath | Out-String | ConvertFrom-Json
+    
+    # Convert Tasks from array to collection
+    $DevOp.Tasks = {$DevOp.Tasks}.Invoke()
+    Write-Output $DevOp
+
 }
 
+Set-Alias -Name 'Get-AppeaseDevOp' -Value 'Get-AppeaseDevOpFromFile'
 
 
 function Rename-AppeaseDevOp(
@@ -91,32 +82,19 @@ $ProjectRootDirPath = '.'){
         .SYNOPSIS
         an internal utility function that updates the name of a DevOp in storage
     #>
-    
-    $OldDevOpFilePath = "$ProjectRootDirPath\.Appease\$OldName.psd1"
-    $NewDevOpFilePath = "$ProjectRootDirPath\.Appease\$NewName.psd1"
-
-    # guard against unintentionally overwriting existing DevOp
-    if(!$Force.IsPresent -and (Test-Path $NewDevOpFilePath)){
-throw `
-@"
-Task group "$NewName" already exists
-for project "$(Resolve-Path $ProjectRootDirPath)".
-
-Task group names must be unique.
-If you want to overwrite the existing DevOp use the -Force parameter
-"@
-    }
-
+        
     # fetch DevOp
-    $DevOp = Get-AppeaseDevOp -Name $OldName -ProjectRootDirPath $ProjectRootDirPath
+    $DevOp = Get-AppeaseDevOpFromFile -Name $OldName -ProjectRootDirPath $ProjectRootDirPath
 
     # update name
     $DevOp.Name = $NewName
 
+    # save to file with updated name
+    Save-AppeaseDevOpToFile -Value $DevOp -Force:$Force -ProjectRootDirPath $ProjectRootDirPath
         
-    #save
-    mv $OldDevOpFilePath $NewDevOpFilePath -Force
-    sc $NewDevOpFilePath -Value (ConvertTo-Pson -InputObject $DevOp -Depth 12 -Layers 12 -Strict) -Force
+    #remove file with old name
+    Remove-Item -Path "$ProjectRootDirPath\.Appease\$OldName.json" -Force
+
 }
 
 function Remove-AppeaseDevOp(
@@ -138,7 +116,7 @@ $ProjectRootDirPath = '.'){
         an internal utility function that removes a DevOp from storage
     #>
     
-    $DevOpFilePath = Resolve-Path "$ProjectRootDirPath\.Appease\$Name.psd1"
+    $DevOpFilePath = Resolve-Path "$ProjectRootDirPath\.Appease\$Name.json"
     
     Remove-Item -Path $DevOpFilePath -Force
 }
@@ -192,17 +170,15 @@ $ProjectRootDirPath = '.'){
         an internal utility function that adds a task to a DevOp in storage
     #>    
     
-    $DevOpFilePath = "$ProjectRootDirPath\.Appease\$DevOpName.psd1"
-
     # fetch DevOp
-    $DevOp = Get-AppeaseDevOp -Name $DevOpName -ProjectRootDirPath $ProjectRootDirPath
+    $DevOp = Get-AppeaseDevOpFromFile -Name $DevOpName -ProjectRootDirPath $ProjectRootDirPath
 
     # guard against unintentionally overwriting existing tasks
-    if(!$Force.IsPresent -and ($DevOp.Tasks.$Name)){
+    if(!$Force.IsPresent -and ($DevOp.Tasks|?{$_.Name -eq $Name}|Select -First)){
 throw `
 @"
-Task "$Name" already exists in DevOp "$DevOpName"
-for project "$(Resolve-Path $ProjectRootDirPath)".
+Task '$Name' already exists in DevOp '$DevOpName'
+for project '$(Resolve-Path $ProjectRootDirPath)'.
 
 Task names must be unique.
 If you want to overwrite the existing task use the -Force parameter
@@ -210,13 +186,14 @@ If you want to overwrite the existing task use the -Force parameter
     }
 
     # construct task object
-    $Task = @{Name=$Name;TemplateId=$TemplateId;TemplateVersion=$TemplateVersion;}
+    $Task = @{Name=$Name;TemplateId=$TemplateId;TemplateVersion=$TemplateVersion}
 
-    # add task to taskgroup
-    $DevOp.Tasks.Insert($Index,$Name,$Task)
+    # add task to dev op 
+    $DevOp.Tasks.Insert($Index,$Task)
 
     # save
-    sc $DevOpFilePath -Value (ConvertTo-Pson -InputObject $DevOp -Depth 12 -Layers 12 -Strict) -Force
+    Save-AppeaseDevOpToFile -Value $DevOp -Force -ProjectRootDirPath $ProjectRootDirPath
+
 }
 
 function Remove-AppeaseTask(
@@ -239,17 +216,16 @@ $Name,
 [Parameter(
     ValueFromPipelineByPropertyName=$true)]
 $ProjectRootDirPath = '.'){
-    
-    $DevOpFilePath = "$ProjectRootDirPath\.Appease\$DevOpName.psd1"
-    
+        
     # fetch DevOp
-    $DevOp = Get-AppeaseDevOp -Name $DevOpName -ProjectRootDirPath $ProjectRootDirPath
+    $DevOp = Get-AppeaseDevOpFromFile -Name $DevOpName -ProjectRootDirPath $ProjectRootDirPath
 
     # remove task
-    $DevOp.Tasks.Remove($Name)
+    $DevOp.Tasks.Remove(($DevOp.Tasks|?{$_.Name -eq $Name}|Select -First))
 
     # save
-    sc $DevOpFilePath -Value (ConvertTo-Pson -InputObject $DevOp -Depth 12 -Layers 12 -Strict) -Force
+    Save-AppeaseDevOpToFile -Value $DevOp -Force -ProjectRootDirPath $ProjectRootDirPath
+
 }
 
 function Rename-AppeaseTask(
@@ -282,50 +258,40 @@ $Force,
 [Parameter(
     ValueFromPipelineByPropertyName=$true)]
 $ProjectRootDirPath = '.'){
-    
-    $DevOpFilePath = "$ProjectRootDirPath\.Appease\$DevOpName.psd1"
-    
+        
     # fetch DevOp
-    $DevOp = Get-AppeaseDevOp -Name $DevOpName -ProjectRootDirPath $ProjectRootDirPath
+    $DevOp = Get-AppeaseDevOpFromFile -Name $DevOpName -ProjectRootDirPath $ProjectRootDirPath
 
     # fetch task
-    $Task = $DevOp.Tasks.$OldName
+    $Task = $DevOp.Tasks|?{$_.Name -eq $OldName}|Select -First
 
     # handle task not found
     if(!$Task){
 throw `
 @"
-Task "$TaskName" not found in DevOp "$DevOpName"
-for project "$(Resolve-Path $ProjectRootDirPath)".
+Task '$TaskName' not found in dev op '$DevOpName'
+for project '$(Resolve-Path $ProjectRootDirPath)'.
 "@
     }
 
     # guard against unintentionally overwriting existing task
-    if(!$Force.IsPresent -and ($DevOp.Tasks.$NewName)){
+    if(!$Force.IsPresent -and ($DevOp.Tasks|?{$_.Name -eq $NewName}|Select -First)){
 throw `
 @"
-Task "$NewName" already exists in DevOp "$DevOpName"
-for project "$(Resolve-Path $ProjectRootDirPath)".
+Task '$NewName' already exists in dev op '$DevOpName'
+for project '$(Resolve-Path $ProjectRootDirPath)'.
 
 Task names must be unique.
 If you want to overwrite the existing task use the -Force parameter
 "@
     }
 
-    # get task index
-    $Index = Get-IndexOfKeyInOrderedDictionary -Key $OldName -OrderedDictionary $DevOp.Tasks
-
     # update name
     $Task.Name = $NewName
 
-    # remove old record
-    $DevOp.Tasks.Remove($OldName)
-
-    # insert new record
-    $DevOp.Tasks.Insert($Index,$Task.Name,$Task)
-
     # save
-    sc $DevOpFilePath -Value (ConvertTo-Pson -InputObject $DevOp -Depth 12 -Layers 12 -Strict) -Force
+    Save-AppeaseDevOpToFile -Value $DevOp -Force -ProjectRootDirPath $ProjectRootDirPath
+
 }
 
 function Set-AppeaseTaskParameter(
@@ -362,21 +328,19 @@ $Force,
 [Parameter(
     ValueFromPipelineByPropertyName=$true)]
 $ProjectRootDirPath = '.'){
-    
-    $DevOpFilePath = "$ProjectRootDirPath\.Appease\$DevOpName.psd1"
-    
+           
     # fetch DevOp
-    $DevOp = Get-AppeaseDevOp -Name $DevOpName -ProjectRootDirPath $ProjectRootDirPath
+    $DevOp = Get-AppeaseDevOpFromFile -Name $DevOpName -ProjectRootDirPath $ProjectRootDirPath
 
     # fetch task
-    $Task = $DevOp.Tasks.$TaskName
+    $Task = $DevOp.Tasks|?{$_.Name -eq $TaskName}|Select -First
 
     # handle task not found
     if(!$Task){
 throw `
 @"
-Task "$TaskName" not found in DevOp "$DevOpName"
-for project "$(Resolve-Path $ProjectRootDirPath)".
+Task '$TaskName' not found in DevOp '$DevOpName'
+for project '$(Resolve-Path $ProjectRootDirPath)'.
 "@
     }
 
@@ -388,8 +352,8 @@ for project "$(Resolve-Path $ProjectRootDirPath)".
     ElseIf(!$Force.IsPresent -and ($Task.Parameters.$Name)){
 throw `
 @"
-A value of $($Task.Parameters.$Name) has already been set for parameter $Name in task "$TaskName" in DevOp "$DevOpName"
-for project "$(Resolve-Path $ProjectRootDirPath)".
+A value of '$($Task.Parameters.$Name)' has already been set for parameter '$Name' of task '$TaskName' in DevOp '$DevOpName'
+for project '$(Resolve-Path $ProjectRootDirPath)'.
 
 If you want to overwrite the existing parameter value use the -Force parameter
 "@
@@ -399,7 +363,7 @@ If you want to overwrite the existing parameter value use the -Force parameter
     }
     
     # save
-    sc $DevOpFilePath -Value (ConvertTo-Pson -InputObject $DevOp -Depth 12 -Layers 12 -Strict) -Force
+    Save-AppeaseDevOpToFile -Value $DevOp -Force -ProjectRootDirPath $ProjectRootDirPath
 }
 
 function Set-AppeaseTaskTemplateVersion(
@@ -429,36 +393,38 @@ $TemplateVersion,
 [Parameter(
     ValueFromPipelineByPropertyName=$true)]
 $ProjectRootDirPath = '.'){
-    
-    $DevOpFilePath = "$ProjectRootDirPath\.Appease\$DevOpName.psd1"
-    
-    # fetch DevOp
-    $DevOp = Get-AppeaseDevOp -Name $DevOpName -ProjectRootDirPath $ProjectRootDirPath
+        
+    # get from file
+    $DevOp = Get-AppeaseDevOpFromFile -Name $DevOpName -ProjectRootDirPath $ProjectRootDirPath
 
     # fetch task
-    $Task = $DevOp.Tasks.$TaskName
+    $Task = $DevOp.Tasks|?{$_.Name -eq $TaskName}|Select -First
 
     # handle task not found
     if(!$Task){
 throw `
 @"
-Task "$TaskName" not found in DevOp "$DevOpName"
-for project "$(Resolve-Path $ProjectRootDirPath)".
+Task '$TaskName' not found in DevOp '$DevOpName'
+for project '$(Resolve-Path $ProjectRootDirPath)'.
 "@
     }
 
     # update task version
     $Task.TemplateVersion = $TemplateVersion
     
-    # save
-    sc $DevOpFilePath -Value (ConvertTo-Pson -InputObject $DevOp -Depth 12 -Layers 12 -Strict) -Force
+    # save to file
+    Save-AppeaseDevOpToFile -Value $DevOp -Force -ProjectRootDirPath $ProjectRootDirPath
+
 }
+
+
+Export-ModuleMember -Alias @(
+                    'Add-AppeaseDevOp',
+                    'Get-AppeaseDevOp')
 
 Export-ModuleMember -Function @(
 
                     # DevOp API
-                    'Get-AppeaseDevOp',
-                    'Add-AppeaseDevOp',
                     'Rename-AppeaseDevOp',
                     'Remove-AppeaseDevOp',
 

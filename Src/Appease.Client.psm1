@@ -1,7 +1,6 @@
 Import-Module "$PSScriptRoot\TemplateManagement"
 Import-Module "$PSScriptRoot\DevOpStorage"
 Import-Module "$PSScriptRoot\HashtableExtensions"
-Import-Module "$PSScriptRoot\OrderedDictionaryExtensions"
 
 function Invoke-AppeaseDevOp(
 
@@ -27,71 +26,61 @@ function Invoke-AppeaseDevOp(
     [ValidateScript({Test-Path $_ -PathType Container})]
     [Parameter(
         ValueFromPipelineByPropertyName=$true)]
-    $ProjectRootDirPath='.'){
-    
-    $DevOp = DevOpStorage\Get-AppeaseDevOp -Name $Name -ProjectRootDirPath $ProjectRootDirPath
+    $ProjectRootDirPath='.'){        
 
-    if($DevOp){        
-
-        foreach($Task in $DevOp.Tasks.Values){
+    foreach($Task in $DevOp.Tasks){
                     
-            if($Parameters.($Task.Name)){
+        if($Parameters.($Task.Name)){
 
-                if($Task.Parameters){
+            if($Task.Parameters){
 
 Write-Debug "Adding union of passed parameters and archived parameters to pipeline. Passed parameters will override archived parameters"
                 
-                    $TaskParameters = HashtableExtensions\Get-UnionOfHashtables -Source1 $Parameters.($Task.Name) -Source2 $Task.Parameters
-
-                }
-                else{
-
-Write-Debug "Adding passed parameters to pipeline"
-
-                    $TaskParameters = $Parameters.($Task.Name)
-            
-                }
-
-            }
-            elseif($Task.Parameters){
-
-Write-Debug "Adding archived parameters to pipeline"    
-                $TaskParameters = $Task.Parameters
+                $TaskParameters = HashtableExtensions\Get-UnionOfHashtables -Source1 $Parameters.($Task.Name) -Source2 $Task.Parameters
 
             }
             else{
-                
-                $TaskParameters = @{}
+
+Write-Debug "Adding passed parameters to pipeline"
+
+                $TaskParameters = $Parameters.($Task.Name)
             
             }
 
+        }
+        elseif($Task.Parameters){
+
+Write-Debug "Adding archived parameters to pipeline"    
+            $TaskParameters = $Task.Parameters
+
+        }
+        else{
+                
+            $TaskParameters = @{}
+            
+        }
+
 Write-Debug "Adding automatic parameters to pipeline"
             
-            $TaskParameters.AppeaseProjectRootDirPath = (Resolve-Path $ProjectRootDirPath)
-            $TaskParameters.AppeaseTaskName = $Task.Name
+        $TaskParameters.AppeaseProjectRootDirPath = (Resolve-Path $ProjectRootDirPath)
+        $TaskParameters.AppeaseTaskName = $Task.Name
 
 Write-Debug "Ensuring task template installed"
-            TemplateManagement\Install-AppeaseTaskTemplate -Id $Task.TemplateId -Version $Task.TemplateVersion -Source $TemplateSource
-            $TaskTemplateInstallDirPath = Get-AppeaseTaskTemplateInstallDirPath -Id $Task.TemplateId -Version $Task.TemplateVersion -ProjectRootDirPath $ProjectRootDirPath
-            $ModuleDirPath = "$TaskTemplateInstallDirPath\bin\$($Task.TemplateId)"
+        TemplateManagement\Install-AppeaseTaskTemplate -Id $Task.TemplateId -Version $Task.TemplateVersion -Source $TemplateSource
+        $TaskTemplateInstallDirPath = Get-AppeaseTaskTemplateInstallDirPath -Id $Task.TemplateId -Version $Task.TemplateVersion -ProjectRootDirPath $ProjectRootDirPath
+        $ModuleDirPath = "$TaskTemplateInstallDirPath\bin\$($Task.TemplateId)"
 Write-Debug "Importing module located at: $ModuleDirPath"
-            Import-Module $ModuleDirPath -Force
+        Import-Module $ModuleDirPath -Force
 
 Write-Debug `
 @"
 Invoking Task $($Task.Name) with parameters: 
 $($TaskParameters|Out-String)
 "@
-            # Parameters must be PSCustomObject so [Parameter(ValueFromPipelineByPropertyName = $true)] works
-            [PSCustomObject]$TaskParameters.Clone() | & "$($Task.TemplateId)\Invoke"
+        # Parameters must be PSCustomObject so [Parameter(ValueFromPipelineByPropertyName = $true)] works
+        [PSCustomObject]$TaskParameters.Clone() | & "$($Task.TemplateId)\Invoke"
 
-            Remove-Module $Task.TemplateId
-
-        }
-    }
-    else{
-
-throw "$Name.psd1 not found for project at $ProjectRootDirPath"
+        Remove-Module $Task.TemplateId
 
     }
 }
@@ -114,7 +103,7 @@ $Force,
     ValueFromPipelineByPropertyName=$true)]
 $ProjectRootDirPath = '.'){
     
-    $DevOp = @{Name=$Name;Tasks=[ordered]@{}}
+    $DevOp = @{Name=$Name;Tasks={@()}.Invoke()}
 
     DevOpStorage\Add-AppeaseDevOp `
         -Value $DevOp `
@@ -267,28 +256,28 @@ $ProjectRootDirPath = '.'){
         Adds a new Task to a DevOp
         
         .EXAMPLE
-        Add-AppeaseTask -DevOp "Deploy To Azure" -Name "LastTask" -TemplateId "DeployNupkgToAzureWebsites" -TemplateVersion "0.0.3"
+        Add-AppeaseTask -DevOpName "Deploy To Azure" -Name "LastTask" -TemplateId "DeployNupkgToAzureWebsites" -TemplateVersion "0.0.3"
         
         Description:
 
         This command adds Task "LastTask" after all existing Tasks in DevOp "Deploy To Azure"
 
         .EXAMPLE
-        Add-AppeaseTask -DevOp "Deploy To Azure" -Name "FirstTask" -TemplateId "DeployNupkgToAzureWebsites" -First
+        Add-AppeaseTask -DevOpName "Deploy To Azure" -Name "FirstTask" -TemplateId "DeployNupkgToAzureWebsites" -First
 
         Description:
 
         This command adds Task "FirstTask" before all existing Tasks in DevOp "Deploy To Azure"
 
         .EXAMPLE
-        Add-AppeaseTask -DevOp "Deploy To Azure" -Name "AfterSecondTask" -TemplateId "DeployNupkgToAzureWebsites" -After "SecondTask"
+        Add-AppeaseTask -DevOpName "Deploy To Azure" -Name "AfterSecondTask" -TemplateId "DeployNupkgToAzureWebsites" -After "SecondTask"
 
         Description:
 
         This command adds Task "AfterSecondTask" after the existing Task "SecondTask" in DevOp "Deploy To Azure"
 
         .EXAMPLE
-        Add-AppeaseTask -DevOp "Deploy To Azure" -Name "BeforeSecondTask" -TemplateId "DeployNupkgToAzureWebsites" -Before "SecondTask"
+        Add-AppeaseTask -DevOpName "Deploy To Azure" -Name "BeforeSecondTask" -TemplateId "DeployNupkgToAzureWebsites" -Before "SecondTask"
 
         Description:
 
@@ -310,7 +299,7 @@ Write-Debug "using greatest available template version : $TemplateVersion"
         elseif('Add-AppeaseTaskAfter' -eq $PSCmdlet.ParameterSetName){
             
             $DevOp = DevOpStorage\Get-AppeaseDevOp -Name $DevOpName -ProjectRootDirPath $ProjectRootDirPath
-            $indexOfAfter = OrderedDictionaryExtensions\Get-IndexOfKeyInOrderedDictionary -Key $After -OrderedDictionary $DevOp.Tasks
+            $indexOfAfter = $DevOp.Tasks.IndexOf(($DevOp.Tasks|?{$_.Name -eq $After}|Select -First))
             # ensure Task with key $After exists
             if($indexOfAfter -lt 0){
                 throw "A task with name $After could not be found."
@@ -321,7 +310,7 @@ Write-Debug "using greatest available template version : $TemplateVersion"
         elseif('Add-AppeaseTaskBefore' -eq $PSCmdlet.ParameterSetName){        
         
             $DevOp = DevOpStorage\Get-AppeaseDevOp -Name $DevOpName -ProjectRootDirPath $ProjectRootDirPath
-            $indexOfBefore = OrderedDictionaryExtensions\Get-IndexOfKeyInOrderedDictionary -Key $Before -OrderedDictionary $DevOp.Tasks
+            $indexOfBefore = $DevOp.Tasks.IndexOf(($DevOp.Tasks|?{$_.Name -eq $Before}|Select -First))
             # ensure Task with key $Before exists
             if($indexOfBefore -lt 0){
                 throw "A Task with name $Before could not be found."
@@ -540,14 +529,14 @@ $ProjectRootDirPath='.'){
     }
     Else{        
         
-        foreach($Task in $DevOp.Tasks.Values){
+        foreach($Task in $DevOp.Tasks){
 
             $templateUpdates.Add($Task.TemplateId,(TemplateManagement\Get-AppeaseTaskTemplateLatestVersion -Source $Source -Id $Task.TemplateId))
         
         }
     }
 
-    foreach($Task in $DevOp.Tasks.Values){
+    foreach($Task in $DevOp.Tasks){
 
         $updatedTemplateVersion = $templateUpdates.($Task.TemplateId)
 
@@ -557,9 +546,10 @@ $ProjectRootDirPath='.'){
 
 Write-Debug `
 @"
-Updating Task "$($Task.Name)" template "$($Task.TemplateId)"
-from version "$($Task.TemplateVersion)"
-to version "$($updatedTemplateVersion)"
+Updating task template '$($Task.TemplateId)'
+from version '$($Task.TemplateVersion)'
+to version '$($updatedTemplateVersion)'
+for task '$($Task.Name)'
 "@
             DevOpStorage\Set-AppeaseTaskTemplateVersion `
                 -DevOpName $DevOpName `
