@@ -28,6 +28,8 @@ function Invoke-AppeaseDevOp(
         ValueFromPipelineByPropertyName=$true)]
     $ProjectRootDirPath='.'){        
 
+    $DevOp = DevOpStorage\Get-AppeaseDevOp -Name $Name -ProjectRootDirPath $ProjectRootDirPath
+
     foreach($Task in $DevOp.Tasks){
                     
         if($Parameters.($Task.Name)){
