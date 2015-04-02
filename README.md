@@ -1,3 +1,5 @@
+![](https://ci.appveyor.com/api/projects/status/i7bjw9a3u0g35spc?svg=true)
+
 ###How do I install it?
 Make sure you have [Chocolatey](https://chocolatey.org) installed, then from PowerShell run
 ```POWERSHELL
@@ -43,6 +45,3 @@ pro-tip: exclude the `.Appease\Templates` folder from version control. Appease i
 
 ###Where's the documentation?
 [Here](Docs)
-
-###What's the build status
-![](https://ci.appveyor.com/api/projects/status/t95vdsnjbmg9hnli?svg=true)
