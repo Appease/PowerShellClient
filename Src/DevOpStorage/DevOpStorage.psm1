@@ -56,8 +56,20 @@ $ProjectRootDirPath = '.'){
     
     $DevOp = Get-Content $DevOpFilePath | Out-String | ConvertFrom-Json
     
-    # Convert Tasks from array to collection
+    # convert tasks from Array to Collection
     $DevOp.Tasks = {$DevOp.Tasks}.Invoke()
+
+    # convert task parameters from PSCustomObject to Hashtable
+    # see : http://stackoverflow.com/questions/22002748/hashtables-from-convertfrom-json-have-different-type-from-powershells-built-in-h
+    for($i = 0; $i -lt $DevOp.Tasks.Count; $i++)
+    {
+        if($DevOp.Tasks[$i].Parameters){
+            $ParametersHashtable = @{}
+            $DevOp.Tasks[$i].Parameters.PSObject.Properties | %{$ParametersHashtable[$_.Name] = $_.Value}
+            $DevOp.Tasks[$i].Parameters = $ParametersHashtable
+        }
+    }
+
     Write-Output $DevOp
 
 }
@@ -350,7 +362,7 @@ for project '$(Resolve-Path $ProjectRootDirPath)'.
 
     # handle the case where this is the first parameter set
     If(!$Task.Parameters){
-        $Task | Add-Member NoteProperty -Name Parameters -Value @{$Name=$Value}
+        $Task.Parameters = @{$Name=$Value}
     }
     # guard against unintentionally overwriting existing parameter value
     ElseIf(!$Force.IsPresent -and ($Task.Parameters.$Name)){
@@ -363,7 +375,7 @@ If you want to overwrite the existing parameter value use the -Force parameter
 "@
     }
     Else{    
-        $Task.Parameters | Add-Member NoteProperty -Name $Name  -Value $Value
+        $Task.Parameters.$Name = $Value
     }
     
     # save

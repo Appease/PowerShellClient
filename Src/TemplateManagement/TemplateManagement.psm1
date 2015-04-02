@@ -87,7 +87,7 @@ function Publish-AppeaseTaskTemplate(
     [Parameter(
         Mandatory=$true,
         ValueFromPipelineByPropertyName = $true)]
-    $Name,
+    $Id,
     
     [string]
     [Parameter(
@@ -104,23 +104,27 @@ function Publish-AppeaseTaskTemplate(
         }
     })]
     [Parameter(
-        Mandatory=$true)]
+        Mandatory=$true,
+        ValueFromPipelineByPropertyName = $true)]
     $Version,
     
-    [Hashtable[]]
+    [PSCustomObject[]]
     [Parameter(
         ValueFromPipelineByPropertyName = $true)]
     $Contributor,
     
-    [Hashtable[]]
+    [PSCustomObject[]]
+    [ValidateCount(1,[int]::MaxValue)]
     [Parameter(
-        ValueFromPipelineByPropertyName = $true)]
+        Mandatory=$true,
+        ValueFromPipelineByPropertyName = $true
+        )]
     $File,
 
-    [Hashtable[]]
+    [PSCustomObject]
     [Parameter(
         ValueFromPipelineByPropertyName = $true)]
-    $Dependency,
+    $Dependencies,
     
     [System.Uri]
     [Parameter(
@@ -154,7 +158,7 @@ function Publish-AppeaseTaskTemplate(
         ValueFromPipelineByPropertyName=$true)]
     $ProjectRootDirPath = '.'){
 
-    $DependenciesFileName = "$([Guid]::NewGuid()).json"
+    $TaskTemplateMetadataFileName = "$([Guid]::NewGuid()).json"
     
     # generate nuspec xml
 $nuspecXmlString =
@@ -162,7 +166,7 @@ $nuspecXmlString =
 <?xml version="1.0"?>
 <package>
   <metadata>
-    <id>$Name</id>
+    <id>$Id</id>
     <version>$Version</version>
     <authors>$([string]::Join(',',($Contributor|%{$_.Name})))</authors>
     <projectUrl>$ProjectUrl</projectUrl>
@@ -172,8 +176,8 @@ $nuspecXmlString =
     <tags>$(if($Tags){[string]::Join(" ",$Tags)})</tags>
   </metadata>
   <files>
-    <file src="$DependenciesFileName" target="dependencies.json"/>
-    $([string]::Join([System.Environment]::NewLine,($File|%{"<file src=`"$($_.Include)`" target=`"bin\$($_.Destination)`" exclude=`"$([string]::Join(';',($DependenciesFileName,$_.Exclude)))`" />"})))
+    <file src="$TaskTemplateMetadataFileName" target="metadata.json"/>
+    $([string]::Join([System.Environment]::NewLine,($File|%{"<file src=`"$([string]::Join(';',($_.Include)))`" target=`"bin\$($_.Destination)`" exclude=`"$([string]::Join(';',($TaskTemplateMetadataFileName + $_.Exclude)))`" />"})))
   </files>
 </package>
 "@
@@ -186,14 +190,18 @@ $nuspecXmlString =
             New-Item -ItemType File -Path $NuspecFilePath -Force
             $NuspecXml.Save($(Resolve-Path $NuspecFilePath))
 
-            # generate a Dependencies file
-            $DependenciesFilePath = Join-Path -Path $ProjectRootDirPath -ChildPath $DependenciesFileName
-            New-Item -ItemType File -Path $DependenciesFilePath -Force
-            $Dependency | ConvertTo-Json | sc -Path $DependenciesFilePath -Force
+            # generate a metadata file
+            $TaskTemplateMetadataFilePath = Join-Path -Path $ProjectRootDirPath -ChildPath $TaskTemplateMetadataFileName
+            New-Item -ItemType File -Path $TaskTemplateMetadataFilePath -Force
+            $TaskTemplateMetadata = @{}
+            if($Dependencies){
+                $TaskTemplateMetadata.Dependencies = $Dependencies
+            }
+            $TaskTemplateMetadata | ConvertTo-Json -Depth 12 | sc -Path $TaskTemplateMetadataFilePath -Force
 
             # build a nupkg file
             New-NuGetPackage -NuspecFilePath $NuspecFilePath
-            $NuPkgFilePath = Join-Path -Path $ProjectRootDirPath -ChildPath "$Name.$Version.nupkg"
+            $NuPkgFilePath = Join-Path -Path $ProjectRootDirPath -ChildPath "$Id.$Version.nupkg"
 
             # publish nupkg file
             Publish-NuGetPackage -NupkgFilePath $NuPkgFilePath -SourcePathOrUrl $DestinationPathOrUrl -ApiKey $ApiKey
@@ -201,7 +209,7 @@ $nuspecXmlString =
         }
         Finally{
             Remove-Item $NuspecFilePath -Force
-            Remove-Item $DependenciesFilePath -Force
+            Remove-Item $TaskTemplateMetadataFilePath -Force
             Remove-Item $NuPkgFilePath -Force
         }
 
@@ -233,14 +241,14 @@ function Get-AppeaseTaskTemplateInstallDirPath(
     
 }
 
-function Get-AppeaseTaskTemplateDependencies(
+function Get-AppeaseTaskTemplateMetadata(
 
     [string]
     [ValidateNotNullOrEmpty()]
     [Parameter(
         Mandatory=$true,
         ValueFromPipelineByPropertyName=$true)]
-    $Name,
+    $Id,
 
     [string]
     [ValidateNotNullOrEmpty()]
@@ -260,10 +268,156 @@ function Get-AppeaseTaskTemplateDependencies(
         Parses a dependencies.json file
     #>
 
-    $TemplateInstallDirPath = Get-AppeaseTaskTemplateInstallDirPath -Name $Name -Version $Version -ProjectRootDirPath $ProjectRootDirPath
-    $TemplateDependenciesFilePath = Join-Path -Path $TemplateInstallDirPath -ChildPath "\dependencies.json"
+    $TemplateInstallDirPath = Get-AppeaseTaskTemplateInstallDirPath -Id $Id -Version $Version -ProjectRootDirPath $ProjectRootDirPath
+    $TemplateDependenciesFilePath = Join-Path -Path $TemplateInstallDirPath -ChildPath "\metadata.json"
     Get-Content $TemplateDependenciesFilePath | Out-String | ConvertFrom-Json | Write-Output
 
+}
+
+function Install-NuGetPackage(
+
+    [string]
+    [ValidateNotNullOrEmpty()]
+    [Parameter(
+        Mandatory=$true,
+        ValueFromPipelineByPropertyName=$true)]
+    $Id,
+
+    [string]
+    [Parameter(
+        ValueFromPipelineByPropertyName=$true)]
+    $Version,
+
+    [string[]]
+    [ValidateCount( 1, [Int]::MaxValue)]
+    [ValidateNotNullOrEmpty()]
+    [Parameter(
+        ValueFromPipelineByPropertyName=$true)]
+    $Source,
+
+    [string]
+    [ValidateNotNullOrEmpty()]
+    [Parameter(
+        ValueFromPipelineByPropertyName=$true)]
+    $OutputDirPath
+){
+
+    $InitialOFS = $OFS
+    
+    Try{
+
+        $OFS = ';'        
+        $NugetParameters = @('install',$Id,'-Source',($Source|Out-String),'-OutputDirectory',$OutputDirPath,'-Version',$Version,'-NonInteractive')
+
+Write-Debug `
+@"
+Invoking nuget:
+& $NuGetCommand $($NugetParameters|Out-String)
+"@
+        & $NuGetCommand $NugetParameters
+
+        # handle errors
+        if ($LastExitCode -ne 0) {
+            throw $Error
+        }
+    
+    }
+    Finally{
+        $OFS = $InitialOFS
+    }
+
+}
+
+function Install-ChocolateyPackage(
+
+    [string]
+    [ValidateNotNullOrEmpty()]
+    [Parameter(
+        Mandatory=$true,
+        ValueFromPipelineByPropertyName=$true)]
+    $Id,
+
+    [string]
+    [ValidateNotNullOrEmpty()]
+    [Parameter(
+        ValueFromPipelineByPropertyName=$true)]
+    $Source,
+
+    [string]
+    [ValidateNotNullOrEmpty()]
+    [Parameter(        
+        ValueFromPipelineByPropertyName=$true)]
+    $Version,
+
+    [string]
+    [Parameter(
+        ValueFromPipelineByPropertyName=$true)]
+    $InstallArguments,
+
+    [switch]
+    [Parameter(
+        ValueFromPipelineByPropertyName=$true)]
+    $OverrideArguments,
+
+    [string]
+    [Parameter(
+        ValueFromPipelineByPropertyName=$true)]
+    $PackageParameters,
+
+    [switch]
+    [Parameter(
+        ValueFromPipelineByPropertyName=$true)]
+    $AllowMultipleVersions,
+
+    [switch]
+    [Parameter(
+        ValueFromPipelineByPropertyName=$true)]
+    $IgnoreDependencies
+
+){
+    
+    $ChocolateyParameters = @('install',$Id,'--confirm')
+
+    if($Source){
+        $ChocolateyParameters += @('--source',$Source)
+    }
+
+    if($Version){
+        $ChocolateyParameters += @('--version',$Version)
+    }
+
+    if($InstallArguments){
+        $ChocolateyParameters += @('--install-arguments',$InstallArguments)
+    }
+        
+    if($OverrideArguments.IsPresent){
+        $ChocolateyParameters += @('--override-arguments')
+    }
+
+    if($PackageParameters){
+        $ChocolateyParameters += @('--package-parameters',$PackageParameters)
+    }
+
+    if($AllowMultipleVersions.IsPresent){
+        $ChocolateyParameters += @('--allow-multiple-versions')
+    }
+
+    if($IgnoreDependencies.IsPresent){
+        $IgnoreDependencies += @('--ignore-dependencies')
+    }
+
+Write-Debug `
+@"
+Invoking chocolatey:
+& $ChocolateyCommand $($ChocolateyParameters|Out-String)
+"@
+
+    & $ChocolateyCommand $ChocolateyParameters
+
+    # handle errors
+    if ($LastExitCode -ne 0) {
+        throw $Error
+    }
 }
 
 function Install-AppeaseTaskTemplate(
@@ -298,8 +452,6 @@ function Install-AppeaseTaskTemplate(
         Installs a task template to an environment if it's not already installed
     #>
 
-    $TemplatesDirPath = "$ProjectRootDirPath\.Appease\Templates"
-
     if([string]::IsNullOrWhiteSpace($Version)){
 
         $Version = Get-LatestTemplateVersion -Source $Source -Id $Id
@@ -308,74 +460,13 @@ Write-Debug "using greatest available template version : $Version"
     
     }
 
-    $initialOFS = $OFS
-    
-    try{
+    # install NuGet package containing task template
+    Install-NuGetPackage -Id $Id -Version $Version -Source $Source -OutputDirPath "$ProjectRootDirPath\.Appease\Templates"
 
-        $OFS = ';'        
-        $NugetParameters = @('install',$Id,'-Source',($Source|Out-String),'-OutputDirectory',$TemplatesDirPath,'-Version',$Version,'-NonInteractive')
+    $AppeaseTaskTemplateMetadata = Get-AppeaseTaskTemplateMetadata -Id $Id -Version $Version -ProjectRootDirPath $ProjectRootDirPath
 
-Write-Debug `
-@"
-Invoking nuget:
-& $NuGetCommand $($NugetParameters|Out-String)
-"@
-        & $NuGetCommand $NugetParameters
-
-        # handle errors
-        if ($LastExitCode -ne 0) {
-            throw $Error
-        }
-    
-    }
-    Finally{
-        $OFS = $initialOFS
-    }
-
-    # install chocolatey dependencies
-    $ChocolateyDependencies = (Get-AppeaseTaskTemplateDependencies -Name $Id -Version $Version -ProjectRootDirPath $ProjectRootDirPath).Chocolatey
-    foreach($ChocolateyDependency in $ChocolateyDependencies){
-        $ChocolateyParameters = @('install',$ChocolateyDependency.Id,'--confirm')
-        
-        if($ChocolateyDependency.Source){
-            $ChocolateyParameters += @('--source',$ChocolateyDependency.Source)
-        }
-
-        if($ChocolateyDependency.Version){
-            $ChocolateyParameters += @('--version',$ChocolateyDependency.Version)
-        }
-
-        if($ChocolateyDependency.InstallArguments){
-            $ChocolateyParameters += @('--install-arguments',$ChocolateyDependency.InstallArguments)
-        }
-        
-        if($ChocolateyDependency.OverrideArguments){
-            $ChocolateyParameters += @('--override-arguments')
-        }
-
-        if($ChocolateyDependency.PackageParameters){
-            $ChocolateyParameters += @('--package-parameters',$ChocolateyDependency.PackageParameters)
-        }
-
-        if($ChocolateyDependency.AllowMultipleVersions){
-            $ChocolateyParameters += @('--allow-multiple-versions')
-        }
-
-Write-Debug `
-@"
-Invoking chocolatey:
-& $ChocolateyCommand $($ChocolateyParameters|Out-String)
-"@
-
-        & $ChocolateyCommand $ChocolateyParameters
-
-        # handle errors
-        if ($LastExitCode -ne 0) {
-            throw $Error
-        }
-
-    }
-
+    # install Chocolatey dependencies
+    $AppeaseTaskTemplateMetadata.Dependencies.Chocolatey | %{if($_){$_ | Install-ChocolateyPackage}}
 }
 
 function Uninstall-AppeaseTaskTemplate(

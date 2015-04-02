@@ -69,7 +69,7 @@ Write-Debug "Adding automatic parameters to pipeline"
 
 Write-Debug "Ensuring task template installed"
         TemplateManagement\Install-AppeaseTaskTemplate -Id $Task.TemplateId -Version $Task.TemplateVersion -Source $TemplateSource
-        $TaskTemplateInstallDirPath = Get-AppeaseTaskTemplateInstallDirPath -Id $Task.TemplateId -Version $Task.TemplateVersion -ProjectRootDirPath $ProjectRootDirPath
+        $TaskTemplateInstallDirPath = TemplateManagement\Get-AppeaseTaskTemplateInstallDirPath -Id $Task.TemplateId -Version $Task.TemplateVersion -ProjectRootDirPath $ProjectRootDirPath
         $ModuleDirPath = "$TaskTemplateInstallDirPath\bin\$($Task.TemplateId)"
 Write-Debug "Importing module located at: $ModuleDirPath"
         Import-Module $ModuleDirPath -Force
@@ -79,6 +79,7 @@ Write-Debug `
 Invoking Task $($Task.Name) with parameters: 
 $($TaskParameters|Out-String)
 "@
+        
         # Parameters must be PSCustomObject so [Parameter(ValueFromPipelineByPropertyName = $true)] works
         [PSCustomObject]$TaskParameters.Clone() | & "$($Task.TemplateId)\Invoke"
 
