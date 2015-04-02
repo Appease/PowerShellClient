@@ -1,0 +1,10 @@
+{
+    "Dependencies":  {
+                         "Chocolatey":  [
+                                            {
+                                                "Id":  "Chocolatey",
+                                                "Version":  "0.9.9.4"
+                                            }
+                                        ]
+                     }
+}

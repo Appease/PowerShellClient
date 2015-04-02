@@ -1,19 +1,19 @@
 ###How do I install it?
 Make sure you have [Chocolatey](https://chocolatey.org) installed, then from PowerShell run
 ```POWERSHELL
-choco install appease -version 0.0.69; # 0.0.69 was latest at time of writing
-Import-Module "C:\Program Files\Appease\Modules\Appease" -Force
+choco install appease.client.powershell -y -version='0.0.77'
+import-module 'C:\Program Files\Appease\PowerShell\Appease.Client' -Force
 ```
 ###In a nutshell, hows it work?
 ***Conceptually:***
 - A `DevOp` (development operation) is a set of related tasks  
   for example: "Build", "Unit Test", "Package", "Deploy", "Integration Test", .. etc
 - `tasks` are arbitrary operations implemented as PowerShell modules and packaged as .nupkg's.    
-  for example: a "Package Artifacts" DevOp might have tasks: Copy Artifacts To Temp, Create NuGet Package
+  for example: a "Package Artifacts" DevOp might have tasks: CopyArtifactsToTemp, CreateNuGetPackage
 
 ***Operationally:***
 - everything takes place within PowerShell
-- as you create/edit your `DevOps` a snapshot of each is maintained in a `YOUR-DEVOP-NAME.psd1` file (under the .Appease directory).
+- as you create/edit your `DevOps` a snapshot of each is maintained in a `YOUR-DEVOP-NAME.json` file (under the .Appease directory).
 
 ###How do I get started?
 navigate to the root directory of your project:
@@ -22,24 +22,24 @@ Set-Location "PATH-TO-ROOT-DIR-OF-YOUR-PROJECT"
 ```
 create a new DevOp:
 ```POWERSHELL
-New-DevOp -Name Build
+New-AppeaseDevOp Build
 ```
 add a few tasks to your DevOp:
 ```POWERSHELL
-Add-DevOpTask -DevOpName Build -Name "Restore NuGet Packages" -PackageId RestoreNuGetPackages
-Add-DevOpTask -DevOpName Build -Name "Build Visual Studio Sln" -PackageId BuildVisualStudioSln
-Add-DevOpTask -DevOpName Build -Name "Execute Unit Tests" -PackageId InvokeVSTestConsole
-Add-DevOpTask -DevOpName Build -Name "Create NuGet Package" -PackageId CreateNuGetPackage
+Add-AppeaseTask -DevOpName Build -Name "Restore NuGet Packages" -TemplateId RestoreNuGetPackages
+Add-AppeaseTask -DevOpName Build -Name "Build Visual Studio Sln" -TemplateId BuildVisualStudioSln
+Add-AppeaseTask -DevOpName Build -Name "Execute Unit Tests" -TemplateId InvokeVSTestConsole
+Add-AppeaseTask -DevOpName Build -Name "Create NuGet Package" -TemplateId CreateNuGetPackage
 ```
 invoke your DevOp:
 ```POWERSHELL
-@{"Create NuGet Package"=@{Version="0.0.1";OutputDirectoryPath=.}} | Invoke-DevOp -Name Build
+@{CreateNuGetPackage=@{Version="0.0.1";OutputDirectoryPath=.}} | Invoke-AppeaseDevOp Build
 ```
 
 ###How do I distribute my DevOps?
-When you invoke `New-DevOp` for the first time it creates a folder named `.Appease` at the root of your project. Make sure you add this directory to version control and you're done. 
+When you invoke `New-AppeaseDevOp` for the first time it creates a folder named `.Appease` at the root of your project. Make sure you add this directory to version control and you're done. 
 
-pro-tip: exclude the `.PoshDevops\packages` folder from version control. Appease is smart enough to handle re-downloading any DevOp packages when it needs them and this way you don't bloat your version control. 
+pro-tip: exclude the `.Appease\Templates` folder from version control. Appease is smart enough to handle installing task templates when they're required and this way you don't bloat your version control. 
 
 ###Where's the documentation?
 [Here](Docs)

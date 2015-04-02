@@ -1,0 +1,13 @@
+{
+    "Name":  "Deploy",
+    "Tasks":  [
+                  {
+                      "TemplateId":  "PushChocolateyPackage",
+                      "Name":  "PushChocolateyPackage",
+                      "TemplateVersion":  "0.0.12",
+                      "Parameters":  {
+                                         "IncludeNupkgFilePath":  ".\\Src\\*"
+                                     }
+                  }
+              ]
+}

@@ -1,0 +1,10 @@
+{
+    "Name":  "Package",
+    "Tasks":  [
+                  {
+                      "TemplateId":  "CreateChocolateyPackage",
+                      "Name":  "CreateChocolateyPackage",
+                      "TemplateVersion":  "0.0.34"
+                  }
+              ]
+}
