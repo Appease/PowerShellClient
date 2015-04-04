@@ -15,6 +15,7 @@ import-module 'C:\Program Files\Appease\PowerShell\Appease.Client' -Force
 ###Whats the API look like?
 ```PowerShell
 PS C:\> Get-Command -Module Appease.Client
+ 
 CommandType     Name                                               Version    Source
 -----------     ----                                               -------    ------
 Function        Add-AppeaseTask                                    0.0.77     Appease.Client
@@ -52,7 +53,7 @@ invoke your devop:
 ```
 
 ###How do I distribute my devops?
-Your devops are stored in json files located at `YOUR-PROJECT-ROOT-DIR\.Appease\YOUR-DEVOP-NAME.json`. Make sure the `.Appease` directory is indexed by your version control you're done.
+Your devops are stored in json files following the format `YOUR-PROJECT-ROOT-DIR\.Appease\YOUR-DEVOP-NAME.json`. Make sure the `.Appease` directory is indexed by your version control and you're done.
 
 pro-tip: exclude the `.Appease\Templates` folder from version control. Appease is smart enough to handle installing task templates when they're required and this way you don't unnecessarily bloat your version control. 
 
