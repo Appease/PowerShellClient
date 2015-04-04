@@ -207,12 +207,6 @@ $DevOpName,
 [string]
 [ValidateNotNullOrEmpty()]
 [Parameter(
-    ValueFromPipelineByPropertyName=$true)]
-$Name = $TemplateId,
-
-[string]
-[ValidateNotNullOrEmpty()]
-[Parameter(
     Mandatory=$true,
     ValueFromPipelineByPropertyName=$true)]
 $TemplateId,
@@ -221,6 +215,12 @@ $TemplateId,
 [Parameter(
     ValueFromPipelineByPropertyName=$true)]
 $TemplateVersion,
+
+[string]
+[ValidateNotNullOrEmpty()]
+[Parameter(
+    ValueFromPipelineByPropertyName=$true)]
+$Name = $TemplateId,
 
 [switch]
 [Parameter(
@@ -271,15 +271,22 @@ $ProjectRootDirPath = '.'){
         .SYNOPSIS
         Adds a new task to a devop
         
+        .PARAMETER TemplateVersion
+        Description: 
+        The version of the task template (identified by the TemplateId parameter) to use
+               
+        Default:                 
+        the latest available version of the task template (identified by the TemplateId parameter)
+
         .PARAMETER Name
         Description: 
-        The name of the task
-        
+        The tasks name
+               
         Default:                 
         the value of the TemplateId parameter
 
         .EXAMPLE
-        Add-AppeaseTask -DevOpName DeployToAzure  -Name LastTask -TemplateId DeployNupkgToAzureWebsites -TemplateVersion '0.0.3'
+        Add-AppeaseTask -DevOpName DeployToAzure -TemplateId DeployNupkgToAzureWebsites -TemplateVersion '0.0.3'-Name LastTask 
         
         Description:
 
@@ -303,7 +310,7 @@ $ProjectRootDirPath = '.'){
         The task uses the latest version of the task template with id 'DeployNupkgToAzureWebsites'
 
         .EXAMPLE
-        Add-AppeaseTask -DevOpName DeployToAzure -Name BeforeSecondTask -TemplateId DeployNupkgToAzureWebsites -Before SecondTask
+        Add-AppeaseTask -DevOpName DeployToAzure -TemplateId DeployNupkgToAzureWebsites -Name BeforeSecondTask -Before SecondTask
 
         Description:
 
