@@ -237,7 +237,7 @@ function Get-AppeaseTaskTemplateInstallDirPath(
         ValueFromPipelineByPropertyName=$true)]
     $ProjectRootDirPath = '.'){
 
-    Resolve-Path "$ProjectRootDirPath\.Appease\Templates\$Id.$Version" | Write-Output
+    "$ProjectRootDirPath\.Appease\Templates\$Id.$Version" | Write-Output
     
 }
 
