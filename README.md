@@ -42,10 +42,10 @@ New-AppeaseDevOp Build
 ```
 add a few tasks to your devop:
 ```PowerShell
-Add-AppeaseTask -DevOpName Build -Name "Restore NuGet Packages" -TemplateId RestoreNuGetPackages
-Add-AppeaseTask -DevOpName Build -Name "Build Visual Studio Sln" -TemplateId BuildVisualStudioSln
-Add-AppeaseTask -DevOpName Build -Name "Execute Unit Tests" -TemplateId InvokeVSTestConsole
-Add-AppeaseTask -DevOpName Build -Name "Create NuGet Package" -TemplateId CreateNuGetPackage
+Add-AppeaseTask -DevOpName Build -TemplateId RestoreNuGetPackages
+Add-AppeaseTask -DevOpName Build -TemplateId BuildVisualStudioSln
+Add-AppeaseTask -DevOpName Build -TemplateId InvokeVSTestConsole
+Add-AppeaseTask -DevOpName Build -TemplateId CreateNuGetPackage
 ```
 invoke your devop:
 ```PowerShell
