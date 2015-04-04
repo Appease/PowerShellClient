@@ -200,51 +200,64 @@ function Add-AppeaseTask(
 [string]
 [ValidateNotNullOrEmpty()]
 [Parameter(
-    Mandatory=$true)]
+    Mandatory=$true,
+    ValueFromPipelineByPropertyName=$true)]
 $DevOpName,
 
 [string]
 [ValidateNotNullOrEmpty()]
 [Parameter(
-    Mandatory=$true)]
-$Name,
+    ValueFromPipelineByPropertyName=$true)]
+$Name = $TemplateId,
 
 [string]
+[ValidateNotNullOrEmpty()]
 [Parameter(
-    Mandatory=$true)]
+    Mandatory=$true,
+    ValueFromPipelineByPropertyName=$true)]
 $TemplateId,
 
 [string]
+[Parameter(
+    ValueFromPipelineByPropertyName=$true)]
 $TemplateVersion,
 
 [switch]
 [Parameter(
     Mandatory=$true,
+    ValueFromPipelineByPropertyName=$true,
     ParameterSetName='Add-AppeaseTaskFirst')]
 $First,
-
-[switch]
-[Parameter(
-    ParameterSetName='Add-AppeaseTaskLast')]
-$Last,
 
 [string]
 [Parameter(
     Mandatory=$true,
+    ValueFromPipelineByPropertyName=$true,
     ParameterSetName='Add-AppeaseTaskAfter')]
 $After,
 
 [string]
 [Parameter(
     Mandatory=$true,
+    ValueFromPipelineByPropertyName=$true,
     ParameterSetName='Add-AppeaseTaskBefore')]
 $Before,
 
 [switch]
+[Parameter(
+    ValueFromPipelineByPropertyName=$true,
+    ParameterSetName='Add-AppeaseTaskLast')]
+$Last,
+
+[switch]
+[Parameter(
+    ValueFromPipelineByPropertyName=$true)]
 $Force,
 
 [string[]]
 [ValidateNotNullOrEmpty()]
+[Parameter(
+    ValueFromPipelineByPropertyName=$true)]
 $TemplateSource= $DefaultTemplateSources,
 
 [string]
@@ -256,35 +269,46 @@ $ProjectRootDirPath = '.'){
 
     <#
         .SYNOPSIS
-        Adds a new Task to a DevOp
+        Adds a new task to a devop
         
+        .PARAMETER Name
+        Description: 
+        The name of the task
+        
+        Default:                 
+        the value of the TemplateId parameter
+
         .EXAMPLE
-        Add-AppeaseTask -DevOpName "Deploy To Azure" -Name "LastTask" -TemplateId "DeployNupkgToAzureWebsites" -TemplateVersion "0.0.3"
+        Add-AppeaseTask -DevOpName DeployToAzure  -Name LastTask -TemplateId DeployNupkgToAzureWebsites -TemplateVersion '0.0.3'
         
         Description:
 
-        This command adds Task "LastTask" after all existing Tasks in DevOp "Deploy To Azure"
+        Adds a task 'LastTask' after all existing tasks in devop 'DeployToAzure'. The task uses version '0.0.3' of
+        the task template with id 'DeployNupkgToAzureWebsites'
 
         .EXAMPLE
-        Add-AppeaseTask -DevOpName "Deploy To Azure" -Name "FirstTask" -TemplateId "DeployNupkgToAzureWebsites" -First
+        Add-AppeaseTask -DevOpName DeployToAzure -TemplateId DeployNupkgToAzureWebsites -First
 
         Description:
 
-        This command adds Task "FirstTask" before all existing Tasks in DevOp "Deploy To Azure"
+        Adds a task 'DeployNupkgToAzureWebsites' before all existing tasks in devop 'DeployToAzure'. The task 
+        uses the latest version of the task template with id 'DeployNupkgToAzureWebsites'
 
         .EXAMPLE
-        Add-AppeaseTask -DevOpName "Deploy To Azure" -Name "AfterSecondTask" -TemplateId "DeployNupkgToAzureWebsites" -After "SecondTask"
+        Add-AppeaseTask -DevOpName DeployToAzure -TemplateId DeployNupkgToAzureWebsites -After SecondTask
 
         Description:
 
-        This command adds Task "AfterSecondTask" after the existing Task "SecondTask" in DevOp "Deploy To Azure"
+        Adds a task 'DeployNupkgToAzureWebsites' after the existing task 'SecondTask' in devop 'DeployToAzure'.
+        The task uses the latest version of the task template with id 'DeployNupkgToAzureWebsites'
 
         .EXAMPLE
-        Add-AppeaseTask -DevOpName "Deploy To Azure" -Name "BeforeSecondTask" -TemplateId "DeployNupkgToAzureWebsites" -Before "SecondTask"
+        Add-AppeaseTask -DevOpName DeployToAzure -Name BeforeSecondTask -TemplateId DeployNupkgToAzureWebsites -Before SecondTask
 
         Description:
 
-        This command adds Task "BeforeSecondTask" before the existing Task "SecondTask" in DevOp "Deploy To Azure"
+        Adds a task 'BeforeSecondTask" before the existing task 'SecondTask' in devop 'DeployToAzure'. The task 
+        uses the latest version of the task template with id 'DeployNupkgToAzureWebsites'
 
     #>
 
