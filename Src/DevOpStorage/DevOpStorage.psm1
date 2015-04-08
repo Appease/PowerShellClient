@@ -463,11 +463,11 @@ function Set-AppeaseTaskParameter(
 
 ){
 
-    # fetch tasks
-    $Tasks = Get-AppeaseDevOp -Name $DevOpName -ProjectRootDirPath $ProjectRootDirPath | Select -ExpandProperty Tasks
+    # fetch devop
+    $DevOp = Get-AppeaseDevOp -Name $DevOpName -ProjectRootDirPath $ProjectRootDirPath
     
     # handle task not found
-    if(!($Tasks|?{$_.Name -eq $TaskName})){
+    if(!($DevOp.Tasks|?{$_.Name -eq $TaskName})){
 throw `
 @"
 Task '$TaskName' not found in devop '$DevOpName'
@@ -479,18 +479,18 @@ for project '$(Resolve-Path $ProjectRootDirPath)'.
     $ParameterSet = Get-AppeaseParameterSet -Name $ParameterSetName -DevOpName $DevOpName -ProjectRootDirPath $ProjectRootDirPath
     
     # handle first task parameter value mapped
-    if(!$ParameterSet.$TaskName){
-        $ParameterSet.$TaskName = @{}
+    if(!$ParameterSet.Mappings.$TaskName){
+        $ParameterSet.Mappings.$TaskName = @{}
     }
 
     foreach($TaskParameterEntry in $TaskParameter.GetEnumerator()){
         $ParameterName = $TaskParameterEntry.Key
         $ParameterValue = $TaskParameterEntry.Value
         # guard against unintentionally overwriting existing parameter value
-        If(!$Force.IsPresent -and ($ParameterSet.$TaskName.$ParameterName)){
+        If(!$Force.IsPresent -and ($ParameterSet.Mappings.$TaskName.$ParameterName)){
 throw `
 @"
-A value of '$($ParameterSet.$TaskName.$ParameterName)' has already been set for configuration '$ParameterSetName' 
+A value of '$($ParameterSet.Mappings.$TaskName.$ParameterName)' has already been set for configuration '$ParameterSetName' 
 of devop '$DevOpName' task '$TaskName' parameter '$ParameterName'
 in project '$(Resolve-Path $ProjectRootDirPath)'.
 
@@ -498,12 +498,23 @@ If you want to overwrite the existing parameter value use the -Force parameter
 "@
         }
         Else{    
-            $ParameterSet.$TaskName.$ParameterName = $ParameterValue
+            $ParameterSet.Mappings.$TaskName.$ParameterName = $ParameterValue
         }
     }
         
+    # build up Save-AppeaseParameterSet parameters
+    $SaveAppeaseParameterSetParameters = @{
+        Name=$ParameterSetName;
+        DevOpName=$DevOpName;
+        Mapping=$ParameterSet.Mappings;
+        ProjectRootDirPath=$ProjectRootDirPath
+    }
+    if($ParameterSet.ParentName){
+        $SaveAppeaseParameterSetParameters.ParentName = $ParameterSet.ParentName
+    }
+
     # save
-    Save-AppeaseParameterSet -Name $ParameterSetName -DevOpName $DevOpName -Value $ParameterSet -ProjectRootDirPath $ProjectRootDirPath
+    [PSCustomObject]$SaveAppeaseParameterSetParameters | Save-AppeaseParameterSet
 }
 
 function Set-AppeaseTaskTemplateVersion(
@@ -606,12 +617,18 @@ function Save-AppeaseParameterSet(
         Mandatory=$true,
         ValueFromPipelineByPropertyName=$true)]
     $DevOpName,
-
+    
     [Hashtable]
     [ValidateNotNull()]
     [Parameter(
         ValueFromPipelineByPropertyName=$true)]
-    $Value = @{},
+    $Mapping = @{},
+
+    [string]
+    [ValidateNotNullOrEmpty()]
+    [Parameter(
+        ValueFromPipelineByPropertyName=$true)]
+    $ParentName,
 
     [string]
     [ValidateScript({Test-Path $_ -PathType Container})]
@@ -631,7 +648,13 @@ function Save-AppeaseParameterSet(
         New-Item -ItemType File -Path $ParameterSetFilePath -Force
     }
 
-    Set-Content $ParameterSetFilePath -Value (ConvertTo-Json -InputObject $Value -Depth 12) -Force
+    $ParameterSet = @{Mappings= $Mapping}
+
+    if($ParentName){
+        $ParameterSet.ParentName = $ParentName
+    }
+
+    Set-Content $ParameterSetFilePath -Value (ConvertTo-Json -InputObject $ParameterSet -Depth 12) -Force
 }
 
 function Add-AppeaseParameterSet(
@@ -716,16 +739,18 @@ function Get-AppeaseParameterSet(
     
     $ParameterSet = Get-Content $ParameterSetFilePath | Out-String | ConvertFrom-Json
     
-    # we need to construct a hashtable of hashtables from a PSCustomObject of PSCustomObjects
-    $ParameterSetHashtable = @{}
-    foreach($TaskParameter in $ParameterSet.PSObject.Properties)
+    # Convert the mappings property from a PSCustomObject of PSCustomObjects to a Hashtable of Hashtables
+    $MappingsHashtable = @{}
+    foreach($Mapping in $ParameterSet.Mappings.PSObject.Properties)
     {
-        $TaskName = $TaskParameter.Name
-        $ParameterSetHashtable.$TaskName = @{}
-        $ParameterSet.$TaskName.PSObject.Properties | %{$ParameterSetHashtable.$TaskName[$_.Name] = $_.Value}
+        $TaskName = $Mapping.Name
+        $MappingsHashtable.$TaskName = @{}
+        $ParameterSet.Mappings.$TaskName.PSObject.Properties | %{$MappingsHashtable.$TaskName[$_.Name] = $_.Value}
     }
+
+    $ParameterSet.Mappings = $MappingsHashtable
     
-    Write-Output $ParameterSetHashtable
+    Write-Output $ParameterSet
 
 }
 
