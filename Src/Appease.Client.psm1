@@ -368,6 +368,7 @@ Export-ModuleMember -Function @(
                                 # ParameterSet API
                                 'Add-AppeaseParameterSet',
                                 'Get-AppeaseParameterSet',
+                                'Set-AppeaseParameterSetParentName',
                                 'Rename-AppeaseParameterSet',
                                 'Remove-AppeaseParameterSet'
 

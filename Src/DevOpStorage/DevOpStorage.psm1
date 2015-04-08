@@ -754,14 +754,54 @@ function Get-AppeaseParameterSet(
 
 }
 
+function Set-AppeaseParameterSetParentName(
+
+    [string]
+    [ValidateNotNullOrEmpty()]
+    [Parameter(
+        Mandatory=$true,
+        ValueFromPipelineByPropertyName=$true)]
+    $Name,
+
+    [string]    
+    [ValidateNotNullOrEmpty()]
+    [Parameter(
+        Mandatory=$true,
+        ValueFromPipelineByPropertyName=$true)]
+    $ParentName,
+
+    [string]
+    [ValidateNotNullOrEmpty()]
+    [Parameter(
+        Mandatory=$true,
+        ValueFromPipelineByPropertyName=$true)]
+    $DevOpName,
+
+    [string]
+    [ValidateScript({Test-Path $_ -PathType Container})]
+    [Parameter(
+        ValueFromPipelineByPropertyName=$true)]
+    $ProjectRootDirPath = '.'
+
+){
+    $ParameterSet = Get-AppeaseParameterSet -Name $Name -DevOpName $DevOpName -ProjectRootDirPath $ProjectRootDirPath
+    Save-AppeaseParameterSet -Name $Name -DevOpName $DevOpName -Mapping $ParameterSet.Mappings -ParentName $ParentName -ProjectRootDirPath $ProjectRootDirPath
+}
+
 function Rename-AppeaseParameterSet(
 
     [string]
     [ValidateNotNullOrEmpty()]
+    [Parameter(
+        Mandatory=$true,
+        ValueFromPipelineByPropertyName=$true)]
     $OldName,
 
     [string]
     [ValidateNotNullOrEmpty()]
+    [Parameter(
+        Mandatory=$true,
+        ValueFromPipelineByPropertyName=$true)]
     $NewName,
 
     [string]
@@ -845,5 +885,6 @@ Export-ModuleMember -Function @(
                     # ParameterSet API
                     'Add-AppeaseParameterSet',
                     'Get-AppeaseParameterSet',
+                    'Set-AppeaseParameterSetParentName',
                     'Rename-AppeaseParameterSet',
                     'Remove-AppeaseParameterSet')
