@@ -429,7 +429,7 @@ function Set-AppeaseTaskParameter(
     [Parameter(
         Mandatory=$true,
         ValueFromPipelineByPropertyName=$true)]
-    $ParameterSetName,
+    $ConfigurationName,
 
     [string]
     [ValidateNotNullOrEmpty()]
@@ -475,22 +475,22 @@ for project '$(Resolve-Path $ProjectRootDirPath)'.
 "@
     }
 
-    # fetch parameter set
-    $ParameterSet = Get-AppeaseParameterSet -Name $ParameterSetName -DevOpName $DevOpName -ProjectRootDirPath $ProjectRootDirPath
+    # fetch configuration
+    $Configuration = Get-AppeaseConfiguration -Name $ConfigurationName -DevOpName $DevOpName -ProjectRootDirPath $ProjectRootDirPath
     
     # handle first task parameter value mapped
-    if(!$ParameterSet.Mappings.$TaskName){
-        $ParameterSet.Mappings.$TaskName = @{}
+    if(!$Configuration.TaskParameters.$TaskName){
+        $Configuration.TaskParameters.$TaskName = @{}
     }
 
     foreach($TaskParameterEntry in $TaskParameter.GetEnumerator()){
         $ParameterName = $TaskParameterEntry.Key
         $ParameterValue = $TaskParameterEntry.Value
         # guard against unintentionally overwriting existing parameter value
-        If(!$Force.IsPresent -and ($ParameterSet.Mappings.$TaskName.$ParameterName)){
+        If(!$Force.IsPresent -and ($Configuration.TaskParameters.$TaskName.$ParameterName)){
 throw `
 @"
-A value of '$($ParameterSet.Mappings.$TaskName.$ParameterName)' has already been set for configuration '$ParameterSetName' 
+A value of '$($Configuration.TaskParameters.$TaskName.$ParameterName)' has already been set for configuration '$ConfigurationName' 
 of devop '$DevOpName' task '$TaskName' parameter '$ParameterName'
 in project '$(Resolve-Path $ProjectRootDirPath)'.
 
@@ -498,23 +498,23 @@ If you want to overwrite the existing parameter value use the -Force parameter
 "@
         }
         Else{    
-            $ParameterSet.Mappings.$TaskName.$ParameterName = $ParameterValue
+            $Configuration.TaskParameters.$TaskName.$ParameterName = $ParameterValue
         }
     }
         
-    # build up Save-AppeaseParameterSet parameters
-    $SaveAppeaseParameterSetParameters = @{
-        Name=$ParameterSetName;
+    # build up Save-AppeaseConfiguration parameters
+    $SaveAppeaseConfigurationParameters = @{
+        Name=$ConfigurationName;
         DevOpName=$DevOpName;
-        Mapping=$ParameterSet.Mappings;
+        TaskParameter=$Configuration.TaskParameters;
         ProjectRootDirPath=$ProjectRootDirPath
     }
-    if($ParameterSet.ParentName){
-        $SaveAppeaseParameterSetParameters.ParentName = $ParameterSet.ParentName
+    if($Configuration.ParentName){
+        $SaveAppeaseConfigurationParameters.ParentName = $Configuration.ParentName
     }
 
     # save
-    [PSCustomObject]$SaveAppeaseParameterSetParameters | Save-AppeaseParameterSet
+    [PSCustomObject]$SaveAppeaseConfigurationParameters | Save-AppeaseConfiguration
 }
 
 function Set-AppeaseTaskTemplateVersion(
@@ -571,7 +571,7 @@ for project '$(Resolve-Path $ProjectRootDirPath)'.
 
 }
 
-function Get-AppeaseParameterSetFilePath(
+function Get-AppeaseConfigurationFilePath(
     
     [string]
     [ValidateNotNullOrEmpty()]
@@ -599,10 +599,10 @@ function Get-AppeaseParameterSetFilePath(
         An Internal utility function that returns the file path of a devop configuration
     #>
 
-    Write-Output "$ProjectRootDirPath\.Appease\DevOps\$DevOpName\ParameterSets\$Name.json"
+    Write-Output "$ProjectRootDirPath\.Appease\DevOps\$DevOpName\Configurations\$Name.json"
 }
 
-function Save-AppeaseParameterSet(
+function Save-AppeaseConfiguration(
     
     [string]
     [ValidateNotNullOrEmpty()]
@@ -622,7 +622,7 @@ function Save-AppeaseParameterSet(
     [ValidateNotNull()]
     [Parameter(
         ValueFromPipelineByPropertyName=$true)]
-    $Mapping = @{},
+    $TaskParameter = @{},
 
     [string]
     [ValidateNotNullOrEmpty()]
@@ -642,22 +642,22 @@ function Save-AppeaseParameterSet(
         An Internal utility function that saves a devop configuration to disk
     #>
     
-    $ParameterSetFilePath = Get-AppeaseParameterSetFilePath  -Name $Name -DevOpName $DevOpName -ProjectRootDirPath $ProjectRootDirPath
+    $ConfigurationFilePath = Get-AppeaseConfigurationFilePath  -Name $Name -DevOpName $DevOpName -ProjectRootDirPath $ProjectRootDirPath
 
-    if(!(Test-Path -Path $ParameterSetFilePath)){
-        New-Item -ItemType File -Path $ParameterSetFilePath -Force
+    if(!(Test-Path -Path $ConfigurationFilePath)){
+        New-Item -ItemType File -Path $ConfigurationFilePath -Force
     }
 
-    $ParameterSet = @{Mappings= $Mapping}
+    $Configuration = @{TaskParameters= $TaskParameter}
 
     if($ParentName){
-        $ParameterSet.ParentName = $ParentName
+        $Configuration.ParentName = $ParentName
     }
 
-    Set-Content $ParameterSetFilePath -Value (ConvertTo-Json -InputObject $ParameterSet -Depth 12) -Force
+    Set-Content $ConfigurationFilePath -Value (ConvertTo-Json -InputObject $Configuration -Depth 12) -Force
 }
 
-function Add-AppeaseParameterSet(
+function Add-AppeaseConfiguration(
     
     [string]
     [ValidateNotNullOrEmpty()]
@@ -687,12 +687,12 @@ function Add-AppeaseParameterSet(
 ){
     <#
         .Synopsis
-        Creates a new parameter set
+        Creates a new configuration
     #>
 
-    $ParameterSetFilePath = Get-AppeaseParameterSetFilePath -Name $Name -DevOpName $DevOpName -ProjectRootDirPath $ProjectRootDirPath
+    $ConfigurationFilePath = Get-AppeaseConfigurationFilePath -Name $Name -DevOpName $DevOpName -ProjectRootDirPath $ProjectRootDirPath
 
-    If(!$Force.IsPresent -and (Test-Path $ParameterSetFilePath)){
+    If(!$Force.IsPresent -and (Test-Path $ConfigurationFilePath)){
 throw `
 @"
 configuration "$Name" already exists
@@ -703,11 +703,11 @@ If you want to overwrite the existing configuration use the -Force parameter
 "@
     }Else{
 
-        Save-AppeaseParameterSet -Name $Name -DevOpName $DevOpName -ProjectRootDirPath $ProjectRootDirPath
+        Save-AppeaseConfiguration -Name $Name -DevOpName $DevOpName -ProjectRootDirPath $ProjectRootDirPath
     }
 }
 
-function Get-AppeaseParameterSet(
+function Get-AppeaseConfiguration(
 
     [string]
     [ValidateNotNullOrEmpty()]
@@ -732,29 +732,29 @@ function Get-AppeaseParameterSet(
 ){
     <#
         .SYNOPSIS
-        Retrieves a parameter set from storage
+        Retrieves a configuration from storage
     #>
 
-    $ParameterSetFilePath = Get-AppeaseParameterSetFilePath -Name $Name -DevOpName $DevOpName -ProjectRootDirPath $ProjectRootDirPath
+    $ConfigurationFilePath = Get-AppeaseConfigurationFilePath -Name $Name -DevOpName $DevOpName -ProjectRootDirPath $ProjectRootDirPath
     
-    $ParameterSet = Get-Content $ParameterSetFilePath | Out-String | ConvertFrom-Json
+    $Configuration = Get-Content $ConfigurationFilePath | Out-String | ConvertFrom-Json
     
     # Convert the mappings property from a PSCustomObject of PSCustomObjects to a Hashtable of Hashtables
-    $MappingsHashtable = @{}
-    foreach($Mapping in $ParameterSet.Mappings.PSObject.Properties)
+    $TaskParametersHashtable = @{}
+    foreach($TaskParameter in $Configuration.TaskParameters.PSObject.Properties)
     {
-        $TaskName = $Mapping.Name
-        $MappingsHashtable.$TaskName = @{}
-        $ParameterSet.Mappings.$TaskName.PSObject.Properties | %{$MappingsHashtable.$TaskName[$_.Name] = $_.Value}
+        $TaskName = $TaskParameter.Name
+        $TaskParametersHashtable.$TaskName = @{}
+        $Configuration.TaskParameters.$TaskName.PSObject.Properties | %{$TaskParametersHashtable.$TaskName[$_.Name] = $_.Value}
     }
 
-    $ParameterSet.Mappings = $MappingsHashtable
+    $Configuration.TaskParameters = $TaskParametersHashtable
     
-    Write-Output $ParameterSet
+    Write-Output $Configuration
 
 }
 
-function Set-AppeaseParameterSetParentName(
+function Set-AppeaseConfigurationParentName(
 
     [string]
     [ValidateNotNullOrEmpty()]
@@ -784,11 +784,11 @@ function Set-AppeaseParameterSetParentName(
     $ProjectRootDirPath = '.'
 
 ){
-    $ParameterSet = Get-AppeaseParameterSet -Name $Name -DevOpName $DevOpName -ProjectRootDirPath $ProjectRootDirPath
-    Save-AppeaseParameterSet -Name $Name -DevOpName $DevOpName -Mapping $ParameterSet.Mappings -ParentName $ParentName -ProjectRootDirPath $ProjectRootDirPath
+    $Configuration = Get-AppeaseConfiguration -Name $Name -DevOpName $DevOpName -ProjectRootDirPath $ProjectRootDirPath
+    Save-AppeaseConfiguration -Name $Name -DevOpName $DevOpName -TaskParameter $Configuration.TaskParameters -ParentName $ParentName -ProjectRootDirPath $ProjectRootDirPath
 }
 
-function Rename-AppeaseParameterSet(
+function Rename-AppeaseConfiguration(
 
     [string]
     [ValidateNotNullOrEmpty()]
@@ -825,17 +825,17 @@ function Rename-AppeaseParameterSet(
 ){
     <#
         .SYNOPSIS
-        Updates the name of a parameter set in storage
+        Updates the name of a configuration in storage
     #>
         
-    $OldParameterSetFilePath = Get-AppeaseParameterSetFilePath -Name $OldName -DevOpName $DevOpName -ProjectRootDirPath $ProjectRootDirPath
-    $NewParameterSetFilePath = Get-AppeaseParameterSetFilePath -Name $NewName -DevOpName $DevOpName -ProjectRootDirPath $ProjectRootDirPath
+    $OldConfigurationFilePath = Get-AppeaseConfigurationFilePath -Name $OldName -DevOpName $DevOpName -ProjectRootDirPath $ProjectRootDirPath
+    $NewConfigurationFilePath = Get-AppeaseConfigurationFilePath -Name $NewName -DevOpName $DevOpName -ProjectRootDirPath $ProjectRootDirPath
 
-    mv $OldParameterSetFilePath $NewParameterSetFilePath -Force:$Force
+    mv $OldConfigurationFilePath $NewConfigurationFilePath -Force:$Force
 
 }
 
-function Remove-AppeaseParameterSet(
+function Remove-AppeaseConfiguration(
 
     [string]
     [ValidateNotNullOrEmpty()]
@@ -859,12 +859,12 @@ function Remove-AppeaseParameterSet(
 ){
     <#
         .SYNOPSIS
-        Removes a parameter set from storage
+        Removes a configuration from storage
     #>
     
-    $ParameterSetFilePath = Get-AppeaseParameterSetFilePath -Name $Name -DevOpName $DevOpName -ProjectRootDirPath $ProjectRootDirPath
+    $ConfigurationFilePath = Get-AppeaseConfigurationFilePath -Name $Name -DevOpName $DevOpName -ProjectRootDirPath $ProjectRootDirPath
     
-    Remove-Item -Path $ParameterSetFilePath -Force
+    Remove-Item -Path $ConfigurationFilePath -Force
 }
 
 Export-ModuleMember -Function @(
@@ -882,9 +882,9 @@ Export-ModuleMember -Function @(
                     'Set-AppeaseTaskParameter',
                     'Set-AppeaseTaskTemplateVersion'
                     
-                    # ParameterSet API
-                    'Add-AppeaseParameterSet',
-                    'Get-AppeaseParameterSet',
-                    'Set-AppeaseParameterSetParentName',
-                    'Rename-AppeaseParameterSet',
-                    'Remove-AppeaseParameterSet')
+                    # Configuration API
+                    'Add-AppeaseConfiguration',
+                    'Get-AppeaseConfiguration',
+                    'Set-AppeaseConfigurationParentName',
+                    'Rename-AppeaseConfiguration',
+                    'Remove-AppeaseConfiguration')

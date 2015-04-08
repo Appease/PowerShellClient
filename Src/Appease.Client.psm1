@@ -12,7 +12,7 @@ function Invoke-AppeaseDevOp(
     [ValidateNotNullOrEmpty()]
     [Parameter(
         ValueFromPipelineByPropertyName=$true)]
-    $ParameterSetName,
+    $ConfigurationName,
 
     [string[]]
     [ValidateCount( 1, [Int]::MaxValue)]
@@ -27,17 +27,18 @@ function Invoke-AppeaseDevOp(
         ValueFromPipelineByPropertyName=$true)]
     $ProjectRootDirPath='.'
 
-){        
+){    
 
-    $Tasks = DevOpStorage\Get-AppeaseDevOp -Name $Name -ProjectRootDirPath $ProjectRootDirPath | Select -ExpandProperty Tasks
-
-    if($ParameterSetName){
-        $ParameterSet = DevOpStorage\Get-AppeaseParameterSet -Name $ParameterSetName -DevOpName $Name -ProjectRootDirPath $ProjectRootDirPath        
+    if($ConfigurationName){
+        $Configuration = DevOpStorage\Get-AppeaseConfiguration -Name $ConfigurationName -DevOpName $Name -ProjectRootDirPath $ProjectRootDirPath        
     }
+    
+    # get devop
+    $DevOp = DevOpStorage\Get-AppeaseDevOp -Name $Name -ProjectRootDirPath $ProjectRootDirPath
 
-    foreach($Task in $Tasks){
+    foreach($Task in $DevOp.Tasks){
         $TaskName = $Task.Name
-        $TaskParameters = $ParameterSet.$TaskName
+        $TaskParameters = $Configuration.TaskParameters.$TaskName
 
         # handle no parameters from parameter set
         if(!$TaskParameters){
@@ -365,12 +366,12 @@ Export-ModuleMember -Function @(
                                 'Rename-AppeaseTask',
                                 'Set-AppeaseTaskParameter',
 
-                                # ParameterSet API
-                                'Add-AppeaseParameterSet',
-                                'Get-AppeaseParameterSet',
-                                'Set-AppeaseParameterSetParentName',
-                                'Rename-AppeaseParameterSet',
-                                'Remove-AppeaseParameterSet'
+                                # Configuration API
+                                'Add-AppeaseConfiguration',
+                                'Get-AppeaseConfiguration',
+                                'Set-AppeaseConfigurationParentName',
+                                'Rename-AppeaseConfiguration',
+                                'Remove-AppeaseConfiguration'
 
                                 # Task Template API
                                 'Update-AppeaseTaskTemplate',
