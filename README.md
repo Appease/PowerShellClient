@@ -11,7 +11,7 @@ import-module 'C:\Program Files\Appease\PowerShell\Appease.Client' -Force
   for example: a project might have 'Build', 'Unit Test', 'Package', 'Deploy', 'Integration Test' devops
 - `tasks` are arbitrary operations implemented as PowerShell modules and packaged as .nupkg's.    
   for example: a 'Package' devop might have tasks: 'CopyArtifactsToTemp', 'CreateNuGetPackage'
-- `configurations` provide values for parameters of tasks.
+- `configurations` provide values for parameters of tasks.  
   for example: a "Deploy" devop might have configurations: 'ChrisDev','Integration','QA','Demo','Prod'
 
 ###Whats the API look like?
