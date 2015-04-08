@@ -12,7 +12,7 @@ import-module 'C:\Program Files\Appease\PowerShell\Appease.Client' -Force
 - `tasks` are arbitrary operations implemented as PowerShell modules and packaged as .nupkg's.    
   for example: a 'Package' devop might have tasks: 'CopyArtifactsToTemp', 'CreateNuGetPackage'
 - `configurations` provide values for parameters of tasks.  
-  for example: a "Deploy" devop might have configurations: 'ChrisDev','Integration','QA','Demo','Prod'
+  for example: a "Deploy" devop might have configurations: 'Base','ChrisDev','Integration','QA','Demo','Prod'
 
 ###Whats the API look like?
 ```PowerShell
@@ -59,7 +59,7 @@ add a 'Base' configuration to the 'Build' devop
 Add-AppeaseConfiguration -Name Base -DevOpName Build
 ```
 
-set the 'InvokeVSTestConsole' tasks 'TestCaseFilter' parameter in the 'Base' configuration of your 'Build' devop
+set the 'TestCaseFilter' parameter of the 'InvokeVSTestConsole' task in the 'Base' configuration of your 'Build' devop
 ```PowerShell
 Set-AppeaseTaskParameter `
     -ConfigurationName Base `
