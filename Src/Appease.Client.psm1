@@ -1,25 +1,22 @@
-#Import-Module "$PSScriptRoot\TemplateManagement"
-#Import-Module "$PSScriptRoot\DevOpStorage"
-#Import-Module "$PSScriptRoot\HashtableExtensions"
 
 function Invoke-AppeaseDevOp(
 
     [string]
     [ValidateNotNullOrEmpty()]
     [Parameter(
-        Mandatory=$true)]
+        Mandatory=$true,
+        ValueFromPipelineByPropertyName=$true)]
     $Name,
-
-    [Hashtable]
-    [ValidateNotNullOrEmpty()]
-    $Parameters,
 
     [string]
     [ValidateNotNullOrEmpty()]
-    $ConfigurationName,
+    [Parameter(
+        ValueFromPipelineByPropertyName=$true)]
+    $ParameterSetName,
 
     [string[]]
     [ValidateCount( 1, [Int]::MaxValue)]
+    [ValidateNotNullOrEmpty()]
     [Parameter(
         ValueFromPipelineByPropertyName=$true)]
     $TemplateSource = $DefaultTemplateSources,
@@ -33,39 +30,18 @@ function Invoke-AppeaseDevOp(
 ){        
 
     $Tasks = DevOpStorage\Get-AppeaseDevOp -Name $Name -ProjectRootDirPath $ProjectRootDirPath | Select -ExpandProperty Tasks
-    $TaskParameterValueMap = DevOpStorage\Get-AppeaseConfiguration -Name $ConfigurationName -DevOpName $Name -ProjectRootDirPath $ProjectRootDirPath | Select -ExpandProperty TaskParameterValueMap
+
+    if($ParameterSetName){
+        $ParameterSet = DevOpStorage\Get-AppeaseParameterSet -Name $ParameterSetName -DevOpName $Name -ProjectRootDirPath $ProjectRootDirPath        
+    }
 
     foreach($Task in $Tasks){
         $TaskName = $Task.Name
-                    
-        if($Parameters.$TaskName){
+        $TaskParameters = $ParameterSet.$TaskName
 
-            if($TaskParameterValueMap.$TaskName){
-
-Write-Debug "Adding union of passed parameters and configuration parameters to pipeline. Passed parameters will override configuration parameters"
-                
-                $TaskParameters = HashtableExtensions\Get-UnionOfHashtables -Source1 $Parameters.$TaskName -Source2 $TaskParameterValueMap.$TaskName
-
-            }
-            else{
-
-Write-Debug "Adding passed parameters to pipeline"
-
-                $TaskParameters = $Parameters.$TaskName
-            
-            }
-
-        }
-        elseif($TaskParameterValueMap){
-
-Write-Debug "Adding archived parameters to pipeline"    
-            $TaskParameters = $TaskParameterValueMap.$TaskName
-
-        }
-        else{
-                
+        # handle no parameters from parameter set
+        if(!$TaskParameters){
             $TaskParameters = @{}
-            
         }
 
 Write-Debug "Adding automatic parameters to pipeline"
@@ -95,78 +71,81 @@ $($TaskParameters|Out-String)
 }
 
 function Add-AppeaseTask(
-[CmdletBinding(
-    DefaultParameterSetName="Add-AppeaseTaskLast")]
 
-[string]
-[ValidateNotNullOrEmpty()]
-[Parameter(
-    Mandatory=$true,
-    ValueFromPipelineByPropertyName=$true)]
-$DevOpName,
+    [CmdletBinding(
+        DefaultParameterSetName="Add-AppeaseTaskLast")]
 
-[string]
-[ValidateNotNullOrEmpty()]
-[Parameter(
-    Mandatory=$true,
-    ValueFromPipelineByPropertyName=$true)]
-$TemplateId,
+    [string]
+    [ValidateNotNullOrEmpty()]
+    [Parameter(
+        Mandatory=$true,
+        ValueFromPipelineByPropertyName=$true)]
+    $DevOpName,
 
-[string]
-[Parameter(
-    ValueFromPipelineByPropertyName=$true)]
-$TemplateVersion,
+    [string]
+    [ValidateNotNullOrEmpty()]
+    [Parameter(
+        Mandatory=$true,
+        ValueFromPipelineByPropertyName=$true)]
+    $TemplateId,
 
-[string]
-[ValidateNotNullOrEmpty()]
-[Parameter(
-    ValueFromPipelineByPropertyName=$true)]
-$Name = $TemplateId,
+    [string]
+    [Parameter(
+        ValueFromPipelineByPropertyName=$true)]
+    $TemplateVersion,
 
-[switch]
-[Parameter(
-    Mandatory=$true,
-    ValueFromPipelineByPropertyName=$true,
-    ParameterSetName='Add-AppeaseTaskFirst')]
-$First,
+    [string]
+    [ValidateNotNullOrEmpty()]
+    [Parameter(
+        ValueFromPipelineByPropertyName=$true)]
+    $Name = $TemplateId,
 
-[string]
-[Parameter(
-    Mandatory=$true,
-    ValueFromPipelineByPropertyName=$true,
-    ParameterSetName='Add-AppeaseTaskAfter')]
-$After,
+    [switch]
+    [Parameter(
+        Mandatory=$true,
+        ValueFromPipelineByPropertyName=$true,
+        ParameterSetName='Add-AppeaseTaskFirst')]
+    $First,
 
-[string]
-[Parameter(
-    Mandatory=$true,
-    ValueFromPipelineByPropertyName=$true,
-    ParameterSetName='Add-AppeaseTaskBefore')]
-$Before,
+    [string]
+    [Parameter(
+        Mandatory=$true,
+        ValueFromPipelineByPropertyName=$true,
+        ParameterSetName='Add-AppeaseTaskAfter')]
+    $After,
 
-[switch]
-[Parameter(
-    ValueFromPipelineByPropertyName=$true,
-    ParameterSetName='Add-AppeaseTaskLast')]
-$Last,
+    [string]
+    [Parameter(
+        Mandatory=$true,
+        ValueFromPipelineByPropertyName=$true,
+        ParameterSetName='Add-AppeaseTaskBefore')]
+    $Before,
 
-[switch]
-[Parameter(
-    ValueFromPipelineByPropertyName=$true)]
-$Force,
+    [switch]
+    [Parameter(
+        ValueFromPipelineByPropertyName=$true,
+        ParameterSetName='Add-AppeaseTaskLast')]
+    $Last,
 
-[string[]]
-[ValidateNotNullOrEmpty()]
-[Parameter(
-    ValueFromPipelineByPropertyName=$true)]
-$TemplateSource= $DefaultTemplateSources,
+    [switch]
+    [Parameter(
+        ValueFromPipelineByPropertyName=$true)]
+    $Force,
 
-[string]
-[ValidateScript({Test-Path $_ -PathType Container})]
-[Parameter(
-    ValueFromPipeline=$true,
-    ValueFromPipelineByPropertyName=$true)]
-$ProjectRootDirPath = '.'){
+    [string[]]
+    [ValidateNotNullOrEmpty()]
+    [Parameter(
+        ValueFromPipelineByPropertyName=$true)]
+    $TemplateSource= $DefaultTemplateSources,
+
+    [string]
+    [ValidateScript({Test-Path $_ -PathType Container})]
+    [Parameter(
+        ValueFromPipeline=$true,
+        ValueFromPipelineByPropertyName=$true)]
+    $ProjectRootDirPath = '.'
+
+){
 
     <#
         .SYNOPSIS
@@ -270,51 +249,54 @@ Write-Debug "using greatest available template version : $TemplateVersion"
 }
 
 function Update-AppeaseTaskTemplate(
-[CmdletBinding(
-    DefaultParameterSetName="Update-All")]
 
-[string]
-[ValidateNotNullOrEmpty()]
-[Parameter(
-    Mandatory=$true)]
-$DevOpName,
+    [CmdletBinding(
+        DefaultParameterSetName="Update-All")]
 
-[string[]]
-[ValidateCount( 1, [Int]::MaxValue)]
-[Parameter(
-    Mandatory=$true,
-    ValueFromPipelineByPropertyName=$true,
-    ParameterSetName="Update-Single")]
-[Parameter(
-    Mandatory=$true,
-    ValueFromPipelineByPropertyName=$true,
-    ParameterSetName="Update-Multiple")]
-$Id,
+    [string]
+    [ValidateNotNullOrEmpty()]
+    [Parameter(
+        Mandatory=$true)]
+    $DevOpName,
 
-[string]
-[Parameter(
-    Mandatory=$true,
-    ValueFromPipelineByPropertyName=$true,
-    ParameterSetName="Update-Single")]
-$Version,
+    [string[]]
+    [ValidateCount( 1, [Int]::MaxValue)]
+    [Parameter(
+        Mandatory=$true,
+        ValueFromPipelineByPropertyName=$true,
+        ParameterSetName="Update-Single")]
+    [Parameter(
+        Mandatory=$true,
+        ValueFromPipelineByPropertyName=$true,
+        ParameterSetName="Update-Multiple")]
+    $Id,
 
-[switch]
-[Parameter(
-    ParameterSetName="Update-All")]
-$All,
+    [string]
+    [Parameter(
+        Mandatory=$true,
+        ValueFromPipelineByPropertyName=$true,
+        ParameterSetName="Update-Single")]
+    $Version,
 
-[string[]]
-[ValidateCount( 1, [Int]::MaxValue)]
-[ValidateNotNullOrEmpty()]
-[Parameter(
-    ValueFromPipelineByPropertyName=$true)]
-$Source = $DefaultTemplateSources,
+    [switch]
+    [Parameter(
+        ParameterSetName="Update-All")]
+    $All,
 
-[String]
-[ValidateScript({Test-Path $_ -PathType Container})]
-[Parameter(
-    ValueFromPipelineByPropertyName=$true)]
-$ProjectRootDirPath='.'){
+    [string[]]
+    [ValidateCount( 1, [Int]::MaxValue)]
+    [ValidateNotNullOrEmpty()]
+    [Parameter(
+        ValueFromPipelineByPropertyName=$true)]
+    $Source = $DefaultTemplateSources,
+
+    [String]
+    [ValidateScript({Test-Path $_ -PathType Container})]
+    [Parameter(
+        ValueFromPipelineByPropertyName=$true)]
+    $ProjectRootDirPath='.'
+
+){
 
     $DevOp = DevOpStorage\Get-AppeaseDevOp -Name $DevOpName -ProjectRootDirPath $ProjectRootDirPath
 
@@ -383,11 +365,11 @@ Export-ModuleMember -Function @(
                                 'Rename-AppeaseTask',
                                 'Set-AppeaseTaskParameter',
 
-                                # Configuration API
-                                'Add-AppeaseConfiguration',
-                                'Get-AppeaseConfiguration',
-                                'Rename-AppeaseConfiguration',
-                                'Remove-AppeaseConfiguration'
+                                # ParameterSet API
+                                'Add-AppeaseParameterSet',
+                                'Get-AppeaseParameterSet',
+                                'Rename-AppeaseParameterSet',
+                                'Remove-AppeaseParameterSet'
 
                                 # Task Template API
                                 'Update-AppeaseTaskTemplate',
