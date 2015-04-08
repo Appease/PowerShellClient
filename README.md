@@ -1,9 +1,9 @@
 ![](https://ci.appveyor.com/api/projects/status/i7bjw9a3u0g35spc?svg=true)
 
 ###How do I install it?
-Make sure you have [Chocolatey](https://chocolatey.org) installed, then from PowerShell run
+Make sure you have >= v0.9.9 of [Chocolatey](https://chocolatey.org) installed, then from PowerShell run
 ```POWERSHELL
-choco install appease.client.powershell -y -version='0.0.77'
+choco install appease.client.powershell -yxf -version='0.0.77'
 import-module 'C:\Program Files\Appease\PowerShell\Appease.Client' -Force
 ```
 ###In a nutshell, hows it work?
