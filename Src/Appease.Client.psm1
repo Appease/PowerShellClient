@@ -1,6 +1,6 @@
-Import-Module "$PSScriptRoot\TemplateManagement"
-Import-Module "$PSScriptRoot\DevOpStorage"
-Import-Module "$PSScriptRoot\HashtableExtensions"
+#Import-Module "$PSScriptRoot\TemplateManagement"
+#Import-Module "$PSScriptRoot\DevOpStorage"
+#Import-Module "$PSScriptRoot\HashtableExtensions"
 
 function Invoke-AppeaseDevOp(
 
@@ -11,10 +11,12 @@ function Invoke-AppeaseDevOp(
     $Name,
 
     [Hashtable]
-    [Parameter(
-        ValueFromPipeline=$true,
-        ValueFromPipelineByPropertyName=$true)]
+    [ValidateNotNullOrEmpty()]
     $Parameters,
+
+    [string]
+    [ValidateNotNullOrEmpty()]
+    $ConfigurationName,
 
     [string[]]
     [ValidateCount( 1, [Int]::MaxValue)]
@@ -26,34 +28,38 @@ function Invoke-AppeaseDevOp(
     [ValidateScript({Test-Path $_ -PathType Container})]
     [Parameter(
         ValueFromPipelineByPropertyName=$true)]
-    $ProjectRootDirPath='.'){        
+    $ProjectRootDirPath='.'
 
-    $DevOp = DevOpStorage\Get-AppeaseDevOp -Name $Name -ProjectRootDirPath $ProjectRootDirPath
+){        
 
-    foreach($Task in $DevOp.Tasks){
+    $Tasks = DevOpStorage\Get-AppeaseDevOp -Name $Name -ProjectRootDirPath $ProjectRootDirPath | Select -ExpandProperty Tasks
+    $TaskParameterValueMap = DevOpStorage\Get-AppeaseConfiguration -Name $ConfigurationName -DevOpName $Name -ProjectRootDirPath $ProjectRootDirPath | Select -ExpandProperty TaskParameterValueMap
+
+    foreach($Task in $Tasks){
+        $TaskName = $Task.Name
                     
-        if($Parameters.($Task.Name)){
+        if($Parameters.$TaskName){
 
-            if($Task.Parameters){
+            if($TaskParameterValueMap.$TaskName){
 
-Write-Debug "Adding union of passed parameters and archived parameters to pipeline. Passed parameters will override archived parameters"
+Write-Debug "Adding union of passed parameters and configuration parameters to pipeline. Passed parameters will override configuration parameters"
                 
-                $TaskParameters = HashtableExtensions\Get-UnionOfHashtables -Source1 $Parameters.($Task.Name) -Source2 $Task.Parameters
+                $TaskParameters = HashtableExtensions\Get-UnionOfHashtables -Source1 $Parameters.$TaskName -Source2 $TaskParameterValueMap.$TaskName
 
             }
             else{
 
 Write-Debug "Adding passed parameters to pipeline"
 
-                $TaskParameters = $Parameters.($Task.Name)
+                $TaskParameters = $Parameters.$TaskName
             
             }
 
         }
-        elseif($Task.Parameters){
+        elseif($TaskParameterValueMap){
 
 Write-Debug "Adding archived parameters to pipeline"    
-            $TaskParameters = $Task.Parameters
+            $TaskParameters = $TaskParameterValueMap.$TaskName
 
         }
         else{
@@ -65,7 +71,7 @@ Write-Debug "Adding archived parameters to pipeline"
 Write-Debug "Adding automatic parameters to pipeline"
             
         $TaskParameters.AppeaseProjectRootDirPath = (Resolve-Path $ProjectRootDirPath)
-        $TaskParameters.AppeaseTaskName = $Task.Name
+        $TaskParameters.AppeaseTaskName = $TaskName
 
 Write-Debug "Ensuring task template installed"
         TemplateManagement\Install-AppeaseTaskTemplate -Id $Task.TemplateId -Version $Task.TemplateVersion -Source $TemplateSource
@@ -76,7 +82,7 @@ Write-Debug "Importing module located at: $ModuleDirPath"
 
 Write-Debug `
 @"
-Invoking Task $($Task.Name) with parameters: 
+Invoking task '$TaskName' with parameters: 
 $($TaskParameters|Out-String)
 "@
         
@@ -86,111 +92,6 @@ $($TaskParameters|Out-String)
         Remove-Module $Task.TemplateId
 
     }
-}
-
-function New-AppeaseDevOp(
-
-[string]
-[ValidateNotNullOrEmpty()]
-[Parameter(
-    Mandatory=$true,
-    ValueFromPipelineByPropertyName=$true)]
-$Name,
-
-[switch]
-$Force,
-
-[string]
-[ValidateScript({Test-Path $_ -PathType Container})]
-[Parameter(
-    ValueFromPipelineByPropertyName=$true)]
-$ProjectRootDirPath = '.'){
-    
-    $DevOp = @{Name=$Name;Tasks={@()}.Invoke()}
-
-    DevOpStorage\Add-AppeaseDevOp `
-        -Value $DevOp `
-        -Force:$Force `
-        -ProjectRootDirPath $ProjectRootDirPath
-}
-
-function Remove-AppeaseDevOp(
-
-[string]
-[ValidateNotNullOrEmpty()]
-[Parameter(
-    Mandatory=$true)]
-$Name,
-
-[switch]$Force,
-
-[string]
-[ValidateScript({Test-Path $_ -PathType Container})]
-[Parameter(
-    ValueFromPipelineByPropertyName=$true)]
-$ProjectRootDirPath = '.'){
-
-    $ConfirmationPromptQuery = "Are you sure you want to delete the DevOp `"$Name`"`?"
-    $ConfirmationPromptCaption = 'Confirm Task removal'
-
-    if($Force.IsPresent -or $PSCmdlet.ShouldContinue($ConfirmationPromptQuery,$ConfirmationPromptCaption)){
-
-        DevOpStorage\Remove-AppeaseDevOp `
-            -Name $Name `
-            -ProjectRootDirPath $ProjectRootDirPath
-
-    }
-
-}
-
-function Rename-AppeaseDevOp(
-
-[string]
-[ValidateNotNullOrEmpty()]
-[Parameter(
-    Mandatory=$true)]
-$OldName,
-
-[string]
-[ValidateNotNullOrEmpty()]
-[Parameter(
-    Mandatory=$true)]
-$NewName,
-
-[switch]
-$Force,
-
-[string]
-[ValidateScript({Test-Path $_ -PathType Container})]
-[Parameter(
-    ValueFromPipeline=$true,
-    ValueFromPipelineByPropertyName=$true)]
-$ProjectRootDirPath = '.'){
-
-    DevOpStorage\Rename-AppeaseDevOp `
-        -OldName $OldName `
-        -NewName $NewName `
-        -Force:$Force `
-        -ProjectRootDirPath $ProjectRootDirPath    
-
-}
-
-function Get-AppeaseDevOp(
-
-[string]
-[ValidateNotNullOrEmpty()]
-[Parameter(
-    Mandatory=$true)]
-$Name,
-
-[string]
-[ValidateScript({Test-Path $_ -PathType Container})]
-[Parameter(
-    ValueFromPipelineByPropertyName=$true)]
-$ProjectRootDirPath = '.'){
-
-    DevOpStorage\Get-AppeaseDevOp -Name $Name -ProjectRootDirPath $ProjectRootDirPath | Write-Output
-
 }
 
 function Add-AppeaseTask(
@@ -332,30 +233,30 @@ Write-Debug "using greatest available template version : $TemplateVersion"
         }
         elseif('Add-AppeaseTaskAfter' -eq $PSCmdlet.ParameterSetName){
             
-            $DevOp = DevOpStorage\Get-AppeaseDevOp -Name $DevOpName -ProjectRootDirPath $ProjectRootDirPath
-            $indexOfAfter = $DevOp.Tasks.IndexOf(($DevOp.Tasks|?{$_.Name -eq $After}|Select -First 1))
+            $Tasks = DevOpStorage\Get-AppeaseDevOp -Name $DevOpName -ProjectRootDirPath $ProjectRootDirPath | Select -ExpandProperty Tasks
+            $indexOfAfter = $Tasks.IndexOf(($Tasks|?{$_.Name -eq $After}))
             # ensure Task with key $After exists
             if($indexOfAfter -lt 0){
-                throw "A task with name $After could not be found."
+                throw "Task '$After' could not be found."
             }
             $TaskIndex = $indexOfAfter + 1
         
         }
         elseif('Add-AppeaseTaskBefore' -eq $PSCmdlet.ParameterSetName){        
         
-            $DevOp = DevOpStorage\Get-AppeaseDevOp -Name $DevOpName -ProjectRootDirPath $ProjectRootDirPath
-            $indexOfBefore = $DevOp.Tasks.IndexOf(($DevOp.Tasks|?{$_.Name -eq $Before}|Select -First 1))
+            $Tasks = DevOpStorage\Get-AppeaseDevOp -Name $DevOpName -ProjectRootDirPath $ProjectRootDirPath | Select -ExpandProperty Tasks
+            $indexOfBefore = $Tasks.IndexOf(($Tasks|?{$_.Name -eq $Before}))
             # ensure Task with key $Before exists
             if($indexOfBefore -lt 0){
-                throw "A Task with name $Before could not be found."
+                throw "Task '$Before' could not be found."
             }
             $TaskIndex = $indexOfBefore
         
         }
         else{
         
-            $DevOp = DevOpStorage\Get-AppeaseDevOp -Name $DevOpName -ProjectRootDirPath $ProjectRootDirPath
-            $TaskIndex = $DevOp.Tasks.Count  
+            $Tasks = DevOpStorage\Get-AppeaseDevOp -Name $DevOpName -ProjectRootDirPath $ProjectRootDirPath | Select -ExpandProperty Tasks
+            $TaskIndex = $Tasks.Count
         }
 
         DevOpStorage\Add-AppeaseTask `
@@ -366,132 +267,6 @@ Write-Debug "using greatest available template version : $TemplateVersion"
             -Index $TaskIndex `
             -Force:$Force `
             -ProjectRootDirPath $ProjectRootDirPath
-}
-
-function Remove-AppeaseTask(
-
-[string]
-[ValidateNotNullOrEmpty()]
-[Parameter(
-    Mandatory=$true)]
-$DevOpName,
-
-[string]
-[ValidateNotNullOrEmpty()]
-[Parameter(
-    Mandatory=$true)]
-$Name,
-
-[switch]$Force,
-
-[string]
-[ValidateScript({Test-Path $_ -PathType Container})]
-[Parameter(
-    ValueFromPipelineByPropertyName=$true)]
-$ProjectRootDirPath = '.'){
-
-    $ConfirmationPromptQuery = "Are you sure you want to remove the Task with name $Name`?"
-    $ConfirmationPromptCaption = 'Confirm Task removal'
-
-    if($Force.IsPresent -or $PSCmdlet.ShouldContinue($ConfirmationPromptQuery,$ConfirmationPromptCaption)){
-
-        DevOpStorage\Remove-AppeaseTask `
-            -DevOpName $DevOpName `
-            -Name $Name `
-            -ProjectRootDirPath $ProjectRootDirPath
-
-    }
-
-}
-
-function Rename-AppeaseTask(
-
-[string]
-[ValidateNotNullOrEmpty()]
-[Parameter(
-    Mandatory=$true)]
-$DevOpName,
-
-[string]
-[ValidateNotNullOrEmpty()]
-[Parameter(
-    Mandatory=$true)]
-$OldName,
-
-[string]
-[ValidateNotNullOrEmpty()]
-[Parameter(
-    Mandatory=$true)]
-$NewName,
-
-[switch]$Force,
-
-[string]
-[ValidateScript({Test-Path $_ -PathType Container})]
-[Parameter(
-    ValueFromPipelineByPropertyName=$true)]
-$ProjectRootDirPath = '.'){
-
-    DevOpStorage\Rename-AppeaseTask `
-        -DevOpName $DevOpName `
-        -OldName $OldName `
-        -NewName $NewName `
-        -Force:$Force `
-        -ProjectRootDirPath $ProjectRootDirPath
-
-}
-
-function Set-AppeaseTaskParameter(
-
-[string]
-[ValidateNotNullOrEmpty()]
-[Parameter(
-    Mandatory=$true)]
-$DevOpName,
-
-[string]
-[ValidateNotNullOrEmpty()]
-[Parameter(
-    Mandatory=$true)]
-$TaskName,
-
-[string]
-[ValidateNotNullOrEmpty()]
-[Parameter(
-    Mandatory=$true)]
-$Name,
-
-[object]
-[Parameter(
-    Mandatory=$true)]
-$Value,
-
-[switch]
-$Force,
-
-[string]
-[ValidateScript({Test-Path $_ -PathType Container})]
-[Parameter(
-    ValueFromPipelineByPropertyName=$true)]
-$ProjectRootDirPath = '.'){
-    <#
-        .SYNOPSIS
-        Sets configurable parameters of a Task
-        
-        .EXAMPLE
-        Set-AppeaseTaskParameter -DevOpName Build -TaskName GitClone -Name GitParameters -Value Status -Force
-        
-        Description:
-
-        This command sets the parameter "GitParameters" to "Status" for a Task "GitClone" in DevOp "Build"
-    #>
-
-    DevOpStorage\Set-AppeaseTaskParameter `
-        -DevOpName $DevOpName `
-        -TaskName $TaskName `
-        -Name $Name `
-        -Value $Value `
-        -Force:$Force
 }
 
 function Update-AppeaseTaskTemplate(
@@ -607,6 +382,12 @@ Export-ModuleMember -Function @(
                                 'Remove-AppeaseTask',
                                 'Rename-AppeaseTask',
                                 'Set-AppeaseTaskParameter',
+
+                                # Configuration API
+                                'Add-AppeaseConfiguration',
+                                'Get-AppeaseConfiguration',
+                                'Rename-AppeaseConfiguration',
+                                'Remove-AppeaseConfiguration'
 
                                 # Task Template API
                                 'Update-AppeaseTaskTemplate',

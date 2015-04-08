@@ -1,58 +1,129 @@
-function Save-AppeaseDevOpToFile(
-[object]
-$Value,
+function Get-AppeaseDevOpFilePath(
 
-[switch]
-$Force,
+    [string]
+    [ValidateNotNullOrEmpty()]
+    [Parameter(
+        Mandatory=$true,
+        ValueFromPipelineByPropertyName=$true)]
+    $Name,
 
-[string]
-[ValidateScript({Test-Path $_ -PathType Container})]
-[Parameter(
-    ValueFromPipelineByPropertyName=$true)]
-$ProjectRootDirPath = '.'){
+    [string]
+    [ValidateScript({Test-Path $_ -PathType Container})]
+    [Parameter(
+        ValueFromPipelineByPropertyName=$true)]
+    $ProjectRootDirPath = '.'
 
-    $DevOpFilePath = "$ProjectRootDirPath\.Appease\$($Value.Name).json"
+){
+    <#
+        .Synopsis
+        An Internal utility function that returns the file path of a devop
+    #>
 
-    if(!$Force.IsPresent -and (Test-Path $DevOpFilePath)){
-throw `
-@"
-dev op "$($Value.Name)" already exists
-for project "$(Resolve-Path $ProjectRootDirPath)".
+    Write-Output "$ProjectRootDirPath\.Appease\DevOps\$Name\$Name.json"
+}
 
-dev op names must be unique.
-If you want to overwrite the existing dev op use the -Force parameter
-"@
-    }
+function Save-AppeaseDevOp(
+
+    [string]
+    [ValidateNotNullOrEmpty()]
+    [Parameter(
+        Mandatory=$true,
+        ValueFromPipelineByPropertyName=$true)]
+    $Name,
+
+    [PSCustomObject[]]
+    [ValidateNotNull()]
+    [Parameter(
+        ValueFromPipelineByPropertyName=$true)]
+    $Task = @(),
+
+    [string]
+    [ValidateScript({Test-Path $_ -PathType Container})]
+    [Parameter(
+        ValueFromPipelineByPropertyName=$true)]
+    $ProjectRootDirPath = '.'
+){
+    <#
+        .Synopsis
+        An Internal utility function that saves a devop to disk
+    #>
+    
+    $DevOpFilePath = Get-AppeaseDevOpFilePath -Name $Name -ProjectRootDirPath $ProjectRootDirPath
 
     if(!(Test-Path -Path $DevOpFilePath)){
         New-Item -ItemType File -Path $DevOpFilePath -Force
     }
 
-    Set-Content $DevOpFilePath -Value (ConvertTo-Json -InputObject $Value -Depth 12) -Force
+    $DevOp = @{Tasks=$Task}
+
+    Set-Content $DevOpFilePath -Value (ConvertTo-Json -InputObject $DevOp -Depth 12) -Force
 }
 
-Set-Alias -Name 'Add-AppeaseDevOp' -Value 'Save-AppeaseDevOpToFile'
+function New-AppeaseDevOp(
 
-function Get-AppeaseDevOpFromFile(
+    [string]
+    [ValidateNotNullOrEmpty()]
+    [Parameter(
+        Mandatory=$true,
+        ValueFromPipelineByPropertyName=$true)]
+    $Name,
 
-[string]
-[ValidateNotNullOrEmpty()]
-[Parameter(
-    Mandatory=$true,
-    ValueFromPipelineByPropertyName=$true)]
-$Name,
+    [switch]
+    [Parameter(
+        ValueFromPipelineByPropertyName=$true)]
+    $Force,
 
-[string]
-[ValidateScript({Test-Path $_ -PathType Container})]
-[Parameter(
-    ValueFromPipelineByPropertyName=$true)]
-$ProjectRootDirPath = '.'){
+    [string]
+    [ValidateScript({Test-Path $_ -PathType Container})]
+    [Parameter(
+        ValueFromPipelineByPropertyName=$true)]
+    $ProjectRootDirPath = '.'
+
+){
+    <#
+        .Synopsis
+        creates a new devop
+    #>
+
+    $DevOpFilePath = Get-AppeaseDevOpFilePath -Name $Name -ProjectRootDirPath $ProjectRootDirPath
+
+    If(!$Force.IsPresent -and (Test-Path $DevOpFilePath)){
+throw `
+@"
+dev op "$($Name)" already exists
+for project "$(Resolve-Path $ProjectRootDirPath)".
+
+dev op names must be unique.
+If you want to overwrite the existing dev op use the -Force parameter
+"@
+    }Else{
+
+        Save-AppeaseDevOp -Name $Name -ProjectRootDirPath $ProjectRootDirPath
+    }
+}
+
+function Get-AppeaseDevOp(
+
+    [string]
+    [ValidateNotNullOrEmpty()]
+    [Parameter(
+        Mandatory=$true,
+        ValueFromPipelineByPropertyName=$true)]
+    $Name,
+
+    [string]
+    [ValidateScript({Test-Path $_ -PathType Container})]
+    [Parameter(
+        ValueFromPipelineByPropertyName=$true)]
+    $ProjectRootDirPath = '.'
+
+){
     <#
         .SYNOPSIS
         an internal utility function that retrieves a DevOp from storage
     #>
 
-    $DevOpFilePath = Resolve-Path "$ProjectRootDirPath\.Appease\$Name.json"
+    $DevOpFilePath = Get-AppeaseDevOpFilePath -Name $Name -ProjectRootDirPath $ProjectRootDirPath
     
     $DevOp = Get-Content $DevOpFilePath | Out-String | ConvertFrom-Json
     
@@ -74,126 +145,155 @@ $ProjectRootDirPath = '.'){
 
 }
 
-Set-Alias -Name 'Get-AppeaseDevOp' -Value 'Get-AppeaseDevOpFromFile'
-
-
 function Rename-AppeaseDevOp(
-[string]
-[ValidateNotNullOrEmpty()]
-$OldName,
 
-[string]
-[ValidateNotNullOrEmpty()]
-$NewName,
+    [string]
+    [ValidateNotNullOrEmpty()]
+    $OldName,
 
-[switch]
-$Force,
+    [string]
+    [ValidateNotNullOrEmpty()]
+    $NewName,
 
-[string]
-[ValidateScript({Test-Path $_ -PathType Container})]
-[Parameter(
-    ValueFromPipelineByPropertyName=$true)]
-$ProjectRootDirPath = '.'){
+    [switch]
+    $Force,
+
+    [string]
+    [ValidateScript({Test-Path $_ -PathType Container})]
+    [Parameter(
+        ValueFromPipelineByPropertyName=$true)]
+    $ProjectRootDirPath = '.'
+
+){
     <#
         .SYNOPSIS
         an internal utility function that updates the name of a DevOp in storage
     #>
+
+    $OldDevOpFilePath = Get-AppeaseDevOpFilePath -Name $OldName -ProjectRootDirPath $ProjectRootDirPath
+    $NewDevOpFilePath = Get-AppeaseDevOpFilePath -Name $NewName -ProjectRootDirPath $ProjectRootDirPath
         
-    # fetch DevOp
-    $DevOp = Get-AppeaseDevOpFromFile -Name $OldName -ProjectRootDirPath $ProjectRootDirPath
-
-    # update name
-    $DevOp.Name = $NewName
-
-    # save to file with updated name
-    Save-AppeaseDevOpToFile -Value $DevOp -Force:$Force -ProjectRootDirPath $ProjectRootDirPath
-        
-    #remove file with old name
-    Remove-Item -Path "$ProjectRootDirPath\.Appease\$OldName.json" -Force
-
+    mv $OldDevOpFilePath $NewDevOpFilePath -Force:$Force
 }
 
 function Remove-AppeaseDevOp(
 
-[string]
-[ValidateNotNullOrEmpty()]
-[Parameter(
-    Mandatory=$true,
-    ValueFromPipelineByPropertyName=$true)]
-$Name,
+    [string]
+    [ValidateNotNullOrEmpty()]
+    [Parameter(
+        Mandatory=$true,
+        ValueFromPipelineByPropertyName=$true)]
+    $Name,
 
-[string]
-[ValidateScript({Test-Path $_ -PathType Container})]
-[Parameter(
-    ValueFromPipelineByPropertyName=$true)]
-$ProjectRootDirPath = '.'){
+    [switch]
+    $Force,
+
+    [string]
+    [ValidateScript({Test-Path $_ -PathType Container})]
+    [Parameter(
+        ValueFromPipelineByPropertyName=$true)]
+    $ProjectRootDirPath = '.'
+
+){
     <#
         .SYNOPSIS
-        an internal utility function that removes a DevOp from storage
+        Removes a DevOp from storage
     #>
     
-    $DevOpFilePath = Resolve-Path "$ProjectRootDirPath\.Appease\$Name.json"
-    
-    Remove-Item -Path $DevOpFilePath -Force
+    $ConfirmationPromptQuery = "Are you sure you want to remove devop '$Name'?"
+    $ConfirmationPromptCaption = 'Confirm Task removal'
+
+    if($Force.IsPresent -or $PSCmdlet.ShouldContinue($ConfirmationPromptQuery,$ConfirmationPromptCaption)){
+            
+        $DevOpFilePath = Get-AppeaseDevOpFilePath -Name $Name -ProjectRootDirPath $ProjectRootDirPath    
+        Remove-Item -Path $DevOpFilePath -Force
+
+    }
+}
+
+function Get-AppeaseDevOpTasks(
+ 
+    [string]
+    [ValidateNotNullOrEmpty()]
+    [Parameter(
+        Mandatory=$true,
+        ValueFromPipelineByPropertyName=$true)]
+    $DevOpName,
+
+    [string]
+    [ValidateScript({Test-Path $_ -PathType Container})]
+    [Parameter(
+        ValueFromPipelineByPropertyName=$true)]
+    $ProjectRootDirPath = '.'
+
+){
 }
 
 function Add-AppeaseTask(
-[string]
-[ValidateNotNullOrEmpty()]
-[Parameter(
-    Mandatory=$true,
-    ValueFromPipelineByPropertyName=$true)]
-$DevOpName,
 
-[string]
-[ValidateNotNullOrEmpty()]
-[Parameter(
-    Mandatory=$true,
-    ValueFromPipelineByPropertyName=$true)]
-$Name,
+    [string]
+    [ValidateNotNullOrEmpty()]
+    [Parameter(
+        Mandatory=$true,
+        ValueFromPipelineByPropertyName=$true)]
+    $DevOpName,
 
-[string]
-[ValidateNotNullOrEmpty()]
-[Parameter(
-    Mandatory=$true,
-    ValueFromPipelineByPropertyName=$true)]
-$TemplateId,
+    [string]
+    [ValidateNotNullOrEmpty()]
+    [Parameter(
+        Mandatory=$true,
+        ValueFromPipelineByPropertyName=$true)]
+    $Name,
 
-[string]
-[ValidateNotNullOrEmpty()]
-[Parameter(
-    Mandatory=$true,
-    ValueFromPipelineByPropertyName=$true)]
-$TemplateVersion,
+    [string]
+    [ValidateNotNullOrEmpty()]
+    [Parameter(
+        Mandatory=$true,
+        ValueFromPipelineByPropertyName=$true)]
+    $TemplateId,
 
-[int]
-[ValidateScript({$_ -gt -1})]
-[Parameter(
-    Mandatory=$true,
-    ValueFromPipelineByPropertyName=$true)]
-$Index,
+    [string]
+    [ValidateNotNullOrEmpty()]
+    [Parameter(
+        Mandatory=$true,
+        ValueFromPipelineByPropertyName=$true)]
+    $TemplateVersion,
 
-[switch]
-$Force,
+    [int]
+    [ValidateScript({$_ -gt -1})]
+    [Parameter(
+        Mandatory=$true,
+        ValueFromPipelineByPropertyName=$true)]
+    $Index,
 
-[string]
-[ValidateScript({Test-Path $_ -PathType Container})]
-[Parameter(
-    ValueFromPipelineByPropertyName=$true)]
-$ProjectRootDirPath = '.'){
+    [switch]
+    $Force,
+
+    [string]
+    [ValidateScript({Test-Path $_ -PathType Container})]
+    [Parameter(
+        ValueFromPipelineByPropertyName=$true)]
+    $ProjectRootDirPath = '.'
+
+){
     <#
         .SYNOPSIS
         an internal utility function that adds a task to a DevOp in storage
     #>    
     
     # fetch DevOp
-    $DevOp = Get-AppeaseDevOpFromFile -Name $DevOpName -ProjectRootDirPath $ProjectRootDirPath
+    $Tasks = Get-AppeaseDevOp -Name $DevOpName -ProjectRootDirPath $ProjectRootDirPath | Select -ExpandProperty Tasks
+
+    # if this is first task
+    If(!$Tasks){
+        $Tasks = {@()}.Invoke()
+    }
 
     # guard against unintentionally overwriting existing tasks
-    if(!$Force.IsPresent -and ($DevOp.Tasks|?{$_.Name -eq $Name}|Select -First 1)){
+    if(!$Force.IsPresent -and ($Tasks|?{$_.Name -eq $Name})){
 throw `
 @"
-Task '$Name' already exists in DevOp '$DevOpName'
+Task '$Name' already exists in devop '$DevOpName'
 for project '$(Resolve-Path $ProjectRootDirPath)'.
 
 Task names must be unique.
@@ -205,81 +305,93 @@ If you want to overwrite the existing task use the -Force parameter
     $Task = @{Name=$Name;TemplateId=$TemplateId;TemplateVersion=$TemplateVersion}
 
     # add task to dev op 
-    $DevOp.Tasks.Insert($Index,$Task)
+    $Tasks.Insert($Index,$Task)
 
     # save
-    Save-AppeaseDevOpToFile -Value $DevOp -Force -ProjectRootDirPath $ProjectRootDirPath
+    Save-AppeaseDevOp -Name $DevOpName -Task $Tasks -ProjectRootDirPath $ProjectRootDirPath
 
 }
 
 function Remove-AppeaseTask(
-[string]
-[ValidateNotNullOrEmpty()]
-[Parameter(
-    Mandatory=$true,
-    ValueFromPipelineByPropertyName=$true)]
-$DevOpName,
 
-[string]
-[ValidateNotNullOrEmpty()]
-[Parameter(
-    Mandatory=$true,
-    ValueFromPipelineByPropertyName=$true)]
-$Name,
+    [string]
+    [ValidateNotNullOrEmpty()]
+    [Parameter(
+        Mandatory=$true,
+        ValueFromPipelineByPropertyName=$true)]
+    $DevOpName,
 
-[string]
-[ValidateScript({Test-Path $_ -PathType Container})]
-[Parameter(
-    ValueFromPipelineByPropertyName=$true)]
-$ProjectRootDirPath = '.'){
-        
-    # fetch DevOp
-    $DevOp = Get-AppeaseDevOpFromFile -Name $DevOpName -ProjectRootDirPath $ProjectRootDirPath
+    [string]
+    [ValidateNotNullOrEmpty()]
+    [Parameter(
+        Mandatory=$true,
+        ValueFromPipelineByPropertyName=$true)]
+    $Name,
 
-    # remove task
-    $DevOp.Tasks.Remove(($DevOp.Tasks|?{$_.Name -eq $Name}|Select -First 1))
+    [string]
+    [ValidateScript({Test-Path $_ -PathType Container})]
+    [Parameter(
+        ValueFromPipelineByPropertyName=$true)]
+    $ProjectRootDirPath = '.'
 
-    # save
-    Save-AppeaseDevOpToFile -Value $DevOp -Force -ProjectRootDirPath $ProjectRootDirPath
+){
+    $ConfirmationPromptQuery = "Are you sure you want to remove the Task with name $Name`?"
+    $ConfirmationPromptCaption = 'Confirm Task removal'
+
+    if($Force.IsPresent -or $PSCmdlet.ShouldContinue($ConfirmationPromptQuery,$ConfirmationPromptCaption)){
+
+        # fetch tasks
+        $Tasks = Get-AppeaseDevOp -Name $DevOpName -ProjectRootDirPath $ProjectRootDirPath | Select -ExpandProperty Tasks
+
+        # remove task
+        $Tasks.Remove(($Tasks|?{$_.Name -eq $Name}))
+
+        # save
+        Save-AppeaseDevOp -Name $DevOpName -Task $Tasks -ProjectRootDirPath $ProjectRootDirPath
+
+    }   
 
 }
 
 function Rename-AppeaseTask(
-[string]
-[ValidateNotNullOrEmpty()]
-[Parameter(
-    Mandatory=$true,
-    ValueFromPipelineByPropertyName=$true)]
-$DevOpName,
 
-[string]
-[ValidateNotNullOrEmpty()]
-[Parameter(
-    Mandatory=$true,
-    ValueFromPipelineByPropertyName=$true)]
-$OldName,
+    [string]
+    [ValidateNotNullOrEmpty()]
+    [Parameter(
+        Mandatory=$true,
+        ValueFromPipelineByPropertyName=$true)]
+    $DevOpName,
 
-[string]
-[ValidateNotNullOrEmpty()]
-[Parameter(
-    Mandatory=$true,
-    ValueFromPipelineByPropertyName=$true)]
-$NewName,
+    [string]
+    [ValidateNotNullOrEmpty()]
+    [Parameter(
+        Mandatory=$true,
+        ValueFromPipelineByPropertyName=$true)]
+    $OldName,
 
-[switch]
-$Force,
+    [string]
+    [ValidateNotNullOrEmpty()]
+    [Parameter(
+        Mandatory=$true,
+        ValueFromPipelineByPropertyName=$true)]
+    $NewName,
 
-[string]
-[ValidateScript({Test-Path $_ -PathType Container})]
-[Parameter(
-    ValueFromPipelineByPropertyName=$true)]
-$ProjectRootDirPath = '.'){
+    [switch]
+    $Force,
+
+    [string]
+    [ValidateScript({Test-Path $_ -PathType Container})]
+    [Parameter(
+        ValueFromPipelineByPropertyName=$true)]
+    $ProjectRootDirPath = '.'
+
+){
         
     # fetch DevOp
-    $DevOp = Get-AppeaseDevOpFromFile -Name $DevOpName -ProjectRootDirPath $ProjectRootDirPath
+    $Tasks = Get-AppeaseDevOp -Name $DevOpName -ProjectRootDirPath $ProjectRootDirPath | Select -ExpandProperty Tasks
 
     # fetch task
-    $Task = $DevOp.Tasks|?{$_.Name -eq $OldName}|Select -First 1
+    $Task = $Tasks|?{$_.Name -eq $OldName}
 
     # handle task not found
     if(!$Task){
@@ -291,7 +403,7 @@ for project '$(Resolve-Path $ProjectRootDirPath)'.
     }
 
     # guard against unintentionally overwriting existing task
-    if(!$Force.IsPresent -and ($DevOp.Tasks|?{$_.Name -eq $NewName}|Select -First 1)){
+    if(!$Force.IsPresent -and ($Tasks|?{$_.Name -eq $NewName})){
 throw `
 @"
 Task '$NewName' already exists in dev op '$DevOpName'
@@ -306,121 +418,135 @@ If you want to overwrite the existing task use the -Force parameter
     $Task.Name = $NewName
 
     # save
-    Save-AppeaseDevOpToFile -Value $DevOp -Force -ProjectRootDirPath $ProjectRootDirPath
+    Save-AppeaseDevOp -Name $DevOpName -Task $Tasks -ProjectRootDirPath $ProjectRootDirPath
 
 }
 
 function Set-AppeaseTaskParameter(
-[string]
-[ValidateNotNullOrEmpty()]
-[Parameter(
-    Mandatory=$true,
-    ValueFromPipelineByPropertyName=$true)]
-$DevOpName,
+    
+    [string]
+    [ValidateNotNullOrEmpty()]
+    [Parameter(
+        Mandatory=$true,
+        ValueFromPipelineByPropertyName=$true)]
+    $ConfigurationName,
 
-[string]
-[ValidateNotNullOrEmpty()]
-[Parameter(
-    Mandatory=$true,
-    ValueFromPipelineByPropertyName=$true)]
-$TaskName,
+    [string]
+    [ValidateNotNullOrEmpty()]
+    [Parameter(
+        Mandatory=$true,
+        ValueFromPipelineByPropertyName=$true)]
+    $DevOpName,
 
-[string]
-[ValidateNotNullOrEmpty()]
-[Parameter(
-    Mandatory=$true)]
-$Name,
+    [string]
+    [ValidateNotNullOrEmpty()]
+    [Parameter(
+        Mandatory=$true,
+        ValueFromPipelineByPropertyName=$true)]
+    $TaskName,
 
-[object]
-[Parameter(
-    Mandatory=$true)]
-$Value,
+    [Hashtable]
+    [ValidateNotNullOrEmpty()]
+    [ValidateCount(1,[int]::MaxValue)]
+    [Parameter(
+        Mandatory=$true)]
+    $Parameter,
 
-[switch]
-$Force,
+    [switch]
+    $Force,
 
-[string]
-[ValidateScript({Test-Path $_ -PathType Container})]
-[Parameter(
-    ValueFromPipelineByPropertyName=$true)]
-$ProjectRootDirPath = '.'){
-           
-    # fetch DevOp
-    $DevOp = Get-AppeaseDevOpFromFile -Name $DevOpName -ProjectRootDirPath $ProjectRootDirPath
+    [string]
+    [ValidateScript({Test-Path $_ -PathType Container})]
+    [Parameter(
+        ValueFromPipelineByPropertyName=$true)]
+    $ProjectRootDirPath = '.'
 
-    # fetch task
-    $Task = $DevOp.Tasks|?{$_.Name -eq $TaskName}|Select -First 1
+){
 
+    # fetch tasks
+    $Tasks = Get-AppeaseDevOp -Name $DevOpName -ProjectRootDirPath $ProjectRootDirPath | Select -ExpandProperty Tasks
+    
     # handle task not found
-    if(!$Task){
+    if(!($Tasks|?{$_.Name -eq $TaskName})){
 throw `
 @"
-Task '$TaskName' not found in DevOp '$DevOpName'
+Task '$TaskName' not found in devop '$DevOpName'
 for project '$(Resolve-Path $ProjectRootDirPath)'.
 "@
     }
 
-    # handle the case where this is the first parameter set
-    If(!$Task.Parameters){
-        $Task | Add-Member -Type NoteProperty -Name Parameters -Value @{$Name=$Value}
+    # fetch task parameter value map
+    $TaskParameterValueMap = Get-AppeaseConfiguration -Name $ConfigurationName -DevOpName $DevOpName -ProjectRootDirPath $ProjectRootDirPath | Select -ExpandProperty TaskParameterValueMap
+    
+    # handle first task parameter value mapped
+    if(!$TaskParameterValueMap.$TaskName){
+        $TaskParameterValueMap.$TaskName = @{}
     }
-    # guard against unintentionally overwriting existing parameter value
-    ElseIf(!$Force.IsPresent -and ($Task.Parameters.$Name)){
+
+    foreach($ParameterEntry in $Parameter.GetEnumerator()){
+        $ParameterName = $ParameterEntry.Key
+        # guard against unintentionally overwriting existing parameter value
+        If(!$Force.IsPresent -and ($TaskParameterValueMap.$TaskName.$ParameterName)){
 throw `
 @"
-A value of '$($Task.Parameters.$Name)' has already been set for parameter '$Name' of task '$TaskName' in DevOp '$DevOpName'
-for project '$(Resolve-Path $ProjectRootDirPath)'.
+A value of '$($TaskParameterValueMap.$TaskName.$ParameterName)' has already been set for configuration '$ConfigurationName' 
+of devop '$DevOpName' task '$TaskName' parameter '$ParameterName'
+in project '$(Resolve-Path $ProjectRootDirPath)'.
 
 If you want to overwrite the existing parameter value use the -Force parameter
 "@
+        }
+        Else{    
+            $TaskParameterValueMap.$TaskName.$ParameterName = $ParameterEntry.Value
+        }
     }
-    Else{    
-        $Task.Parameters.$Name = $Value
-    }
-    
+        
     # save
-    Save-AppeaseDevOpToFile -Value $DevOp -Force -ProjectRootDirPath $ProjectRootDirPath
+    Save-AppeaseConfiguration -Name $ConfigurationName -DevOpName $DevOpName -TaskParameterValueMap $TaskParameterValueMap -ProjectRootDirPath $ProjectRootDirPath
 }
 
 function Set-AppeaseTaskTemplateVersion(
-[string]
-[ValidateNotNullOrEmpty()]
-[Parameter(
-    Mandatory=$true,
-    ValueFromPipelineByPropertyName=$true)]
-$DevOpName,
 
-[string]
-[ValidateNotNullOrEmpty()]
-[Parameter(
-    Mandatory=$true,
-    ValueFromPipelineByPropertyName=$true)]
-$TaskName,
+    [string]
+    [ValidateNotNullOrEmpty()]
+    [Parameter(
+        Mandatory=$true,
+        ValueFromPipelineByPropertyName=$true)]
+    $DevOpName,
 
-[string]
-[ValidateNotNullOrEmpty()]
-[Parameter(
-    Mandatory=$true,
-    ValueFromPipelineByPropertyName=$true)]
-$TemplateVersion,
+    [string]
+    [ValidateNotNullOrEmpty()]
+    [Parameter(
+        Mandatory=$true,
+        ValueFromPipelineByPropertyName=$true)]
+    $TaskName,
 
-[string]
-[ValidateScript({Test-Path $_ -PathType Container})]
-[Parameter(
-    ValueFromPipelineByPropertyName=$true)]
-$ProjectRootDirPath = '.'){
+    [string]
+    [ValidateNotNullOrEmpty()]
+    [Parameter(
+        Mandatory=$true,
+        ValueFromPipelineByPropertyName=$true)]
+    $TemplateVersion,
+
+    [string]
+    [ValidateScript({Test-Path $_ -PathType Container})]
+    [Parameter(
+        ValueFromPipelineByPropertyName=$true)]
+    $ProjectRootDirPath = '.'
+
+){
         
     # get from file
-    $DevOp = Get-AppeaseDevOpFromFile -Name $DevOpName -ProjectRootDirPath $ProjectRootDirPath
+    $Tasks = Get-AppeaseDevOp -Name $DevOpName -ProjectRootDirPath $ProjectRootDirPath | Select -ExpandProperty Tasks
 
     # fetch task
-    $Task = $DevOp.Tasks|?{$_.Name -eq $TaskName}|Select -First 1
+    $Task = $Tasks|?{$_.Name -eq $TaskName}
 
     # handle task not found
     if(!$Task){
 throw `
 @"
-Task '$TaskName' not found in DevOp '$DevOpName'
+Task '$TaskName' not found in devop '$DevOpName'
 for project '$(Resolve-Path $ProjectRootDirPath)'.
 "@
     }
@@ -429,21 +555,263 @@ for project '$(Resolve-Path $ProjectRootDirPath)'.
     $Task.TemplateVersion = $TemplateVersion
     
     # save to file
-    Save-AppeaseDevOpToFile -Value $DevOp -Force -ProjectRootDirPath $ProjectRootDirPath
+    Save-AppeaseDevOp -Name $DevOpName -Task $Tasks -ProjectRootDirPath $ProjectRootDirPath
 
 }
 
+function Get-AppeaseConfigurationFilePath(
+    
+    [string]
+    [ValidateNotNullOrEmpty()]
+    [Parameter(
+        Mandatory=$true,
+        ValueFromPipelineByPropertyName=$true)]
+    $Name,
+    
+    [string]
+    [ValidateNotNullOrEmpty()]
+    [Parameter(
+        Mandatory=$true,
+        ValueFromPipelineByPropertyName=$true)]
+    $DevOpName,
 
-Export-ModuleMember -Alias @(
-                    'Add-AppeaseDevOp',
-                    'Get-AppeaseDevOp')
+    [string]
+    [ValidateScript({Test-Path $_ -PathType Container})]
+    [Parameter(
+        ValueFromPipelineByPropertyName=$true)]
+    $ProjectRootDirPath = '.'
+
+){
+    <#
+        .Synopsis
+        An Internal utility function that returns the file path of a devop configuration
+    #>
+
+    Write-Output "$ProjectRootDirPath\.Appease\DevOps\$DevOpName\Configurations\$Name.json"
+}
+
+function Save-AppeaseConfiguration(
+    
+    [string]
+    [ValidateNotNullOrEmpty()]
+    [Parameter(
+        Mandatory=$true,
+        ValueFromPipelineByPropertyName=$true)]
+    $Name,
+    
+    [string]
+    [ValidateNotNullOrEmpty()]
+    [Parameter(
+        Mandatory=$true,
+        ValueFromPipelineByPropertyName=$true)]
+    $DevOpName,
+
+    [Hashtable]
+    [ValidateNotNull()]
+    [Parameter(
+        ValueFromPipelineByPropertyName=$true)]
+    $TaskParameterValueMap = @{},
+
+    [string]
+    [ValidateScript({Test-Path $_ -PathType Container})]
+    [Parameter(
+        ValueFromPipelineByPropertyName=$true)]
+    $ProjectRootDirPath = '.'
+
+){
+    <#
+        .Synopsis
+        An Internal utility function that saves a devop configuration to disk
+    #>
+    
+    $ConfigurationFilePath = Get-AppeaseConfigurationFilePath  -Name $Name -DevOpName $DevOpName -ProjectRootDirPath $ProjectRootDirPath
+
+    if(!(Test-Path -Path $ConfigurationFilePath)){
+        New-Item -ItemType File -Path $ConfigurationFilePath -Force
+    }
+
+    $Configuration = @{TaskParameterValueMap = $TaskParameterValueMap}
+
+    Set-Content $ConfigurationFilePath -Value (ConvertTo-Json -InputObject $Configuration -Depth 12) -Force
+}
+
+function Add-AppeaseConfiguration(
+    
+    [string]
+    [ValidateNotNullOrEmpty()]
+    [Parameter(
+        Mandatory=$true,
+        ValueFromPipelineByPropertyName=$true)]
+    $Name,
+    
+    [string]
+    [ValidateNotNullOrEmpty()]
+    [Parameter(
+        Mandatory=$true,
+        ValueFromPipelineByPropertyName=$true)]
+    $DevOpName,
+
+    [switch]
+    [Parameter(
+        ValueFromPipelineByPropertyName=$true)]
+    $Force,
+
+    [string]
+    [ValidateScript({Test-Path $_ -PathType Container})]
+    [Parameter(
+        ValueFromPipelineByPropertyName=$true)]
+    $ProjectRootDirPath = '.'
+
+){
+    <#
+        .Synopsis
+        creates a new configuration
+    #>
+
+    $ConfigurationFilePath = Get-AppeaseConfigurationFilePath -Name $Name -DevOpName $DevOpName -ProjectRootDirPath $ProjectRootDirPath
+
+    If(!$Force.IsPresent -and (Test-Path $ConfigurationFilePath)){
+throw `
+@"
+configuration "$Name" already exists
+for project "$(Resolve-Path $ProjectRootDirPath)".
+
+configuration names must be unique.
+If you want to overwrite the existing configuration use the -Force parameter
+"@
+    }Else{
+
+        Save-AppeaseConfiguration -Name $Name -DevOpName $DevOpName -ProjectRootDirPath $ProjectRootDirPath
+    }
+}
+
+function Get-AppeaseConfiguration(
+
+    [string]
+    [ValidateNotNullOrEmpty()]
+    [Parameter(
+        Mandatory=$true,
+        ValueFromPipelineByPropertyName=$true)]
+    $Name,
+
+    [string]
+    [ValidateNotNullOrEmpty()]
+    [Parameter(
+        Mandatory=$true,
+        ValueFromPipelineByPropertyName=$true)]
+    $DevOpName,
+
+    [string]
+    [ValidateScript({Test-Path $_ -PathType Container})]
+    [Parameter(
+        ValueFromPipelineByPropertyName=$true)]
+    $ProjectRootDirPath = '.'
+
+){
+    <#
+        .SYNOPSIS
+        an internal utility function that retrieves a DevOp from storage
+    #>
+
+    $ConfigurationFilePath = Get-AppeaseConfigurationFilePath -Name $Name -DevOpName $DevOpName -ProjectRootDirPath $ProjectRootDirPath
+    
+    $Configuration = Get-Content $ConfigurationFilePath | Out-String | ConvertFrom-Json
+    
+    # we need to construct a hashtable of hashtables from a PSCustomObject of PSCustomObjects
+    $TaskParameterHashtable = @{}
+    foreach($TaskParameter in $Configuration.TaskParameterValueMap.PSObject.Properties)
+    {
+        $TaskName = $TaskParameter.Name
+        $TaskParameterHashtable.$TaskName = @{}
+        $Configuration.TaskParameterValueMap.$TaskName.PSObject.Properties | %{$TaskParameterHashtable.$TaskName[$_.Name] = $_.Value}
+    }
+    
+    $Configuration.TaskParameterValueMap = $TaskParameterHashtable
+
+    Write-Output $Configuration
+
+}
+
+function Rename-AppeaseConfiguration(
+
+    [string]
+    [ValidateNotNullOrEmpty()]
+    $OldName,
+
+    [string]
+    [ValidateNotNullOrEmpty()]
+    $NewName,
+
+    [string]
+    [ValidateNotNullOrEmpty()]
+    [Parameter(
+        Mandatory=$true,
+        ValueFromPipelineByPropertyName=$true)]
+    $DevOpName,
+
+    [string]
+    [ValidateScript({Test-Path $_ -PathType Container})]
+    [Parameter(
+        ValueFromPipelineByPropertyName=$true)]
+    $ProjectRootDirPath = '.',
+
+    [switch]
+    [Parameter(
+        ValueFromPipelineByPropertyName=$true)]
+    $Force
+
+){
+    <#
+        .SYNOPSIS
+        an internal utility function that updates the name of a DevOp in storage
+    #>
+        
+    $OldConfigurationFilePath = Get-AppeaseConfigurationFilePath -Name $OldName -DevOpName $DevOpName -ProjectRootDirPath $ProjectRootDirPath
+    $NewConfigurationFilePath = Get-AppeaseConfigurationFilePath -Name $NewName -DevOpName $DevOpName -ProjectRootDirPath $ProjectRootDirPath
+
+    mv $OldConfigurationFilePath $NewConfigurationFilePath -Force:$Force
+
+}
+
+function Remove-AppeaseConfiguration(
+
+    [string]
+    [ValidateNotNullOrEmpty()]
+    [Parameter(
+        Mandatory=$true,
+        ValueFromPipelineByPropertyName=$true)]
+    $Name,
+
+    [string]
+    [ValidateNotNullOrEmpty()]
+    [Parameter(
+        Mandatory=$true,
+        ValueFromPipelineByPropertyName=$true)]
+    $DevOpName,
+
+    [string]
+    [ValidateScript({Test-Path $_ -PathType Container})]
+    [Parameter(
+        ValueFromPipelineByPropertyName=$true)]
+    $ProjectRootDirPath = '.'
+){
+    <#
+        .SYNOPSIS
+        an internal utility function that removes a devop configuration from storage
+    #>
+    
+    $ConfigurationFilePath = Get-AppeaseConfigurationFilePath -Name $Name -DevOpName $DevOpName -ProjectRootDirPath $ProjectRootDirPath
+    
+    Remove-Item -Path $ConfigurationFilePath -Force
+}
+
+
 
 Export-ModuleMember -Function @(
 
                     # DevOp API
-                    'Save-AppeaseDevOpToFile',
-                    'Get-AppeaseDevOpFromFile',
-                    'Add-AppeaseDevOp',
+                    'New-AppeaseDevOp',
+                    'Get-AppeaseDevOp',
                     'Rename-AppeaseDevOp',
                     'Remove-AppeaseDevOp',
 
@@ -452,4 +820,10 @@ Export-ModuleMember -Function @(
                     'Remove-AppeaseTask',
                     'Rename-AppeaseTask',
                     'Set-AppeaseTaskParameter',
-                    'Set-AppeaseTaskTemplateVersion')
+                    'Set-AppeaseTaskTemplateVersion'
+                    
+                    # Configuration API
+                    'Add-AppeaseConfiguration',
+                    'Get-AppeaseConfiguration',
+                    'Rename-AppeaseConfiguration',
+                    'Remove-AppeaseConfiguration')
