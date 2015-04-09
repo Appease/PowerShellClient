@@ -370,6 +370,8 @@ Export-ModuleMember -Function @(
                                 'Add-AppeaseConfiguration',
                                 'Get-AppeaseConfiguration',
                                 'Set-AppeaseConfigurationParentName',
+                                'Set-AppeaseConfigurationVariable',
+                                'Remove-AppeaseConfigurationVariable',
                                 'Rename-AppeaseConfiguration',
                                 'Remove-AppeaseConfiguration'
 

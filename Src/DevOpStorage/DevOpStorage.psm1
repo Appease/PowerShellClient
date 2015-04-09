@@ -617,6 +617,12 @@ function Save-AppeaseConfiguration(
         Mandatory=$true,
         ValueFromPipelineByPropertyName=$true)]
     $DevOpName,
+
+    [Hashtable]
+    [ValidateNotNull()]
+    [Parameter(
+        ValueFromPipelineByPropertyName=$true)]
+    $Variable = @{},
     
     [Hashtable]
     [ValidateNotNull()]
@@ -648,7 +654,10 @@ function Save-AppeaseConfiguration(
         New-Item -ItemType File -Path $ConfigurationFilePath -Force
     }
 
-    $Configuration = @{TaskParameters= $TaskParameter}
+    $Configuration = @{
+        Variables = $Variable;
+        TaskParameters = $TaskParameter
+    }
 
     if($ParentName){
         $Configuration.ParentName = $ParentName
@@ -738,8 +747,13 @@ function Get-AppeaseConfiguration(
     $ConfigurationFilePath = Get-AppeaseConfigurationFilePath -Name $Name -DevOpName $DevOpName -ProjectRootDirPath $ProjectRootDirPath
     
     $Configuration = Get-Content $ConfigurationFilePath | Out-String | ConvertFrom-Json
+
+    # Convert the Variables property from a PSCustomObject to a Hashtable
+    $VariablesHashtable = @{}
+    $Configuration.Variables.PSObject.Properties | %{$VariablesHashtable[$_.Name] = $_.Value}
+    $Configuration.Variables = $VariablesHashtable 
     
-    # Convert the mappings property from a PSCustomObject of PSCustomObjects to a Hashtable of Hashtables
+    # Convert the TaskParameters property from a PSCustomObject of PSCustomObjects to a Hashtable of Hashtables
     $TaskParametersHashtable = @{}
     foreach($TaskParameter in $Configuration.TaskParameters.PSObject.Properties)
     {
@@ -747,7 +761,6 @@ function Get-AppeaseConfiguration(
         $TaskParametersHashtable.$TaskName = @{}
         $Configuration.TaskParameters.$TaskName.PSObject.Properties | %{$TaskParametersHashtable.$TaskName[$_.Name] = $_.Value}
     }
-
     $Configuration.TaskParameters = $TaskParametersHashtable
     
     Write-Output $Configuration
@@ -785,7 +798,144 @@ function Set-AppeaseConfigurationParentName(
 
 ){
     $Configuration = Get-AppeaseConfiguration -Name $Name -DevOpName $DevOpName -ProjectRootDirPath $ProjectRootDirPath
-    Save-AppeaseConfiguration -Name $Name -DevOpName $DevOpName -TaskParameter $Configuration.TaskParameters -ParentName $ParentName -ProjectRootDirPath $ProjectRootDirPath
+
+    # build up Save-AppeaseConfiguration parameters
+    $SaveAppeaseConfigurationParameters = @{
+        Name = $ConfigurationName;
+        DevOpName = $DevOpName;
+        ParentName = $ParentName;
+        ProjectRootDirPath = $ProjectRootDirPath
+    }
+
+    if($Configuration.Variables){
+        $SaveAppeaseConfigurationParameters.Variable = $Configuration.Variables
+    }
+
+    if($Configuration.TaskParameters){
+        $SaveAppeaseConfigurationParameters.TaskParameter = $Configuration.TaskParameters
+    }
+
+    [PSCustomObject]$SaveAppeaseConfigurationParameters | Save-AppeaseConfiguration
+}
+
+function Set-AppeaseConfigurationVariable(
+
+    [string]
+    [ValidateNotNullOrEmpty()]
+    [Parameter(
+        Mandatory=$true,
+        ValueFromPipelineByPropertyName=$true)]
+    $Name,
+
+    [PSCustomObject]
+    [ValidateNotNullOrEmpty()]
+    [Parameter(
+        Mandatory=$true,
+        ValueFromPipelineByPropertyName=$true)]
+    $Value,
+
+    [string]    
+    [ValidateNotNullOrEmpty()]
+    [Parameter(
+        Mandatory=$true,
+        ValueFromPipelineByPropertyName=$true)]
+    $ConfigurationName,
+
+    [string]
+    [ValidateNotNullOrEmpty()]
+    [Parameter(
+        Mandatory=$true,
+        ValueFromPipelineByPropertyName=$true)]
+    $DevOpName,
+
+    [string]
+    [ValidateScript({Test-Path $_ -PathType Container})]
+    [Parameter(
+        ValueFromPipelineByPropertyName=$true)]
+    $ProjectRootDirPath = '.'    
+
+){
+    
+    $Configuration = Get-AppeaseConfiguration -Name $ConfigurationName -DevOpName $DevOpName -ProjectRootDirPath $ProjectRootDirPath
+
+    $Configuration.Variables.$Name = $Value
+
+    # build up Save-AppeaseConfiguration parameters
+    $SaveAppeaseConfigurationParameters = @{
+        Name = $ConfigurationName;
+        DevOpName = $DevOpName;
+        Variable = $Configuration.Variables;
+        ProjectRootDirPath = $ProjectRootDirPath
+    }
+
+    if($Configuration.TaskParameters){
+        $SaveAppeaseConfigurationParameters.TaskParameter = $Configuration.TaskParameters
+    }
+
+    if($Configuration.ParentName){
+        $SaveAppeaseConfigurationParameters.ParentName = $Configuration.ParentName
+    }
+
+    [PSCustomObject]$SaveAppeaseConfigurationParameters | Save-AppeaseConfiguration
+
+}
+
+function Remove-AppeaseConfigurationVariable(
+
+    [string]
+    [ValidateNotNullOrEmpty()]
+    [Parameter(
+        Mandatory=$true,
+        ValueFromPipelineByPropertyName=$true)]
+    $Name,
+
+    [string]    
+    [ValidateNotNullOrEmpty()]
+    [Parameter(
+        Mandatory=$true,
+        ValueFromPipelineByPropertyName=$true)]
+    $ConfigurationName,
+
+    [string]
+    [ValidateNotNullOrEmpty()]
+    [Parameter(
+        Mandatory=$true,
+        ValueFromPipelineByPropertyName=$true)]
+    $DevOpName,
+
+    [string]
+    [ValidateScript({Test-Path $_ -PathType Container})]
+    [Parameter(
+        ValueFromPipelineByPropertyName=$true)]
+    $ProjectRootDirPath = '.'
+
+){
+
+    Get-AppeaseConfiguration -Name $ConfigurationName -DevOpName $DevOpName -ProjectRootDirPath $ProjectRootDirPath
+
+    $Configuration.Variables.Remove($Name)
+
+    # build up Save-AppeaseConfiguration parameters
+    $SaveAppeaseConfigurationParameters = @{
+        Name = $ConfigurationName;
+        DevOpName = $DevOpName;
+        ProjectRootDirPath = $ProjectRootDirPath
+    }
+
+    if($Configuration.Variables){
+        $SaveAppeaseConfigurationParameters.Variable = $Configuration.Variables
+    }
+
+    if($Configuration.TaskParameters){
+        $SaveAppeaseConfigurationParameters.TaskParameter = $Configuration.TaskParameters
+    }
+
+    if($Configuration.ParentName){
+        $SaveAppeaseConfigurationParameters.ParentName = $Configuration.ParentName
+    }
+
+    [PSCustomObject]$SaveAppeaseConfigurationParameters | Save-AppeaseConfiguration
+
 }
 
 function Rename-AppeaseConfiguration(
@@ -867,7 +1017,6 @@ function Remove-AppeaseConfiguration(
     Remove-Item -Path $ConfigurationFilePath -Force
 }
 
-
 Export-ModuleMember -Function @(
 
                     # DevOp API
@@ -887,5 +1036,7 @@ Export-ModuleMember -Function @(
                     'Add-AppeaseConfiguration',
                     'Get-AppeaseConfiguration',
                     'Set-AppeaseConfigurationParentName',
+                    'Set-AppeaseConfigurationVariable',
+                    'Remove-AppeaseConfigurationVariable',
                     'Rename-AppeaseConfiguration',
                     'Remove-AppeaseConfiguration')
