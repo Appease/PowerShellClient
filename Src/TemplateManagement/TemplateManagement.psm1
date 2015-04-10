@@ -169,11 +169,11 @@ $nuspecXmlString =
     <id>$Id</id>
     <version>$Version</version>
     <authors>$([string]::Join(',',($Contributor|%{$_.Name})))</authors>
-    <projectUrl>$ProjectUrl</projectUrl>
-    <iconUrl>$([string]$IconUrl)</iconUrl>
+    $(if($ProjectUrl){"<projectUrl>$ProjectUrl</projectUrl>"})
+    $(if($IconUrl){"<iconUrl>$IconUrl</iconUrl>"})
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
-    <description>$Description</description>
-    <tags>$(if($Tags){[string]::Join(" ",$Tags)})</tags>
+    $(if($Description){"<description>$Description</description>"})
+    $(if($Tags){"<tags>$([string]::Join(" ",$Tags))</tags>"})
   </metadata>
   <files>
     <file src="$TaskTemplateMetadataFileName" target="metadata.json"/>
