@@ -168,7 +168,7 @@ $nuspecXmlString =
   <metadata>
     <id>$Id</id>
     <version>$Version</version>
-    <authors>$([string]::Join(',',($Contributor|%{$_.Name})))</authors>
+    $(if($Contributor){"<authors>$([string]::Join(',',($Contributor|%{$_.Name})))</authors>"})
     $(if($ProjectUrl){"<projectUrl>$ProjectUrl</projectUrl>"})
     $(if($IconUrl){"<iconUrl>$IconUrl</iconUrl>"})
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
