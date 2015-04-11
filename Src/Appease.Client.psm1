@@ -377,4 +377,5 @@ Export-ModuleMember -Function @(
 
                                 # Task Template API
                                 'Update-AppeaseTaskTemplate',
-                                'Publish-AppeaseTaskTemplate')
+                                'Save-AppeaseTaskTemplate',
+                                'Publish-AppeaseTaskTemplateToNupkgSource')
