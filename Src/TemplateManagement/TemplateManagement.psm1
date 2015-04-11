@@ -225,6 +225,16 @@ function Save-AppeaseTaskTemplate(
         ValueFromPipelineByPropertyName = $true)]
     $Description,
     
+    [string]
+    [ValidateSet('PowerShell3Module','PowerShell4Module')]
+    [Parameter(
+        ValueFromPipelineByPropertyName = $true)]
+    $Type = 'PowerShell3Module',
+
+    [string]
+    [PSCustomObject[]]
+    $Parameters,
+    
     [PSCustomObject[]]
     [ValidateNotNullOrEmpty()]
     [Parameter(
@@ -286,10 +296,11 @@ To overwrite existing task template include the -Force parameter
         $TaskTemplateMetadata = @{
             Id=$Id;
             Version=$Version;
-            EntryPointType=$EntryPointType;
+            Description=$Description;
+            Type=$Type;
         }
-        if($Description){
-            $TaskTemplateMetadata.Description = $Description
+        if($Parameters){
+            $TaskTemplateMetadata.Parameters = $Parameters
         }
         if($Maintainer){
             $TaskTemplateMetadata.Maintainers = $Maintainer

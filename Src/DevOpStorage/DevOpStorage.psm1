@@ -852,7 +852,7 @@ function Set-AppeaseConfigurationVariable(
     [ValidateScript({Test-Path $_ -PathType Container})]
     [Parameter(
         ValueFromPipelineByPropertyName=$true)]
-    $ProjectRootDirPath = '.'    
+    $ProjectRootDirPath = '.'
 
 ){
     
