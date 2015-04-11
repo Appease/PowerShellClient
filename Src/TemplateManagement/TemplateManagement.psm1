@@ -80,7 +80,212 @@ $NuGetCommand $($NuGetParameters|Out-String)
     }
 }
 
-function Publish-AppeaseTaskTemplate(
+function Publish-AppeaseTaskTemplateToNupkgSource(
+
+    [string]    
+    [ValidateNotNullOrEmpty()]
+    [Parameter(
+        Mandatory=$true,
+        ValueFromPipelineByPropertyName = $true)]
+    $TaskTemplateDirPath,
+    
+    [string]
+    [ValidateNotNullOrEmpty()]
+    [Parameter(
+        ValueFromPipelineByPropertyName = $true)]
+    $DestinationPathOrUrl = $DefaultTemplateSources[0],
+
+    [string]
+    [Parameter(
+        ValueFromPipelineByPropertyName = $true)]
+    $ApiKey
+
+){
+
+    <#
+        .SYNOPSIS
+        an internal utility function that publishes a task template to a .nupkg source
+    #>
+
+    $TaskTemplateMetadata = Get-AppeaseTaskTemplateMetadata -TaskTemplateDirPath $TaskTemplateDirPath
+    
+    # generate nuspec xml
+$nuspecXmlString =
+@"
+<?xml version="1.0"?>
+<package>
+  <metadata>
+    <id>$($TaskTemplateMetadata.$Id)</id>
+    <version>$($TaskTemplateMetadata.$Version)</version>
+    $(if($TaskTemplateMetadata.$Contributor){"<authors>$([string]::Join(',',($TaskTemplateMetadata.$Contributor|%{$_.Name})))</authors>"})
+    $(if($TaskTemplateMetadata.$ProjectUrl){"<projectUrl>$($TaskTemplateMetadata.$ProjectUrl)</projectUrl>"})
+    $(if($TaskTemplateMetadata.$IconUrl){"<iconUrl>$($TaskTemplateMetadata.$IconUrl)</iconUrl>"})
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    $(if($TaskTemplateMetadata.$Description){"<description>$($TaskTemplateMetadata.$Description)</description>"})
+    $(if($TaskTemplateMetadata.$Tags){"<tags>$([string]::Join(" ",$TaskTemplateMetadata.$Tags))</tags>"})
+  </metadata>
+  <files>
+    <file src="**" target="bin"/>
+  </files>
+</package>
+"@
+        $NuspecXml = [xml]($nuspecXmlString)
+
+        Try
+        {
+            # generate a nuspec file
+            $NuspecFilePath = Join-Path -Path $TaskTemplateDirPath -ChildPath "$([Guid]::NewGuid()).nuspec"
+            New-Item -ItemType File -Path $NuspecFilePath -Force
+            $NuspecXml.Save($(Resolve-Path $NuspecFilePath))
+
+            # build a nupkg file
+            New-NuGetPackage -NuspecFilePath $NuspecFilePath
+            $NupkgFilePath = Join-Path -Path $TaskTemplateDirPath -ChildPath "$($TaskTemplateMetadata.$Id).$($TaskTemplateMetadata.$Version).nupkg"
+
+            # publish nupkg file
+            Publish-NuGetPackage -NupkgFilePath $NuPkgFilePath -SourcePathOrUrl $DestinationPathOrUrl -ApiKey $ApiKey
+            
+        }
+        Finally{
+            Remove-Item $NuspecFilePath -Force
+            Remove-Item $NupkgFilePath -Force
+        }
+}
+
+function Get-AppeaseTaskTemplateMetadata(
+
+    [string]    
+    [ValidateNotNullOrEmpty()]
+    [Parameter(
+        Mandatory=$true,
+        ValueFromPipelineByPropertyName = $true)]
+    $TaskTemplateZipFilePath
+
+){
+    <#
+        .SYNOPSIS
+        an internal utility function that retrieves the metadata for a task template
+    #>
+
+    $TaskTemplateMetadataFilePath = "$TaskTemplateZipFilePath\metadata.json"
+
+    if(!(Test-Path $TaskTemplateMetadataFilePath)){
+throw `
+@"
+task template metadata not found for task template
+'$TaskTemplateMetadataFilePath'
+"@
+    }
+
+    $TaskTemplateMetadata = Get-Content $TaskTemplateMetadataFilePath | Out-String | ConvertFrom-Json
+    Write-Output $TaskTemplateMetadata
+}
+
+function Save-AppeaseTaskTemplate(
+
+    [string]    
+    [ValidateNotNullOrEmpty()]
+    [Parameter(
+        Mandatory=$true,
+        ValueFromPipelineByPropertyName = $true)]
+    $Id,
+    
+    [string]
+    [ValidateScript({
+        if($_ | Test-SemanticVersion){
+            $true
+        }
+        else{            
+            throw "'$_' is not a valid Semantic Version"
+        }
+    })]
+    [Parameter(
+        Mandatory=$true,
+        ValueFromPipelineByPropertyName = $true)]
+    $Version,
+    
+    [PSCustomObject[]]
+    [ValidateCount(1,[int]::MaxValue)]
+    [Parameter(
+        Mandatory=$true,
+        ValueFromPipelineByPropertyName = $true)]
+    $SourceFilePathSpec,
+    
+    [string]
+    [Parameter(
+        ValueFromPipelineByPropertyName = $true)]
+    $Description,
+    
+    [PSCustomObject[]]
+    [Parameter(
+        ValueFromPipelineByPropertyName = $true)]
+    $Maintainer,
+
+    [PSCustomObject]
+    [Parameter(
+        ValueFromPipelineByPropertyName = $true)]
+    $Dependency,
+    
+    [System.Uri]
+    [Parameter(
+        ValueFromPipelineByPropertyName = $true)]
+    $IconUrl,
+
+    [System.Uri]
+    [Parameter(
+        ValueFromPipelineByPropertyName = $true)]
+    $ProjectUrl,
+
+    [string[]]
+    [Parameter(
+        ValueFromPipelineByPropertyName = $true)]
+    $Tag,
+    
+    [string]
+    [ValidateNotNullOrEmpty()]
+    [Parameter(
+        ValueFromPipelineByPropertyName = $true)]
+    $DestinationDirPath
+
+){
+    
+    $TaskTemplateDirPath = New-Item -Path "$DestinationDirPath\$Id.$Version" -ItemType Directory -Force
+
+    # create metadata file 
+     $TaskTemplateMetadataFilePath = "$TaskTemplateDirPath\metadata.json"
+    New-Item -ItemType File -Path $TaskTemplateMetadataFilePath -Force
+    $TaskTemplateMetadata = @{
+        Id=$Id;
+        Version=$Version;
+        EntryPointType=$EntryPointType;
+    }
+    if($Description){
+        $TaskTemplateMetadata.Description = $Description
+    }
+    if($Maintainer){
+        $TaskTemplateMetadata.Maintainers = $Maintainer
+    }
+    if($Dependency){
+        $TaskTemplateMetadata.Dependencies = $Dependencies
+    }
+    if($IconUrl){
+        $TaskTemplateMetadata.IconUrl = $IconUrl
+    }
+    if($ProjectUrl){
+        $TaskTemplateMetadata.ProjectUrl = $ProjectUrl
+    }
+    if($Tag){
+        $TaskTemplateMetadata.Tags = $Tag
+    }
+    $TaskTemplateMetadata | ConvertTo-Json -Depth 12 | sc -Path $TaskTemplateMetadataFilePath -Force
+
+    foreach($SourceFilePathSpecItem in $SourceFilePathSpecItem){
+        Copy-Item @SourceFilePathSpecItem
+    }
+
+}
+
+function Publish-AppeasePowerShellTaskTemplate(
     
     [string]    
     [ValidateNotNullOrEmpty()]
@@ -117,8 +322,7 @@ function Publish-AppeaseTaskTemplate(
     [ValidateCount(1,[int]::MaxValue)]
     [Parameter(
         Mandatory=$true,
-        ValueFromPipelineByPropertyName = $true
-        )]
+        ValueFromPipelineByPropertyName = $true)]
     $File,
 
     [PSCustomObject]
@@ -195,6 +399,7 @@ $nuspecXmlString =
             New-Item -ItemType File -Path $TaskTemplateMetadataFilePath -Force
             $TaskTemplateMetadata = @{}
             if($Dependencies){
+                $TaskTemplateMetadata.Type = 'PowerShell'
                 $TaskTemplateMetadata.Dependencies = $Dependencies
             }
             $TaskTemplateMetadata | ConvertTo-Json -Depth 12 | sc -Path $TaskTemplateMetadataFilePath -Force
