@@ -38,35 +38,54 @@ function Invoke-AppeaseDevOp(
 
     foreach($Task in $DevOp.Tasks){
         $TaskName = $Task.Name
+
+        # combine parameters
         $TaskParameters = $Configuration.TaskParameters.$TaskName
+        # @todo: support default parameter values
 
-        # handle no parameters from parameter set
-        if(!$TaskParameters){
-            $TaskParameters = @{}
+        # add variables from configuration
+        if($Configuration.Variables){
+            $Variables = $Configuration.Variables          
         }
+        else{
+            $Variables = @{}
+        }
+        # add automatic variables
+        $Variables.'Appease.ProjectRootDirPath' = (Resolve-Path $ProjectRootDirPath)
+        $Variables.'Appease.Task.Name' = $TaskName
+        # @todo: support composite variables (perform variable substitution on variables)
 
-Write-Debug "Adding automatic parameters to pipeline"
-            
-        $TaskParameters.AppeaseProjectRootDirPath = (Resolve-Path $ProjectRootDirPath)
-        $TaskParameters.AppeaseTaskName = $TaskName
+        # perform variable substitution on task parameters    
+        $TaskInvocationCommand = $TaskTemplateMetadata.Invocation.Command
+        foreach($TaskParameter in $TaskParameters.GetEnumerator()){
+            foreach($Variable in $Variables){
+                $TaskParameter = $TaskParameter.Value -creplace "#{$($Variable.Key)}",$Variable.Value
+            }
+            $TaskInvocationCommand += " -$($TaskParameter.Name) $($TaskParameter.Value)"
+        }
 
 Write-Debug "Ensuring task template installed"
         TemplateManagement\Install-AppeaseTaskTemplate -Id $Task.TemplateId -Version $Task.TemplateVersion -Source $TemplateSource
         $TaskTemplateInstallDirPath = TemplateManagement\Get-AppeaseTaskTemplateInstallDirPath -Id $Task.TemplateId -Version $Task.TemplateVersion -ProjectRootDirPath $ProjectRootDirPath
-        $ModuleDirPath = "$TaskTemplateInstallDirPath\bin\$($Task.TemplateId)"
-Write-Debug "Importing module located at: $ModuleDirPath"
-        Import-Module $ModuleDirPath -Force
+        $TaskTemplateMetadata = TemplateManagement\Get-AppeaseTaskTemplateMetadata -TaskTemplateDirPath $TaskTemplateInstallDirPath
+
+        # invoke task template
+        $OriginalLocation = Get-Location
+        Try
+        {
+            Set-Location $TaskTemplateInstallDirPath
 
 Write-Debug `
 @"
-Invoking task '$TaskName' with parameters: 
-$($TaskParameters|Out-String)
+Invoking task '$TaskName' using command:
+iex $TaskInvocationCommand
 "@
-        
-        # Parameters must be PSCustomObject so [Parameter(ValueFromPipelineByPropertyName = $true)] works
-        [PSCustomObject]$TaskParameters.Clone() | & "$($Task.TemplateId)\Invoke"
+        iex $TaskInvocationCommand
 
-        Remove-Module $Task.TemplateId
+        }
+        Finally{
+            Set-Location $OriginalLocation
+        }
 
     }
 }
@@ -377,5 +396,5 @@ Export-ModuleMember -Function @(
 
                                 # Task Template API
                                 'Update-AppeaseTaskTemplate',
-                                'Save-AppeaseTaskTemplate',
-                                'Publish-AppeaseTaskTemplateToNupkgSource')
+                                'New-AppeaseTaskTemplatePackage',
+                                'Publish-AppeaseTaskTemplateToNuGetFeed')

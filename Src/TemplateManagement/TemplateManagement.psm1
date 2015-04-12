@@ -6,16 +6,21 @@ $ChocolateyCommand = "chocolatey"
 
 function Get-AppeaseTaskTemplateLatestVersion(
 
-    [string[]]
-    [Parameter(
-        Mandatory=$true)]
-    $Source = $DefaultTemplateSources,
 
     [string]
     [ValidateNotNullOrEmpty()]
     [Parameter(
-        Mandatory=$true)]
-    $Id){
+        Mandatory=$true,
+        ValueFromPipelineByPropertyName = $true)]
+    $Id, 
+
+    [string[]]
+    [ValidateNotNullOrEmpty()]
+    [Parameter(
+        ValueFromPipelineByPropertyName = $true)]
+    $Source = $DefaultTemplateSources
+
+){
     
     $versions = @()
 
@@ -33,8 +38,13 @@ Write-Output ([Array](Get-SortedSemanticVersions -InputArray $versions -Descendi
 }
 
 function New-NuGetPackage(
+    
     [string]
-    $NuspecFilePath){
+    [Parameter(
+        ValueFromPipelineByPropertyName = $true)]
+    $NuspecFilePath
+
+){
 
     $OutputDirectory = (gi $NuspecFilePath).DirectoryName
     
@@ -54,14 +64,23 @@ Invoking nuget:
 }
 
 function Publish-NuGetPackage(
-    [string]
-    $NupkgFilePath,
-    [string]
 
     [string]
+    [Parameter(
+        ValueFromPipelineByPropertyName = $true)]
+    $NupkgFilePath,
+
+    [string]
+    [Parameter(
+        ValueFromPipelineByPropertyName = $true)]
     $SourcePathOrUrl,
 
-    $ApiKey){
+    [string]
+    [Parameter(
+        ValueFromPipelineByPropertyName = $true)]
+    $ApiKey
+    
+){
 
     if(Test-Path $SourcePathOrUrl -PathType Container){
         $SourcePathOrUrl = Resolve-Path $SourcePathOrUrl
@@ -87,7 +106,7 @@ $NuGetCommand $($NuGetParameters|Out-String)
     }
 }
 
-function Publish-AppeaseTaskTemplateToNupkgSource(
+function Publish-AppeaseTaskTemplateToNuGetFeed(
 
     [string]    
     [ValidateNotNullOrEmpty()]
@@ -111,7 +130,7 @@ function Publish-AppeaseTaskTemplateToNupkgSource(
 
     <#
         .SYNOPSIS
-        an internal utility function that publishes a task template to a .nupkg source
+        Publishes a task template to a .nupkg source
     #>
 
     $TaskTemplateMetadata = Get-AppeaseTaskTemplateMetadata -TaskTemplateDirPath $TaskTemplateDirPath
@@ -171,7 +190,7 @@ function Get-AppeaseTaskTemplateMetadata(
 ){
     <#
         .SYNOPSIS
-        an internal utility function that retrieves the metadata for a task template
+        Retrieves the metadata for a task template
     #>
 
     $TaskTemplateMetadataFilePath = "$TaskTemplateDirPath\metadata.json"
@@ -188,7 +207,7 @@ task template metadata not found for task template
     Write-Output $TaskTemplateMetadata
 }
 
-function Save-AppeaseTaskTemplate(
+function New-AppeaseTaskTemplatePackage(
 
     [string]    
     [ValidateNotNullOrEmpty()]
@@ -216,7 +235,7 @@ function Save-AppeaseTaskTemplate(
     [Parameter(
         Mandatory=$true,
         ValueFromPipelineByPropertyName = $true)]
-    $SourceDir,
+    $SourceDirPath,
     
     [string]
     [ValidateNotNullOrEmpty()]
@@ -225,22 +244,23 @@ function Save-AppeaseTaskTemplate(
         ValueFromPipelineByPropertyName = $true)]
     $Description,
     
-    [string]
-    [ValidateSet('PowerShell3Module','PowerShell4Module')]
-    [Parameter(
-        ValueFromPipelineByPropertyName = $true)]
-    $Type = 'PowerShell3Module',
-
-    [string]
-    [PSCustomObject[]]
-    $Parameters,
-    
     [PSCustomObject[]]
     [ValidateNotNullOrEmpty()]
     [Parameter(
         Mandatory=$true,
         ValueFromPipelineByPropertyName = $true)]
     $Maintainer,
+    
+    [string]
+    [Parameter(
+        Mandatory=$true,
+        ValueFromPipelineByPropertyName = $true)]
+    $InvocationCommand,
+    
+    [PSCustomObject[]]
+    [Parameter(
+        ValueFromPipelineByPropertyName = $true)]
+    $InvocationParameter,
 
     [PSCustomObject]
     [Parameter(
@@ -273,54 +293,58 @@ function Save-AppeaseTaskTemplate(
 
 ){
     
-    $TaskTemplateDirPath = "$DestinationDirPath\$Id.$Version"
-    If((Test-Path $TaskTemplateDirPath) -and !$Force.IsPresent){
+    $TaskTemplatePackageDirPath = "$DestinationDirPath\$Id.$Version"
+    # handle existing task template package dir
+    If(Test-Path $TaskTemplatePackageDirPath){
+
+        If($Force.IsPresent){
+            Remove-Item -Path $TaskTemplatePackageDirPath -Recurse -Force
+        }
+        Else{
         
 throw `
 @"
 Task template already exists at:
-'$TaskTemplateDirPath'
+'$TaskTemplatePackageDirPath'
 To overwrite existing task template include the -Force parameter
-"@
+"@        
+        }
 
     }
-    Else{
-        
-        Remove-Item -Path $TaskTemplateDirPath -Recurse -Force
 
-        New-Item -Path $TaskTemplateDirPath -ItemType Directory
+    New-Item -Path $TaskTemplatePackageDirPath -ItemType Directory
 
-        # create metadata file 
-         $TaskTemplateMetadataFilePath = "$TaskTemplateDirPath\metadata.json"
-        New-Item -ItemType File -Path $TaskTemplateMetadataFilePath -Force
-        $TaskTemplateMetadata = @{
-            Id=$Id;
-            Version=$Version;
-            Description=$Description;
-            Type=$Type;
-        }
-        if($Parameters){
-            $TaskTemplateMetadata.Parameters = $Parameters
-        }
-        if($Maintainer){
-            $TaskTemplateMetadata.Maintainers = $Maintainer
-        }
-        if($Dependency){
-            $TaskTemplateMetadata.Dependencies = $Dependencies
-        }
-        if($IconUrl){
-            $TaskTemplateMetadata.IconUrl = $IconUrl
-        }
-        if($ProjectUrl){
-            $TaskTemplateMetadata.ProjectUrl = $ProjectUrl
-        }
-        if($Tag){
-            $TaskTemplateMetadata.Tags = $Tag
-        }
-        $TaskTemplateMetadata | ConvertTo-Json -Depth 12 | sc -Path $TaskTemplateMetadataFilePath -Force
-
-        Copy-Item $SourceDir "$TaskTemplateDirPath\bin" -Recurse -Container -Force
+    # create metadata file 
+    $TaskTemplateMetadataFilePath = "$TaskTemplatePackageDirPath\metadata.json"
+    New-Item -ItemType File -Path $TaskTemplateMetadataFilePath -Force
+    $TaskTemplateMetadata = @{
+        Id=$Id;
+        Version=$Version;
+        Description=$Description;
+        Invocation=@{Command=$InvocationCommand};
     }
+    if($InvocationParameter){
+        $TaskTemplateMetadata.Invocation.Parameters = $InvocationParameter
+    }
+    if($Maintainer){
+        $TaskTemplateMetadata.Maintainers = $Maintainer
+    }
+    if($Dependency){
+        $TaskTemplateMetadata.Dependencies = $Dependencies
+    }
+    if($IconUrl){
+        $TaskTemplateMetadata.IconUrl = $IconUrl
+    }
+    if($ProjectUrl){
+        $TaskTemplateMetadata.ProjectUrl = $ProjectUrl
+    }
+    if($Tag){
+        $TaskTemplateMetadata.Tags = $Tag
+    }
+    $TaskTemplateMetadata | ConvertTo-Json -Depth 12 | sc -Path $TaskTemplateMetadataFilePath -Force
+
+    # add binaries
+    Copy-Item $SourceDirPath "$TaskTemplatePackageDirPath\bin" -Recurse -Container -Force
 
 }
 
@@ -599,8 +623,9 @@ $TaskTemplateInstallationDir
 Export-ModuleMember -Variable 'DefaultTemplateSources'
 Export-ModuleMember -Function @(
                                 'Get-AppeaseTaskTemplateLatestVersion',
+                                'Publish-AppeaseTaskTemplateToNuGetFeed',
+                                'Get-AppeaseTaskTemplateMetadata',
+                                'New-AppeaseTaskTemplatePackage',
                                 'Get-AppeaseTaskTemplateInstallDirPath',
-                                'Save-AppeaseTaskTemplate',
-                                'Publish-AppeaseTaskTemplateToNupkgSource',
                                 'Install-AppeaseTaskTemplate',
                                 'Uninstall-AppeaseTaskTemplate')
