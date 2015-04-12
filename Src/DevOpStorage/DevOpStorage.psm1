@@ -1,3 +1,27 @@
+function Get-AppeaseDevOpDirPath(
+
+    [string]
+    [ValidateNotNullOrEmpty()]
+    [Parameter(
+        Mandatory=$true,
+        ValueFromPipelineByPropertyName=$true)]
+    $Name,
+
+    [string]
+    [ValidateScript({Test-Path $_ -PathType Container})]
+    [Parameter(
+        ValueFromPipelineByPropertyName=$true)]
+    $ProjectRootDirPath = '.'
+
+){
+    <#
+        .Synopsis
+        An Internal utility function that returns the dir path of a devop
+    #>
+
+    Write-Output "$ProjectRootDirPath\.Appease\DevOps\$Name"
+}
+
 function Get-AppeaseDevOpFilePath(
 
     [string]
@@ -19,7 +43,8 @@ function Get-AppeaseDevOpFilePath(
         An Internal utility function that returns the file path of a devop
     #>
 
-    Write-Output "$ProjectRootDirPath\.Appease\DevOps\$Name\$Name.json"
+   $DevOpDirPath = Get-AppeaseDevOpDirPath -Name $Name -ProjectRootDirPath $ProjectRootDirPath
+   Write-Output "$DevOpDirPath\$Name.json"
 }
 
 function Save-AppeaseDevOp(
@@ -170,10 +195,10 @@ function Rename-AppeaseDevOp(
         an internal utility function that updates the name of a DevOp in storage
     #>
 
-    $OldDevOpFilePath = Get-AppeaseDevOpFilePath -Name $OldName -ProjectRootDirPath $ProjectRootDirPath
-    $NewDevOpFilePath = Get-AppeaseDevOpFilePath -Name $NewName -ProjectRootDirPath $ProjectRootDirPath
+    $OldDevOpDirPath = Get-AppeaseDevOpDirPath -Name $OldName -ProjectRootDirPath $ProjectRootDirPath
+    $NewDevOpDirPath = Get-AppeaseDevOpDirPath -Name $NewName -ProjectRootDirPath $ProjectRootDirPath
         
-    mv $OldDevOpFilePath $NewDevOpFilePath -Force:$Force
+    mv $OldDevOpDirPath $NewDevOpDirPath -Force:$Force
 }
 
 function Remove-AppeaseDevOp(
