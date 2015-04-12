@@ -6,7 +6,6 @@ $ChocolateyCommand = "chocolatey"
 
 function Get-AppeaseTaskTemplateLatestVersion(
 
-
     [string]
     [ValidateNotNullOrEmpty()]
     [Parameter(

@@ -55,25 +55,25 @@ function Invoke-AppeaseDevOp(
         $Variables.'Appease.Task.Name' = $TaskName
         # @todo: support composite variables (perform variable substitution on variables)
 
-        # perform variable substitution on task parameters    
-        $TaskInvocationCommand = $TaskTemplateMetadata.Invocation.Command
-        foreach($TaskParameter in $TaskParameters.GetEnumerator()){
-            foreach($Variable in $Variables){
-                $TaskParameter = $TaskParameter.Value -creplace "#{$($Variable.Key)}",$Variable.Value
-            }
-            $TaskInvocationCommand += " -$($TaskParameter.Name) $($TaskParameter.Value)"
-        }
-
 Write-Debug "Ensuring task template installed"
         TemplateManagement\Install-AppeaseTaskTemplate -Id $Task.TemplateId -Version $Task.TemplateVersion -Source $TemplateSource
         $TaskTemplateInstallDirPath = TemplateManagement\Get-AppeaseTaskTemplateInstallDirPath -Id $Task.TemplateId -Version $Task.TemplateVersion -ProjectRootDirPath $ProjectRootDirPath
         $TaskTemplateMetadata = TemplateManagement\Get-AppeaseTaskTemplateMetadata -TaskTemplateDirPath $TaskTemplateInstallDirPath
 
+        # perform variable substitution on task parameters    
+        $TaskInvocationCommand = $TaskTemplateMetadata.Invocation.Command
+        foreach($TaskParameter in $TaskParameters.GetEnumerator()){
+            foreach($Variable in $Variables.GetEnumerator()){
+                $TaskParameter.Value = $TaskParameter.Value -creplace "#{$($Variable.Key)}",$Variable.Value
+            }
+            $TaskInvocationCommand += " -$($TaskParameter.Key) $($TaskParameter.Value)"
+        }
+
         # invoke task template
         $OriginalLocation = Get-Location
         Try
         {
-            Set-Location $TaskTemplateInstallDirPath
+            Set-Location "$TaskTemplateInstallDirPath\bin"
 
 Write-Debug `
 @"
