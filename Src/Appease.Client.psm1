@@ -47,8 +47,8 @@ function Invoke-AppeaseDevOp(
             $Variables = @{}
         }
         # add automatic variables
-        $Variables.'Variables.Appease.ProjectRootDirPath' = (Resolve-Path $ProjectRootDirPath)
-        $Variables.'Variables.Appease.Task.Name' = $TaskName
+        $Variables.'Appease.ProjectRootDirPath' = (Resolve-Path $ProjectRootDirPath)
+        $Variables.'Appease.Task.Name' = $TaskName
         # @todo: support composite variables (perform variable substitution on variables)
 
 Write-Debug "Ensuring task template installed"
@@ -61,7 +61,7 @@ Write-Debug "Ensuring task template installed"
         # @todo: support default parameter values
         foreach($TaskParameter in $TaskParameters.GetEnumerator()){
             foreach($Variable in $Variables.GetEnumerator()){
-                $TaskParameter.Value = $TaskParameter.Value -replace "#{Variables.$($Variable.Key)}",$Variable.Value
+                $TaskParameter.Value = $TaskParameter.Value -replace "#{$($Variable.Key)}",$Variable.Value
             }
         }
 
@@ -69,10 +69,10 @@ Write-Debug "Ensuring task template installed"
         $TaskInvocationCommand = $TaskTemplateMetadata.Invocation.Command
         foreach($TaskParameter in $TaskParameters.GetEnumerator()){
             $TaskParameterValueJson = $TaskParameter.Value | ConvertTo-Json -Depth 12
-            $TaskInvocationCommand -replace "#{Parameters.$($TaskParameter.Key)}",$TaskParameterValueJson
+            $TaskInvocationCommand -replace "#{Appease.Task.Parameters.$($TaskParameter.Key)}",$TaskParameterValueJson
         }
         $TaskParametersJson = $TaskParameters | ConvertTo-Json -Depth 12
-        $TaskInvocationCommand -replace "#{Parameters}",$TaskParametersJson
+        $TaskInvocationCommand -replace "#{Appease.Task.Parameters}",$TaskParametersJson
 
         # invoke task template
         $OriginalLocation = Get-Location
