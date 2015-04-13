@@ -249,7 +249,13 @@ function New-AppeaseTaskTemplatePackage(
         Mandatory=$true,
         ValueFromPipelineByPropertyName = $true)]
     $Maintainer,
-    
+
+    [string]
+    [Parameter(
+        Mandatory=$true,
+        ValueFromPipelineByPropertyName = $true)]
+    $InvocationHandler,
+
     [string]
     [Parameter(
         Mandatory=$true,
@@ -320,7 +326,10 @@ To overwrite existing task template include the -Force parameter
         Id=$Id;
         Version=$Version;
         Description=$Description;
-        Invocation=@{Command=$InvocationCommand};
+        Invocation=@{
+            Handler=$InvocationHandler;
+            Command=$InvocationCommand
+        };
     }
     if($InvocationParameter){
         $TaskTemplateMetadata.Invocation.Parameters = $InvocationParameter

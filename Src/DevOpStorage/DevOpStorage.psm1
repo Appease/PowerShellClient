@@ -307,15 +307,15 @@ function Add-AppeaseTask(
     #>    
     
     # fetch DevOp
-    $Tasks = Get-AppeaseDevOp -Name $DevOpName -ProjectRootDirPath $ProjectRootDirPath | Select -ExpandProperty Tasks
+    $DevOp = Get-AppeaseDevOp -Name $DevOpName -ProjectRootDirPath $ProjectRootDirPath
 
     # if this is first task
-    If(!$Tasks){
-        $Tasks = {@()}.Invoke()
+    If(!$DevOp.Tasks){
+        $DevOp.Tasks = {@()}.Invoke()
     }
 
     # guard against unintentionally overwriting existing tasks
-    if(!$Force.IsPresent -and ($Tasks|?{$_.Name -eq $Name})){
+    if(!$Force.IsPresent -and ($DevOp.Tasks|?{$_.Name -eq $Name})){
 throw `
 @"
 Task '$Name' already exists in devop '$DevOpName'
@@ -330,10 +330,10 @@ If you want to overwrite the existing task use the -Force parameter
     $Task = @{Name=$Name;TemplateId=$TemplateId;TemplateVersion=$TemplateVersion}
 
     # add task to dev op 
-    $Tasks.Insert($Index,$Task)
+    $DevOp.Tasks.Insert($Index,$Task)
 
     # save
-    Save-AppeaseDevOp -Name $DevOpName -Task $Tasks -ProjectRootDirPath $ProjectRootDirPath
+    Save-AppeaseDevOp -Name $DevOpName -Task $DevOp.Tasks -ProjectRootDirPath $ProjectRootDirPath
 
 }
 
@@ -366,13 +366,13 @@ function Remove-AppeaseTask(
     if($Force.IsPresent -or $PSCmdlet.ShouldContinue($ConfirmationPromptQuery,$ConfirmationPromptCaption)){
 
         # fetch tasks
-        $Tasks = Get-AppeaseDevOp -Name $DevOpName -ProjectRootDirPath $ProjectRootDirPath | Select -ExpandProperty Tasks
+        $DevOp = Get-AppeaseDevOp -Name $DevOpName -ProjectRootDirPath $ProjectRootDirPath
 
         # remove task
-        $Tasks.Remove(($Tasks|?{$_.Name -eq $Name}))
+        $DevOp.Tasks.Remove(($DevOp.Tasks|?{$_.Name -eq $Name}))|Write-Debug
 
         # save
-        Save-AppeaseDevOp -Name $DevOpName -Task $Tasks -ProjectRootDirPath $ProjectRootDirPath
+        Save-AppeaseDevOp -Name $DevOpName -Task $DevOp.Tasks -ProjectRootDirPath $ProjectRootDirPath
 
     }   
 
@@ -413,10 +413,10 @@ function Rename-AppeaseTask(
 ){
         
     # fetch devop
-    $Tasks = Get-AppeaseDevOp -Name $DevOpName -ProjectRootDirPath $ProjectRootDirPath | Select -ExpandProperty Tasks
+    $DevOp.Tasks = Get-AppeaseDevOp -Name $DevOpName -ProjectRootDirPath $ProjectRootDirPath
 
     # fetch task
-    $Task = $Tasks|?{$_.Name -eq $OldName}
+    $Task = $DevOp.Tasks|?{$_.Name -eq $OldName}
 
     # handle task not found
     if(!$Task){
@@ -428,7 +428,7 @@ for project '$(Resolve-Path $ProjectRootDirPath)'.
     }
 
     # guard against unintentionally overwriting existing task
-    if(!$Force.IsPresent -and ($Tasks|?{$_.Name -eq $NewName})){
+    if(!$Force.IsPresent -and ($DevOp.Tasks|?{$_.Name -eq $NewName})){
 throw `
 @"
 Task '$NewName' already exists in dev op '$DevOpName'
@@ -443,7 +443,7 @@ If you want to overwrite the existing task use the -Force parameter
     $Task.Name = $NewName
 
     # save
-    Save-AppeaseDevOp -Name $DevOpName -Task $Tasks -ProjectRootDirPath $ProjectRootDirPath
+    Save-AppeaseDevOp -Name $DevOpName -Task $DevOp.Tasks -ProjectRootDirPath $ProjectRootDirPath
 
 }
 

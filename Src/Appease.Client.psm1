@@ -39,10 +39,6 @@ function Invoke-AppeaseDevOp(
     foreach($Task in $DevOp.Tasks){
         $TaskName = $Task.Name
 
-        # combine parameters
-        $TaskParameters = $Configuration.TaskParameters.$TaskName
-        # @todo: support default parameter values
-
         # add variables from configuration
         if($Configuration.Variables){
             $Variables = $Configuration.Variables          
@@ -51,8 +47,8 @@ function Invoke-AppeaseDevOp(
             $Variables = @{}
         }
         # add automatic variables
-        $Variables.'Appease.ProjectRootDirPath' = (Resolve-Path $ProjectRootDirPath)
-        $Variables.'Appease.Task.Name' = $TaskName
+        $Variables.'Variables.Appease.ProjectRootDirPath' = (Resolve-Path $ProjectRootDirPath)
+        $Variables.'Variables.Appease.Task.Name' = $TaskName
         # @todo: support composite variables (perform variable substitution on variables)
 
 Write-Debug "Ensuring task template installed"
@@ -60,27 +56,39 @@ Write-Debug "Ensuring task template installed"
         $TaskTemplateInstallDirPath = TemplateManagement\Get-AppeaseTaskTemplateInstallDirPath -Id $Task.TemplateId -Version $Task.TemplateVersion -ProjectRootDirPath $ProjectRootDirPath
         $TaskTemplateMetadata = TemplateManagement\Get-AppeaseTaskTemplateMetadata -TaskTemplateDirPath $TaskTemplateInstallDirPath
 
-        # perform variable substitution on task parameters    
-        $TaskInvocationCommand = $TaskTemplateMetadata.Invocation.Command
+        # perform variable substitution on task parameters
+        $TaskParameters = $Configuration.TaskParameters.$TaskName
+        # @todo: support default parameter values
         foreach($TaskParameter in $TaskParameters.GetEnumerator()){
             foreach($Variable in $Variables.GetEnumerator()){
-                $TaskParameter.Value = $TaskParameter.Value -creplace "#{$($Variable.Key)}",$Variable.Value
+                $TaskParameter.Value = $TaskParameter.Value -replace "#{Variables.$($Variable.Key)}",$Variable.Value
             }
-            $TaskInvocationCommand += " -$($TaskParameter.Key) $($TaskParameter.Value)"
         }
+
+        # perform parameter substitution on task invocation command
+        $TaskInvocationCommand = $TaskTemplateMetadata.Invocation.Command
+        foreach($TaskParameter in $TaskParameters.GetEnumerator()){
+            $TaskParameterValueJson = $TaskParameter.Value | ConvertTo-Json -Depth 12
+            $TaskInvocationCommand -replace "#{Parameters.$($TaskParameter.Key)}",$TaskParameterValueJson
+        }
+        $TaskParametersJson = $TaskParameters | ConvertTo-Json -Depth 12
+        $TaskInvocationCommand -replace "#{Parameters}",$TaskParametersJson
 
         # invoke task template
         $OriginalLocation = Get-Location
         Try
         {
             Set-Location "$TaskTemplateInstallDirPath\bin"
+            
+            $TaskInvocationHandler = $TaskTemplateMetadata.Invocation.Handler
 
 Write-Debug `
 @"
-Invoking task '$TaskName' using command:
-iex $TaskInvocationCommand
+Invoking task '$TaskName' using:
+    handler: $TaskInvocationHandler
+    command: $TaskInvocationCommand
 "@
-        iex $TaskInvocationCommand
+        & $TaskInvocationHandler $TaskInvocationCommand
 
         }
         Finally{
