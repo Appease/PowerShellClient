@@ -68,11 +68,13 @@ Write-Debug "Ensuring task template installed"
         # perform parameter substitution on task invocation command
         $TaskInvocationCommand = $TaskTemplateMetadata.Invocation.Command
         foreach($TaskParameter in $TaskParameters.GetEnumerator()){
-            $TaskParameterValueJson = $TaskParameter.Value | ConvertTo-Json -Depth 12
-            $TaskInvocationCommand -replace "#{Appease.Task.Parameters.$($TaskParameter.Key)}",$TaskParameterValueJson
+            $TaskParameterValueJson = $TaskParameter.Value | ConvertTo-Json -Depth 12 -Compress
+            $TaskInvocationCommand = $TaskInvocationCommand -replace "#{Appease.Task.Parameters.$($TaskParameter.Key)}",$TaskParameterValueJson
         }
-        $TaskParametersJson = $TaskParameters | ConvertTo-Json -Depth 12
-        $TaskInvocationCommand -replace "#{Appease.Task.Parameters}",$TaskParametersJson
+        $TaskParametersJson = $TaskParameters | ConvertTo-Json -Depth 12 -Compress
+        $TaskInvocationCommand = $TaskInvocationCommand -replace "#{Appease.Task.Parameters}",$TaskParametersJson
+        # see: http://docs.aws.amazon.com/cli/latest/userguide/cli-using-param.html#quoting-strings
+        $TaskInvocationCommand = $TaskInvocationCommand -replace '"','\"'
 
         # invoke task template
         $OriginalLocation = Get-Location
@@ -84,12 +86,11 @@ Write-Debug "Ensuring task template installed"
 
 Write-Debug `
 @"
-Invoking task '$TaskName' using:
-    handler: $TaskInvocationHandler
-    command: $TaskInvocationCommand
+Invoking task '$TaskName':
+    & $TaskInvocationHandler $TaskInvocationCommand
 "@
+        #& 'C:\Users\chris\Downloads\EchoArgs.exe' $TaskInvocationCommand
         & $TaskInvocationHandler $TaskInvocationCommand
-
         }
         Finally{
             Set-Location $OriginalLocation
